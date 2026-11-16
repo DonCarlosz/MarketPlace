@@ -91,7 +91,7 @@ export default function LandingPage() {
 
   const carouselRef = useRef(null);
 
-  // Auto-switch hero banner slides every 5.5 seconds
+  // Auto-switch hero banner slides every 5.5 seconds with smooth horizontal slide
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -156,7 +156,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col pb-16">
-      {/* 1. eBay-Style Top Search Section (Tight padding to eliminate gap above banner) */}
+      {/* 1. eBay-Style Top Search Section (Clean & Tight) */}
       <section className="bg-slate-50 border-b border-slate-200/90 pt-3 pb-2.5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-2">
           <form
@@ -223,203 +223,193 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 2. Full-Bleed Auto-Switching Hero Banner (Zero margins, edge-to-edge w-full, strictly fixed height) */}
+      {/* 2. Full-Bleed Auto-Switching Hero Banner (Zero margins, Smooth Horizontal Sliding, Fixed Proportional Height) */}
       <section className="w-full relative overflow-hidden bg-slate-900 border-b border-slate-200">
-        <div className="relative w-full h-[360px] sm:h-[400px] md:h-[430px] overflow-hidden">
-          {/* SLIDE 1: Clean White Background with Large Cutout Product Cards (Image 6 style) */}
+        {/* Fixed height container: h-[340px] sm:h-[360px] md:h-[375px] leaves visible white space at bottom */}
+        <div className="relative w-full h-[340px] sm:h-[360px] md:h-[375px] overflow-hidden">
+          {/* Smooth Horizontal Sliding Track (translates horizontally smoothly from right to left like eBay) */}
           <div
-            className={`absolute inset-0 w-full h-full bg-white transition-opacity duration-500 ${
-              currentSlide === 0 ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
-            }`}
+            className="flex w-full h-full transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+            style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
-            <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
-              {/* Left Content */}
-              <div className="max-w-lg space-y-4">
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Zero Platform Fees • Direct Local Meetups</span>
-                </span>
-                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-                  Great local finds. <br />
-                  Direct deals.
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md">
-                  Find pre-owned tech, vehicles, home furniture, and neighborhood handwork with zero wire transfer risks.
-                </p>
-                <div className="pt-2">
-                  <Link
-                    to="/market"
-                    className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition"
-                  >
-                    <span>Explore market</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Right Content: Prominent Large Product Cards (filling space, no awkward gaps) */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 shrink-0 pr-4 sm:pr-8">
-                {/* Large Card 1 */}
-                <div className="w-32 h-36 sm:w-44 sm:h-44 rounded-2xl bg-blue-500 p-2.5 sm:p-3 shadow-md transform -rotate-2 hover:rotate-0 transition duration-200 flex flex-col justify-between">
-                  <img
-                    src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80"
-                    alt="Smart Watch"
-                    className="w-full h-24 sm:h-32 object-cover rounded-xl"
-                  />
-                  <div className="text-xs font-bold text-white text-center truncate">Smart Watch</div>
+            {/* SLIDE 1: Clean White Background with Large Cutout Product Cards */}
+            <div className="w-full h-full flex-shrink-0 relative bg-white border-b border-slate-200 overflow-hidden">
+              <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-6 lg:gap-10">
+                {/* Left Content: Natural flow without early breaking, proportionate header size */}
+                <div className="flex-1 max-w-xl space-y-3.5">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Zero Platform Fees • Direct Local Meetups</span>
+                  </span>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
+                    Great local finds. Direct deals.
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-lg">
+                    Find pre-owned tech, vehicles, home furniture, and neighborhood handwork with zero wire transfer risks.
+                  </p>
+                  <div className="pt-1">
+                    <Link
+                      to="/market"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition"
+                    >
+                      <span>Explore market</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 </div>
 
-                {/* Large Card 2 */}
-                <div className="w-32 h-36 sm:w-44 sm:h-44 rounded-2xl bg-rose-500 p-2.5 sm:p-3 shadow-lg transform rotate-2 hover:rotate-0 transition duration-200 flex flex-col justify-between">
-                  <img
-                    src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80"
-                    alt="Audio Gear"
-                    className="w-full h-24 sm:h-32 object-cover rounded-xl"
-                  />
-                  <div className="text-xs font-bold text-white text-center truncate">Pro Audio</div>
-                </div>
-
-                {/* Large Card 3 */}
-                <div className="w-32 h-36 sm:w-44 sm:h-44 rounded-2xl bg-emerald-600 p-2.5 sm:p-3 shadow-md transform rotate-1 hover:rotate-0 transition duration-200 flex flex-col justify-between">
-                  <img
-                    src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80"
-                    alt="Camera Gear"
-                    className="w-full h-24 sm:h-32 object-cover rounded-xl"
-                  />
-                  <div className="text-xs font-bold text-white text-center truncate">Vintage Optics</div>
-                </div>
-
-                {/* Large Card 4 */}
-                <div className="w-32 h-36 sm:w-44 sm:h-44 rounded-2xl bg-amber-500 p-2.5 sm:p-3 shadow-md transform -rotate-1 hover:rotate-0 transition duration-200 flex flex-col justify-between">
-                  <img
-                    src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=400&q=80"
-                    alt="Fashion Sneaker"
-                    className="w-full h-24 sm:h-32 object-cover rounded-xl"
-                  />
-                  <div className="text-xs font-bold text-white text-center truncate">Sneakers & Wears</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SLIDE 2: Full Real Photographic Background Image (Matching eBay Image 1, replacing the pinkish color) */}
-          <div
-            className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
-              currentSlide === 1 ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
-            }`}
-          >
-            {/* Real high-resolution lifestyle community trading photo */}
-            <img
-              src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1800&q=80"
-              alt="Community Life and Meetups"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            {/* Dark gradient overlay for text readability on left */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-transparent" />
-
-            <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center">
-              <div className="max-w-xl space-y-4 text-white">
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
-                  <Flame className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Direct Peer-to-Peer Community</span>
-                </span>
-                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                  Get more with a <br />
-                  LocalMarket account.
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-md">
-                  Enjoy direct member messaging, instant deal notifications, and zero listing fees across your neighborhood.
-                </p>
-                <div className="pt-2 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handlePostClick}
-                    className="px-7 py-3 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95"
-                  >
-                    {user ? 'Post a Listing' : 'Sign in to Start'}
-                  </button>
-                  <Link
-                    to="/market"
-                    className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 backdrop-blur-sm transition"
-                  >
-                    Explore market
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* SLIDE 3: On-Demand Neighborhood Handwork with Large Service Showcase Cards */}
-          <div
-            className={`absolute inset-0 w-full h-full bg-[#1e1b4b] text-white transition-opacity duration-500 ${
-              currentSlide === 2 ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
-            }`}
-          >
-            <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
-              {/* Left Content */}
-              <div className="max-w-lg space-y-4">
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-300 bg-white/10 px-3 py-1 rounded-full border border-white/15">
-                  <Wrench className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Skilled Handwork & Pros</span>
-                </span>
-                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-                  Neighborhood handwork <br />
-                  on demand.
-                </h2>
-                <p className="text-xs sm:text-sm text-indigo-100 leading-relaxed max-w-md">
-                  Book trusted local barbers, braiders, mechanics, cleaners, and private tutors directly in your town.
-                </p>
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleModeNavigate('service')}
-                    className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition"
-                  >
-                    <span>Find skilled pros</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Right Content: Prominent Large Service Cards (no big empty gaps) */}
-              <div className="flex items-center gap-4 shrink-0 pr-4 sm:pr-8">
-                {/* Barber Card */}
-                <div className="w-40 sm:w-52 h-52 sm:h-64 bg-white text-slate-900 rounded-2xl p-3.5 shadow-xl transform -rotate-2 hover:rotate-0 transition flex flex-col justify-between">
-                  <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2">
+                {/* Right Content: Prominent Large Product Cards (enlarged, filling the right side without gap) */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 shrink-0 pr-2 sm:pr-6">
+                  {/* Card 1 */}
+                  <div className="w-32 h-34 sm:w-40 sm:h-42 md:w-44 md:h-44 rounded-2xl bg-blue-500 p-2.5 shadow-md transform -rotate-1 hover:rotate-0 transition duration-200 flex flex-col justify-between">
                     <img
-                      src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80"
-                      alt="Barber"
-                      className="w-full h-full object-cover"
+                      src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=400&q=80"
+                      alt="Smart Watch"
+                      className="w-full h-22 sm:h-28 md:h-30 object-cover rounded-xl"
                     />
+                    <div className="text-xs font-bold text-white text-center truncate">Smart Watch</div>
                   </div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Master Barber</div>
-                    <div className="text-[11px] text-purple-600 font-bold">Fixed Sessions</div>
-                    <div className="text-[10px] text-slate-500 truncate mt-0.5">Fades, Beard & Styling</div>
+
+                  {/* Card 2 */}
+                  <div className="w-32 h-34 sm:w-40 sm:h-42 md:w-44 md:h-44 rounded-2xl bg-rose-500 p-2.5 shadow-lg transform rotate-2 hover:rotate-0 transition duration-200 flex flex-col justify-between">
+                    <img
+                      src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80"
+                      alt="Audio Gear"
+                      className="w-full h-22 sm:h-28 md:h-30 object-cover rounded-xl"
+                    />
+                    <div className="text-xs font-bold text-white text-center truncate">Pro Audio</div>
+                  </div>
+
+                  {/* Card 3 */}
+                  <div className="w-32 h-34 sm:w-40 sm:h-42 md:w-44 md:h-44 rounded-2xl bg-emerald-600 p-2.5 shadow-md transform rotate-1 hover:rotate-0 transition duration-200 flex flex-col justify-between">
+                    <img
+                      src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80"
+                      alt="Camera Gear"
+                      className="w-full h-22 sm:h-28 md:h-30 object-cover rounded-xl"
+                    />
+                    <div className="text-xs font-bold text-white text-center truncate">Vintage Optics</div>
+                  </div>
+
+                  {/* Card 4 */}
+                  <div className="w-32 h-34 sm:w-40 sm:h-42 md:w-44 md:h-44 rounded-2xl bg-amber-500 p-2.5 shadow-md transform -rotate-2 hover:rotate-0 transition duration-200 flex flex-col justify-between">
+                    <img
+                      src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=400&q=80"
+                      alt="Fashion Sneaker"
+                      className="w-full h-22 sm:h-28 md:h-30 object-cover rounded-xl"
+                    />
+                    <div className="text-xs font-bold text-white text-center truncate">Sneakers & Wears</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SLIDE 2: Real Photographic Background Image (Community Life & Account Perks) */}
+            <div className="w-full h-full flex-shrink-0 relative overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1800&q=80"
+                alt="Community Life and Meetups"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-transparent" />
+
+              <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center">
+                <div className="max-w-xl space-y-3.5 text-white">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                    <Flame className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Direct Peer-to-Peer Community</span>
+                  </span>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-snug">
+                    Get more with a LocalMarket account.
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed max-w-lg">
+                    Enjoy direct member messaging, instant deal notifications, and zero listing fees across your neighborhood.
+                  </p>
+                  <div className="pt-2 flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handlePostClick}
+                      className="px-6 py-2.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm shadow-lg transition active:scale-95"
+                    >
+                      {user ? 'Post a Listing' : 'Sign in to Start'}
+                    </button>
+                    <Link
+                      to="/market"
+                      className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 backdrop-blur-sm transition"
+                    >
+                      Explore market
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SLIDE 3: On-Demand Neighborhood Handwork with Gradient Fade & Large Service Cards */}
+            <div className="w-full h-full flex-shrink-0 relative overflow-hidden bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white border-b border-indigo-900/40">
+              <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-6 lg:gap-10">
+                {/* Left Content: No early breaking, proportionate header size */}
+                <div className="flex-1 max-w-xl space-y-3.5">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-100 bg-white/15 px-3 py-1 rounded-full border border-white/20">
+                    <Wrench className="w-3.5 h-3.5 text-indigo-200" />
+                    <span>Skilled Handwork & Pros</span>
+                  </span>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight leading-snug">
+                    Neighborhood handwork on demand.
+                  </h2>
+                  <p className="text-xs sm:text-sm text-indigo-100 leading-relaxed max-w-lg">
+                    Book trusted local barbers, braiders, mechanics, cleaners, and private tutors directly in your town.
+                  </p>
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleModeNavigate('service')}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm shadow-md transition"
+                    >
+                      <span>Find skilled pros</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                {/* Mechanic Card */}
-                <div className="w-40 sm:w-52 h-52 sm:h-64 bg-white text-slate-900 rounded-2xl p-3.5 shadow-xl transform rotate-2 hover:rotate-0 transition flex flex-col justify-between">
-                  <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2">
-                    <img
-                      src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80"
-                      alt="Mechanic"
-                      className="w-full h-full object-cover"
-                    />
+                {/* Right Content: Large Prominent Service Cards (enlarged to eliminate void) */}
+                <div className="flex items-center gap-4 shrink-0 pr-2 sm:pr-6">
+                  {/* Barber Card */}
+                  <div className="w-44 sm:w-56 md:w-60 h-52 sm:h-60 bg-white text-slate-900 rounded-2xl p-3 sm:p-3.5 shadow-xl transform -rotate-1 hover:rotate-0 transition flex flex-col justify-between">
+                    <div className="w-full h-28 sm:h-34 rounded-xl overflow-hidden mb-2">
+                      <img
+                        src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80"
+                        alt="Barber"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Master Barber</div>
+                      <div className="text-[11px] text-purple-600 font-bold">Fixed Sessions</div>
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">Fades, Beard & Styling</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Auto Mechanics</div>
-                    <div className="text-[11px] text-emerald-600 font-bold">Starting-At</div>
-                    <div className="text-[10px] text-slate-500 truncate mt-0.5">Engine, Brakes & Tune-up</div>
+
+                  {/* Mechanic Card */}
+                  <div className="w-44 sm:w-56 md:w-60 h-52 sm:h-60 bg-white text-slate-900 rounded-2xl p-3 sm:p-3.5 shadow-xl transform rotate-1 hover:rotate-0 transition flex flex-col justify-between">
+                    <div className="w-full h-28 sm:h-34 rounded-xl overflow-hidden mb-2">
+                      <img
+                        src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80"
+                        alt="Mechanic"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Auto Mechanics</div>
+                      <div className="text-[11px] text-emerald-600 font-bold">Starting-At</div>
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">Engine, Brakes & Tune-up</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* eBay-style Controls Cluster (Matching Image 1: Bottom Right Chevrons & Pause/Play) */}
-          <div className="absolute bottom-4 right-6 z-20 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full text-white shadow-md">
+          {/* eBay-Style Controls Cluster (Bottom Right Chevrons & Play/Pause) */}
+          <div className="absolute bottom-3 right-6 z-20 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full text-white shadow-md">
             {/* Slide indicator dots */}
             <div className="flex items-center gap-1.5 px-1">
               {[0, 1, 2].map((idx) => (
@@ -471,7 +461,7 @@ export default function LandingPage() {
       </section>
 
       {/* 3. Category Square Tiles: "Explore by Category" (Image 4 Style) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-10">
         <div className="flex items-end justify-between mb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Explore by Category</h2>
