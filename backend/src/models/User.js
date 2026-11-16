@@ -87,6 +87,13 @@ const userSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    // Saved / Favorite listings
+    favorites: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Listing',
+      },
+    ],
   },
   {
     timestamps: true,

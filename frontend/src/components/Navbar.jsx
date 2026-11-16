@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
+import { useFavorites } from '../context/FavoritesContext';
 import ModeSwitcher from './ModeSwitcher';
 import ConfirmModal from './ConfirmModal';
 import {
@@ -12,11 +13,13 @@ import {
   LogOut,
   MapPin,
   Compass,
+  Heart,
 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, openAuthModal } = useAuth();
   const { userLocation } = useMode();
+  const { count } = useFavorites();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
@@ -83,6 +86,19 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center gap-2">
                 <Link
+                  to="/favorites"
+                  className="p-2 text-slate-600 hover:text-rose-500 hover:bg-slate-100 rounded-xl transition relative"
+                  title="Favorites & Wishlist"
+                >
+                  <Heart className="w-5 h-5" />
+                  {count > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                      {count > 9 ? '9+' : count}
+                    </span>
+                  )}
+                </Link>
+
+                <Link
                   to="/messages"
                   className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition relative"
                   title="Messages"
@@ -132,6 +148,14 @@ export default function Navbar() {
                           <UserIcon className="w-4 h-4 text-slate-400" />
                           My Profile & Listings
                         </Link>
+                        <Link
+                          to="/favorites"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium"
+                        >
+                          <Heart className="w-4 h-4 text-rose-500" />
+                          Saved Favorites ({count})
+                        </Link>
                         <button
                           onClick={() => {
                             setDropdownOpen(false);
@@ -167,8 +191,20 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile top header action: Sign in button or user avatar (clean and uncluttered) */}
+          {/* Mobile top header action: Favorites + Sign in button or user avatar */}
           <div className="flex sm:hidden items-center gap-2">
+            <Link
+              to="/favorites"
+              className="p-1.5 text-slate-600 hover:text-rose-500 rounded-lg relative"
+              title="Favorites"
+            >
+              <Heart className="w-5 h-5" />
+              {count > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center">
+                  {count > 9 ? '9+' : count}
+                </span>
+              )}
+            </Link>
             {user ? (
               <Link
                 to="/profile"

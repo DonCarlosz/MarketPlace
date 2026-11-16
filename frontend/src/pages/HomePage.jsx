@@ -506,22 +506,22 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Listings Grid with Clean Responsive Breakpoints */}
+        {/* Listings Grid with Clean Responsive Breakpoints (2 columns on mobile, up to 5 on desktop) */}
         {loading && displayListings.length === 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <div
                 key={n}
                 className="bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
               >
-                <div className="w-full aspect-[4/3] bg-slate-200 rounded-xl"></div>
+                <div className="w-full aspect-square bg-slate-200 rounded-xl"></div>
                 <div className="h-4 bg-slate-200 rounded w-3/4"></div>
                 <div className="h-3 bg-slate-200 rounded w-1/2"></div>
               </div>
             ))}
           </div>
         ) : displayListings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {displayListings.map((item) => (
               <ListingCard key={item._id} listing={item} />
             ))}

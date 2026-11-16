@@ -1,4 +1,5 @@
 import Listing from '../models/Listing.js';
+import User from '../models/User.js';
 import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo.js';
 
 // @desc    Get all listings with filtering, search, and radius/proximity support
@@ -343,6 +344,66 @@ export const updateListingStatus = async (req, res, next) => {
       success: true,
       message: `Listing marked as ${status}`,
       listing,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Toggle favorite on a listing
+// @route   POST /api/listings/:id/favorite
+export const toggleFavorite = async (req, res, next) => {
+  try {
+    const listingId = req.params.id;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (!Array.isArray(user.favorites)) {
+      user.favorites = [];
+    }
+
+    const isFav = user.favorites.some((fav) => fav.toString() === listingId);
+    if (isFav) {
+      user.favorites = user.favorites.filter((fav) => fav.toString() !== listingId);
+    } else {
+      user.favorites.push(listingId);
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      isFavorite: !isFav,
+      favorites: user.favorites,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get current user's favorite listings
+// @route   GET /api/listings/user/favorites
+export const getFavorites = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: 'favorites',
+      match: { status: 'active' },
+      populate: { path: 'seller', select: 'name avatar location isVerified createdAt' },
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const validFavorites = (user.favorites || []).filter(Boolean);
+
+    res.json({
+      success: true,
+      count: validFavorites.length,
+      listings: validFavorites,
     });
   } catch (error) {
     next(error);

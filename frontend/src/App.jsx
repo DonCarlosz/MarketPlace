@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
+import { FavoritesProvider } from './context/FavoritesContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import AuthModal from './components/AuthModal';
@@ -11,6 +12,7 @@ import ListingDetailPage from './pages/ListingDetailPage';
 import CreateListingPage from './pages/CreateListingPage';
 import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
+import FavoritesPage from './pages/FavoritesPage';
 import { Store, ShieldCheck } from 'lucide-react';
 
 function AuthRouteRedirect({ view }) {
@@ -65,6 +67,7 @@ function AppContent() {
           <Route path="/create" element={<CreateListingPage />} />
           <Route path="/messages" element={<ChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/login" element={<AuthRouteRedirect view="login" />} />
           <Route path="/register" element={<AuthRouteRedirect view="register" />} />
         </Routes>
@@ -79,9 +82,11 @@ export default function App() {
   return (
     <AuthProvider>
       <ModeProvider>
-        <Router>
-          <AppContent />
-        </Router>
+        <FavoritesProvider>
+          <Router>
+            <AppContent />
+          </Router>
+        </FavoritesProvider>
       </ModeProvider>
     </AuthProvider>
   );

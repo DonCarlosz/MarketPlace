@@ -62,6 +62,7 @@ export const register = async (req, res, next) => {
         location: user.location,
         avatar: user.avatar,
         role: user.role,
+        favorites: user.favorites || [],
       },
     });
   } catch (error) {
@@ -139,6 +140,7 @@ export const login = async (req, res, next) => {
         location: user.location,
         avatar: user.avatar,
         role: user.role,
+        favorites: user.favorites || [],
       },
     });
   } catch (error) {
