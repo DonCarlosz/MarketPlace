@@ -234,23 +234,23 @@ export default function LandingPage() {
           >
             {/* SLIDE 1: Clean White Background with Horizontal Category Showcases (Matching eBay Image 1) */}
             <div className="w-full h-full flex-shrink-0 relative bg-white border-b border-slate-200 overflow-hidden">
-              <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-6 lg:gap-10">
-                {/* Left Content: Strong prominent header, bold subtext */}
-                <div className="flex-1 max-w-lg space-y-3">
+              <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-4 sm:gap-6 lg:gap-10">
+                {/* Left Content: Strong prominent header, bold subtext, guaranteed breathing room */}
+                <div className="flex-1 min-w-[260px] sm:min-w-[320px] max-w-xl space-y-2.5 sm:space-y-3 z-10">
                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
                     <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
                     <span>Zero Platform Fees • Direct Local Meetups</span>
                   </span>
-                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug">
                     Great local finds. Direct deals.
                   </h2>
                   <p className="text-xs sm:text-sm md:text-base font-bold text-slate-700 leading-relaxed max-w-lg">
                     Find pre-owned tech, vehicles, home furniture, and neighborhood handwork with zero wire transfer risks.
                   </p>
-                  <div className="pt-1.5">
+                  <div className="pt-1">
                     <Link
                       to="/market"
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition"
+                      className="inline-flex items-center gap-2 px-5 py-2 sm:px-6 sm:py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition"
                     >
                       <span>Explore market</span>
                       <ArrowRight className="w-4 h-4" />
@@ -258,8 +258,8 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Right Content: 3 Horizontal Showcases (Like eBay Image 1, plenty of breathing room, not touching edges) */}
-                <div className="hidden sm:flex items-center gap-4 sm:gap-6 lg:gap-8 shrink-0 py-2">
+                {/* Right Content: 3 Horizontal Showcases (Balanced proportions, plenty of breathing room) */}
+                <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-7 shrink-0 py-2">
                   {/* Item 1: Home & Garden */}
                   <button
                     type="button"
@@ -270,14 +270,14 @@ export default function LandingPage() {
                     }}
                     className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
                   >
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex items-center justify-center p-1.5 mb-1.5 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-26 md:h-26 lg:w-30 lg:h-30 flex items-center justify-center p-2 mb-1.5 bg-slate-50/80 rounded-2xl border border-slate-100 shadow-sm">
                       <img
                         src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80"
                         alt="Home and Garden"
                         className="max-h-full max-w-full object-contain rounded-xl"
                       />
                     </div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5">
+                    <span className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap">
                       Home and Garden <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </button>
@@ -292,14 +292,14 @@ export default function LandingPage() {
                     }}
                     className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
                   >
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex items-center justify-center p-1.5 mb-1.5 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-26 md:h-26 lg:w-30 lg:h-30 flex items-center justify-center p-2 mb-1.5 bg-slate-50/80 rounded-2xl border border-slate-100 shadow-sm">
                       <img
                         src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=400&q=80"
                         alt="Fashion"
                         className="max-h-full max-w-full object-contain rounded-xl"
                       />
                     </div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5">
+                    <span className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap">
                       Fashion & Wears <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </button>
@@ -314,14 +314,14 @@ export default function LandingPage() {
                     }}
                     className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
                   >
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 flex items-center justify-center p-1.5 mb-1.5 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm">
+                    <div className="w-20 h-20 sm:w-22 sm:h-22 md:w-26 md:h-26 lg:w-30 lg:h-30 flex items-center justify-center p-2 mb-1.5 bg-slate-50/80 rounded-2xl border border-slate-100 shadow-sm">
                       <img
                         src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80"
                         alt="Tech & Tools"
                         className="max-h-full max-w-full object-contain rounded-xl"
                       />
                     </div>
-                    <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5">
+                    <span className="text-[11px] sm:text-xs md:text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap">
                       Tech & Tools <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </button>
