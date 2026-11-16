@@ -5,6 +5,7 @@ import { ModeProvider } from './context/ModeContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import AuthModal from './components/AuthModal';
+import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
 import ListingDetailPage from './pages/ListingDetailPage';
 import CreateListingPage from './pages/CreateListingPage';
@@ -58,7 +59,8 @@ function AppContent() {
       <AuthModal />
       <div className={`flex-1 ${isChatRoute ? 'overflow-hidden flex flex-col' : ''}`}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/market" element={<HomePage />} />
           <Route path="/listing/:id" element={<ListingDetailPage />} />
           <Route path="/create" element={<CreateListingPage />} />
           <Route path="/messages" element={<ChatPage />} />

@@ -31,9 +31,9 @@ export default function ModeSwitcher({ compact = false }) {
 
   const handleModeClick = (modeId) => {
     setMode(modeId);
-    // If user is currently on another route (listing detail, chat, profile, etc.), navigate to marketplace home!
-    if (location.pathname !== '/') {
-      navigate('/');
+    // Navigate to marketplace feed if on another route
+    if (location.pathname !== '/market') {
+      navigate('/market');
     }
   };
 

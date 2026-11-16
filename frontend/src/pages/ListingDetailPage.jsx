@@ -139,11 +139,11 @@ export default function ListingDetailPage() {
         {/* Navigation Breadcrumb */}
         <div className="mb-4">
           <Link
-            to="/"
+            to="/market"
             className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Back to listings</span>
+            <span>Back to marketplace</span>
           </Link>
         </div>
 

@@ -11,6 +11,7 @@ import {
   User as UserIcon,
   LogOut,
   MapPin,
+  Compass,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -38,7 +39,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Brand Logo without the unnecessary subtitle */}
+          {/* Brand Logo & Explore Market Link */}
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2 group">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200 group-hover:scale-105 transition">
@@ -47,6 +48,14 @@ export default function Navbar() {
               <span className="font-bold text-xl tracking-tight text-slate-900 group-hover:text-indigo-600 transition">
                 LocalMarket
               </span>
+            </Link>
+
+            <Link
+              to="/market"
+              className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition"
+            >
+              <Compass className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Explore Market</span>
             </Link>
 
             <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100/80 px-3 py-1 rounded-full border border-slate-200/80">
