@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
 import { FavoritesProvider } from './context/FavoritesContext';
@@ -29,18 +29,105 @@ function AuthRouteRedirect({ view }) {
 
 function Footer() {
   return (
-    <footer className="bg-white border-t border-slate-200 mt-auto py-8 px-4 text-xs text-slate-500 mb-16 sm:mb-0">
-      <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <Store className="w-4 h-4 text-indigo-600" />
-          <span className="font-bold text-slate-800">LocalMarket</span>
-          <span>— Peer-to-Peer Second-Hand, New Items & Local Services</span>
+    <footer className="bg-white border-t border-slate-200 mt-auto pt-12 pb-8 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mb-16 sm:mb-0">
+      <div className="max-w-7xl mx-auto space-y-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {/* Column 1: Buy */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Buy & Discover</h4>
+            <ul className="space-y-2 text-slate-600">
+              <li>
+                <Link to="/market" className="hover:text-indigo-600 transition">
+                  Explore Marketplace
+                </Link>
+              </li>
+              <li>
+                <Link to="/market" className="hover:text-indigo-600 transition">
+                  Second-Hand Goods
+                </Link>
+              </li>
+              <li>
+                <Link to="/market" className="hover:text-indigo-600 transition">
+                  Brand-New Items
+                </Link>
+              </li>
+              <li>
+                <Link to="/market" className="hover:text-indigo-600 transition">
+                  Local Handwork & Services
+                </Link>
+              </li>
+              <li>
+                <Link to="/favorites" className="hover:text-indigo-600 transition">
+                  Saved Wishlist
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 2: Sell */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Sell & Offer Handwork</h4>
+            <ul className="space-y-2 text-slate-600">
+              <li>
+                <Link to="/create" className="hover:text-indigo-600 transition">
+                  Post a Free Listing
+                </Link>
+              </li>
+              <li>
+                <span className="text-slate-500">Zero Commission / No Fees</span>
+              </li>
+              <li>
+                <span className="text-slate-500">Fast In-App Buyer Chat</span>
+              </li>
+              <li>
+                <span className="text-slate-500">Direct In-Person Payment</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Safe Meetups & Trust */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">Safe Community Trading</h4>
+            <ul className="space-y-2 text-slate-600">
+              <li>
+                <span className="text-slate-500">Public Place Meetup Advice</span>
+              </li>
+              <li>
+                <span className="text-slate-500">In-Person Inspection First</span>
+              </li>
+              <li>
+                <span className="text-slate-500">No Wire Transfer Policy</span>
+              </li>
+              <li>
+                <span className="text-slate-500">Discreet User Blocking & Spam Defense</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: About & Liability */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">About LocalMarket</h4>
+            <p className="text-slate-500 leading-relaxed text-[11px]">
+              Direct peer-to-peer neighborhood marketplace for pre-loved items, verified brand-new merchandise, and on-demand local skills across Nigeria.
+            </p>
+            <div className="pt-1 flex items-center gap-1.5 text-emerald-700 font-semibold text-[11px]">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Zero Platform Payment Liability</span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-6">
-          <span className="flex items-center gap-1 text-slate-600">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Zero Platform Payment Liability
-          </span>
-          <span>© {new Date().getFullYear()} LocalMarket.</span>
+
+        {/* Bottom copyright row */}
+        <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-[11px]">
+          <div className="flex items-center gap-2">
+            <Store className="w-4 h-4 text-indigo-600 shrink-0" />
+            <span className="font-bold text-slate-800">LocalMarket</span>
+            <span>• Peer-to-Peer Second-Hand, New Items & Local Services</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span>© {new Date().getFullYear()} LocalMarket Inc. All rights reserved.</span>
+            <span className="text-slate-600 font-medium">Nigeria (NGN ₦)</span>
+          </div>
         </div>
       </div>
     </footer>

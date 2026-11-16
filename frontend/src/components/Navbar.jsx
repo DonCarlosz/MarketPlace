@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useMode } from '../context/ModeContext';
-import { useFavorites } from '../context/FavoritesContext';
 import ModeSwitcher from './ModeSwitcher';
 import ConfirmModal from './ConfirmModal';
 import {
@@ -11,15 +9,12 @@ import {
   MessageSquare,
   User as UserIcon,
   LogOut,
-  MapPin,
   Compass,
   Heart,
 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, openAuthModal } = useAuth();
-  const { userLocation } = useMode();
-  const { count } = useFavorites();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
@@ -43,7 +38,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Brand Logo & Explore Market Link */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <Link to="/" className="flex items-center gap-2 group">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200 group-hover:scale-105 transition">
                 <Store className="w-5 h-5" />
@@ -55,16 +50,11 @@ export default function Navbar() {
 
             <Link
               to="/market"
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition"
+              className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition whitespace-nowrap"
             >
-              <Compass className="w-3.5 h-3.5 text-indigo-600" />
+              <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span>Explore Market</span>
             </Link>
-
-            <div className="hidden lg:flex items-center gap-1.5 text-xs text-slate-600 bg-slate-100/80 px-3 py-1 rounded-full border border-slate-200/80">
-              <MapPin className="w-3.5 h-3.5 text-indigo-600" />
-              <span className="font-semibold">{userLocation.city || 'All Locations'}</span>
-            </div>
           </div>
 
           {/* Mode Switcher in Center (visible on tablet and desktop) */}
@@ -73,46 +63,34 @@ export default function Navbar() {
           </div>
 
           {/* Right Action Buttons */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3 shrink-0">
             <Link
               to="/create"
               onClick={handlePostListingClick}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-100 hover:shadow-md transition"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-100 hover:shadow-md transition whitespace-nowrap shrink-0"
             >
-              <PlusCircle className="w-4 h-4" />
+              <PlusCircle className="w-4 h-4 shrink-0" />
               <span>Post Listing</span>
             </Link>
 
             {user ? (
-              <div className="flex items-center gap-2">
-                <Link
-                  to="/favorites"
-                  className="p-2 text-slate-600 hover:text-rose-500 hover:bg-slate-100 rounded-xl transition relative"
-                  title="Favorites & Wishlist"
-                >
-                  <Heart className="w-5 h-5" />
-                  {count > 0 && (
-                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
-                      {count > 9 ? '9+' : count}
-                    </span>
-                  )}
-                </Link>
-
+              <div className="flex items-center gap-2 shrink-0">
                 <Link
                   to="/messages"
-                  className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition relative"
+                  className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded-xl transition relative shrink-0"
                   title="Messages"
                 >
                   <MessageSquare className="w-5 h-5" />
                 </Link>
 
-                {/* User Dropdown */}
-                <div className="relative">
+                {/* User Dropdown: Initial circle avatar only (no full name text crowding the navbar) */}
+                <div className="relative shrink-0">
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-100 transition"
+                    className="flex items-center p-0.5 rounded-full hover:ring-2 hover:ring-indigo-300 transition"
+                    title={user.name}
                   >
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200 shadow-sm">
                       {user.avatar ? (
                         <img
                           src={user.avatar}
@@ -123,14 +101,11 @@ export default function Navbar() {
                         user.name?.charAt(0).toUpperCase() || 'U'
                       )}
                     </div>
-                    <span className="text-xs sm:text-sm font-semibold text-slate-700 max-w-[110px] truncate">
-                      {user.name}
-                    </span>
                   </button>
 
                   {dropdownOpen && (
                     <>
-                      {/* Full-screen invisible dismiss backdrop so clicking ANY part of the screen closes it */}
+                      {/* Full-screen invisible dismiss backdrop */}
                       <div
                         className="fixed inset-0 z-40"
                         onClick={() => setDropdownOpen(false)}
@@ -138,7 +113,8 @@ export default function Navbar() {
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1">
                         <div className="px-4 py-2 border-b border-slate-100">
                           <p className="text-[11px] text-slate-400">Signed in as</p>
-                          <p className="text-xs font-bold text-slate-800 truncate">{user.email}</p>
+                          <p className="text-xs font-bold text-slate-800 truncate">{user.name}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
                         </div>
                         <Link
                           to="/profile"
@@ -154,7 +130,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium"
                         >
                           <Heart className="w-4 h-4 text-rose-500" />
-                          Saved Favorites ({count})
+                          Saved Favorites
                         </Link>
                         <button
                           onClick={() => {
@@ -172,18 +148,18 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
+                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition whitespace-nowrap"
                 >
                   Log In
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal('register')}
-                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition"
+                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition whitespace-nowrap"
                 >
                   Sign Up
                 </button>
@@ -191,20 +167,8 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile top header action: Favorites + Sign in button or user avatar */}
+          {/* Mobile top header action: avatar or login button */}
           <div className="flex sm:hidden items-center gap-2">
-            <Link
-              to="/favorites"
-              className="p-1.5 text-slate-600 hover:text-rose-500 rounded-lg relative"
-              title="Favorites"
-            >
-              <Heart className="w-5 h-5" />
-              {count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-white text-[8px] font-black flex items-center justify-center">
-                  {count > 9 ? '9+' : count}
-                </span>
-              )}
-            </Link>
             {user ? (
               <Link
                 to="/profile"
@@ -216,7 +180,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => openAuthModal('login')}
-                className="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white"
+                className="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white whitespace-nowrap"
               >
                 Log In
               </button>
