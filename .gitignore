@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.*
+*.env
+**/.env
+**/.env.*
+!**/.env.example
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# Uploads & media
+uploads/*
+**/uploads/*
+!**/uploads/.gitkeep
+
+# Logs & temp
+*.log
+**/*.log
+.DS_Store
+Thumbs.db
