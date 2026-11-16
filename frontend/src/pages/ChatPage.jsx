@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Inbox,
   UserX,
+  ChevronLeft,
 } from 'lucide-react';
 
 export default function ChatPage() {
@@ -331,9 +332,13 @@ export default function ChatPage() {
     <div className="flex-1 h-full w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 overflow-hidden flex flex-col">
       <div className="flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex min-h-0">
         {/* Left Sidebar: Conversations List & TikTok-style Tabs */}
-        <aside className="w-full md:w-80 border-r border-slate-200 flex flex-col shrink-0">
+        <aside
+          className={`w-full md:w-80 border-r border-slate-200 flex flex-col shrink-0 ${
+            activeConvId ? 'hidden md:flex' : 'flex'
+          }`}
+        >
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-indigo-600" />
               Inbox
             </h2>
@@ -343,7 +348,7 @@ export default function ChatPage() {
           <div className="flex border-b border-slate-200 bg-slate-50/70 p-1.5 gap-1.5">
             <button
               onClick={() => setInboxTab('primary')}
-              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 inboxTab === 'primary'
                   ? 'bg-white text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -355,7 +360,7 @@ export default function ChatPage() {
 
             <button
               onClick={() => setInboxTab('requests')}
-              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                 inboxTab === 'requests'
                   ? 'bg-white text-indigo-700 shadow-sm'
                   : 'text-slate-600 hover:text-slate-900'
@@ -395,7 +400,7 @@ export default function ChatPage() {
                   <button
                     key={conv._id}
                     onClick={() => setActiveConvId(conv._id)}
-                    className={`w-full p-4 flex items-start gap-3 text-left transition ${
+                    className={`w-full p-4 flex items-start gap-3 text-left transition cursor-pointer ${
                       isSelected ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50'
                     }`}
                   >
@@ -416,7 +421,7 @@ export default function ChatPage() {
                         </span>
                       </div>
 
-                      <p className="text-[11px] font-medium text-indigo-600 truncate mt-0.5">
+                      <p className="text-[11px] font-semibold text-indigo-600 truncate mt-0.5">
                         {conv.listing?.title || 'Listing'}
                       </p>
 
@@ -439,12 +444,26 @@ export default function ChatPage() {
         </aside>
 
         {/* Right Pane: Active Chat Window */}
-        <section className="flex-1 flex flex-col bg-slate-50/50 min-w-0 h-full overflow-hidden">
+        <section
+          className={`flex-1 flex flex-col bg-slate-50/50 min-w-0 h-full overflow-hidden ${
+            activeConvId ? 'flex' : 'hidden md:flex'
+          }`}
+        >
           {activeConversation ? (
             <>
               {/* Chat Header with Listing Banner & Discreet More Menu */}
               <div className="p-3 sm:p-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Mobile Back to Inbox Button */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveConvId(null)}
+                    className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
+                    title="Back to Inbox"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+
                   <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
                     {activeConversation.listing?.images?.[0]?.url ? (
                       <img

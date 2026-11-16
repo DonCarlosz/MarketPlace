@@ -14,6 +14,8 @@ import {
   MapPin,
   DollarSign,
   AlertCircle,
+  Eye,
+  CheckCircle2,
 } from 'lucide-react';
 
 const CATEGORIES_BY_MODE = {
@@ -202,12 +204,16 @@ export default function CreateListingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto space-y-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Create a Listing</h1>
+          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 mb-2">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Free Local Community Posting</span>
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Create a Listing</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Publish items or local services for neighbors in your area. Zero platform transaction fees.
+            Publish items or local services for neighbors in your area. Zero platform commission or wire risks.
           </p>
         </div>
 
@@ -218,56 +224,58 @@ export default function CreateListingPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Step 1: Mode Selection */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-              1. Select Listing Type
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => handleModeChange('second-hand')}
-                className={`p-4 rounded-2xl border-2 text-left transition ${
-                  mode === 'second-hand'
-                    ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950'
-                    : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                }`}
-              >
-                <RefreshCw className="w-5 h-5 text-indigo-600 mb-2" />
-                <h4 className="text-sm font-bold">Second-hand</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">Used goods, electronics, furniture, clothing</p>
-              </button>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Main Form (8 Columns) */}
+          <form onSubmit={handleSubmit} className="lg:col-span-8 space-y-6">
+            {/* Step 1: Mode Selection */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                1. Select Listing Type
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('second-hand')}
+                  className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer ${
+                    mode === 'second-hand'
+                      ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 shadow-sm'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                  }`}
+                >
+                  <RefreshCw className="w-5 h-5 text-indigo-600 mb-2" />
+                  <h4 className="text-sm font-bold">Second-hand</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Used goods, gadgets, furniture, clothing</p>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleModeChange('new')}
-                className={`p-4 rounded-2xl border-2 text-left transition ${
-                  mode === 'new'
-                    ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950'
-                    : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                }`}
-              >
-                <Sparkles className="w-5 h-5 text-emerald-600 mb-2" />
-                <h4 className="text-sm font-bold">New Items</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">Brand-new, boxed or handmade items</p>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('new')}
+                  className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer ${
+                    mode === 'new'
+                      ? 'border-emerald-600 bg-emerald-50/50 text-emerald-950 shadow-sm'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                  }`}
+                >
+                  <Sparkles className="w-5 h-5 text-emerald-600 mb-2" />
+                  <h4 className="text-sm font-bold">New Items</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Brand-new, boxed or handmade items</p>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleModeChange('service')}
-                className={`p-4 rounded-2xl border-2 text-left transition ${
-                  mode === 'service'
-                    ? 'border-purple-600 bg-purple-50/50 text-purple-950'
-                    : 'border-slate-200 hover:border-slate-300 text-slate-600'
-                }`}
-              >
-                <Wrench className="w-5 h-5 text-purple-600 mb-2" />
-                <h4 className="text-sm font-bold">Services</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">Barbers, nail artists, photography, tutoring</p>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange('service')}
+                  className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer ${
+                    mode === 'service'
+                      ? 'border-purple-600 bg-purple-50/50 text-purple-950 shadow-sm'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                  }`}
+                >
+                  <Wrench className="w-5 h-5 text-purple-600 mb-2" />
+                  <h4 className="text-sm font-bold">Services</h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Barbers, nail artists, photography, lessons</p>
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Step 2: Listing Details */}
           <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
@@ -547,12 +555,83 @@ export default function CreateListingPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl shadow-md shadow-indigo-100 transition"
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-black text-sm rounded-2xl shadow-md shadow-indigo-100 transition cursor-pointer"
           >
             {submitting ? 'Publishing Listing...' : 'Publish Listing'}
           </button>
         </form>
+
+        {/* Right Sticky Column: Live Listing Card Preview (4 Columns) */}
+        <div className="hidden lg:block lg:col-span-4">
+          <div className="sticky top-24 space-y-4">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <Eye className="w-4 h-4 text-indigo-600" />
+              <span>Live Marketplace Preview</span>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3 select-none">
+              <div className="relative aspect-square rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center border border-slate-200/80">
+                {images.length > 0 ? (
+                  <img src={images[0].url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-slate-400 gap-1.5 p-4 text-center">
+                    <Upload className="w-8 h-8 stroke-1 text-slate-300" />
+                    <span className="text-[11px] font-medium text-slate-400">Photos will preview here</span>
+                  </div>
+                )}
+
+                <div className="absolute top-2 left-2">
+                  {mode === 'new' && (
+                    <span className="bg-emerald-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                      New
+                    </span>
+                  )}
+                  {mode === 'service' && (
+                    <span className="bg-purple-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                      Service
+                    </span>
+                  )}
+                  {mode === 'second-hand' && (
+                    <span className="bg-indigo-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                      Used
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-lg font-black text-slate-900">
+                  ₦{price ? Number(price).toLocaleString() : '0'}
+                  <span className="text-[11px] font-normal text-slate-500 ml-1">
+                    ({priceType === 'fixed' ? 'Fixed' : priceType})
+                  </span>
+                </div>
+                <h4 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug">
+                  {title || 'Your listing title will appear here...'}
+                </h4>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1.5 border-t border-slate-100">
+                  <span className="flex items-center gap-1 truncate">
+                    <MapPin className="w-3 h-3 text-slate-400" />
+                    {city || 'Location'}
+                  </span>
+                  <span className="font-semibold text-slate-600 shrink-0">{category}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-[11px] text-indigo-900 space-y-1">
+              <p className="font-bold flex items-center gap-1 text-indigo-800">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                Zero Wire Transfer Policy
+              </p>
+              <p className="text-indigo-700/80 leading-relaxed">
+                Your phone/email stays private. Buyers message you directly in the in-app chat.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
   );
 }

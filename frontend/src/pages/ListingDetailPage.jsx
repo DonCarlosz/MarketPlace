@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext';
 import { formatPrice } from '../utils/format';
 import SafetyBanner from '../components/SafetyBanner';
+import ListingCard from '../components/ListingCard';
 import {
   MapPin,
   Clock,
@@ -19,14 +21,18 @@ import {
   RefreshCw,
   Wrench,
   AlertTriangle,
+  Heart,
+  Calendar,
 } from 'lucide-react';
 
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, openAuthModal } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const [listing, setListing] = useState(null);
+  const [relatedListings, setRelatedListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -40,7 +46,26 @@ export default function ListingDetailPage() {
       try {
         const res = await API.get(`/listings/${id}`);
         if (res.data?.success) {
-          setListing(res.data.listing);
+          const fetchedListing = res.data.listing;
+          setListing(fetchedListing);
+
+          // Fetch related listings
+          try {
+            const relatedRes = await API.get('/listings', {
+              params: {
+                mode: fetchedListing.mode,
+                category: fetchedListing.category,
+                limit: 8,
+              },
+            });
+            if (relatedRes.data?.success) {
+              setRelatedListings(
+                (relatedRes.data.listings || []).filter((item) => item._id !== fetchedListing._id)
+              );
+            }
+          } catch {
+            // Ignore related fetch failure
+          }
         }
       } catch (err) {
         console.error('Error fetching listing details:', err);
@@ -152,27 +177,27 @@ export default function ListingDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Main Image Gallery */}
             <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm p-3">
-              <div className="aspect-[16/10] bg-slate-900 rounded-2xl overflow-hidden relative flex items-center justify-center">
+              <div className="aspect-[16/11] bg-slate-50 rounded-2xl overflow-hidden relative flex items-center justify-center border border-slate-100">
                 <img
                   src={images[selectedImageIndex]}
                   alt={listing.title}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain p-2"
                 />
 
                 {/* Mode Tag */}
                 <div className="absolute top-3 left-3">
                   {listing.mode === 'new' && (
-                    <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow">
+                    <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                       <Sparkles className="w-3.5 h-3.5" /> Brand New
                     </span>
                   )}
                   {listing.mode === 'service' && (
-                    <span className="inline-flex items-center gap-1 bg-purple-600 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow">
+                    <span className="inline-flex items-center gap-1 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                       <Wrench className="w-3.5 h-3.5" /> Local Service
                     </span>
                   )}
                   {listing.mode === 'second-hand' && (
-                    <span className="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-semibold px-2.5 py-1 rounded-lg shadow">
+                    <span className="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
                       <RefreshCw className="w-3.5 h-3.5" /> Second-hand
                     </span>
                   )}
@@ -181,13 +206,13 @@ export default function ListingDetailPage() {
 
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+                <div className="flex gap-2.5 mt-3 overflow-x-auto pb-1">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImageIndex(idx)}
                       className={`relative w-20 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition ${
-                        selectedImageIndex === idx ? 'border-indigo-600 scale-95' : 'border-transparent opacity-70 hover:opacity-100'
+                        selectedImageIndex === idx ? 'border-indigo-600 ring-2 ring-indigo-200 scale-95' : 'border-slate-200 opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -288,20 +313,38 @@ export default function ListingDetailPage() {
           <div className="space-y-6">
             {/* Price & Primary CTA Card */}
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
-              <div>
-                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Price</span>
-                <div className="text-3xl font-black text-slate-900 mt-0.5">
-                  {formatPrice(listing.price, listing.priceType)}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Price</span>
+                  <div className="text-3xl font-black text-slate-900 mt-0.5">
+                    {formatPrice(listing.price, listing.priceType)}
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Pay seller directly (cash or local bank transfer) upon in-person meetup & inspection.
-                </p>
+
+                {/* Favorite / Wishlist Heart Button */}
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(listing._id)}
+                  className={`p-2.5 sm:px-3 sm:py-2 rounded-2xl border transition flex items-center gap-1.5 font-bold text-xs shadow-sm cursor-pointer ${
+                    isFavorite(listing._id)
+                      ? 'bg-rose-50 border-rose-200 text-rose-600'
+                      : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                  }`}
+                  title={isFavorite(listing._id) ? 'Saved in Wishlist' : 'Add to Wishlist'}
+                >
+                  <Heart className={`w-4 h-4 ${isFavorite(listing._id) ? 'fill-rose-500 text-rose-500' : 'text-slate-600'}`} />
+                  <span className="hidden sm:inline">{isFavorite(listing._id) ? 'Saved' : 'Save'}</span>
+                </button>
               </div>
+
+              <p className="text-[11px] text-slate-500 leading-normal">
+                Direct community deal. Pay seller safely in person (cash or bank transfer) upon physical inspection.
+              </p>
 
               <button
                 onClick={handleStartChat}
                 disabled={actionLoading}
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-2xl shadow-sm shadow-indigo-100 transition"
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-sm rounded-2xl shadow-md shadow-indigo-100 transition cursor-pointer"
               >
                 <MessageCircle className="w-4 h-4" />
                 <span>
@@ -316,7 +359,7 @@ export default function ListingDetailPage() {
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
                 <button
                   onClick={() => setReportModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-600 transition"
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-rose-600 transition cursor-pointer"
                 >
                   <Flag className="w-3.5 h-3.5" />
                   <span>Report listing</span>
@@ -329,7 +372,7 @@ export default function ListingDetailPage() {
                       alert('Link copied to clipboard!');
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 transition"
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-600 transition cursor-pointer"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                   <span>Share</span>
@@ -399,6 +442,31 @@ export default function ListingDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Similar / Related Neighborhood Listings */}
+        {relatedListings.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-slate-900">
+                  More {listing.mode === 'service' ? 'services' : 'listings'} in {listing.category}
+                </h3>
+                <p className="text-xs text-slate-500">Discover other verified deals and handwork nearby</p>
+              </div>
+              <Link
+                to="/market"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
+              >
+                Browse all in Market →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+              {relatedListings.slice(0, 5).map((item) => (
+                <ListingCard key={item._id} listing={item} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Report Modal */}

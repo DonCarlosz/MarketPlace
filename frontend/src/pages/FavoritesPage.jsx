@@ -1,19 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
-import { Heart, Compass, ArrowRight, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { Heart, Compass, ArrowRight, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
 
 export default function FavoritesPage() {
   const { user, openAuthModal } = useAuth();
   const { favoriteListings, fetchFavorites, loading, count } = useFavorites();
+  const [filterMode, setFilterMode] = useState('all');
 
   useEffect(() => {
     if (user) {
       fetchFavorites();
     }
   }, [user, fetchFavorites]);
+
+  const filteredFavorites = favoriteListings.filter((l) => {
+    if (filterMode === 'all') return true;
+    return l.mode === filterMode;
+  });
+
+  const totalValue = favoriteListings.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
 
   if (!user) {
     return (
@@ -60,11 +68,17 @@ export default function FavoritesPage() {
               Favorites & Saved Deals
             </h1>
             <p className="text-xs sm:text-sm text-slate-500">
-              {count} {count === 1 ? 'item saved' : 'items saved'} in your private wishlist. Tap the heart again to remove any item.
+              {count} {count === 1 ? 'item saved' : 'items saved'} in your private wishlist. Tap the heart to remove any item.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
+            {totalValue > 0 && (
+              <div className="hidden sm:flex flex-col items-end px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estimated Value</span>
+                <span className="text-sm font-black text-slate-900">₦{totalValue.toLocaleString()}</span>
+              </div>
+            )}
             <Link
               to="/market"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shadow-sm transition"
@@ -74,6 +88,30 @@ export default function FavoritesPage() {
             </Link>
           </div>
         </div>
+
+        {/* Filter Mode Pills (if items exist) */}
+        {favoriteListings.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {['all', 'second-hand', 'new', 'service'].map((m) => {
+              const isSelected = filterMode === m;
+              const countForMode = m === 'all' ? favoriteListings.length : favoriteListings.filter(l => l.mode === m).length;
+              if (m !== 'all' && countForMode === 0) return null;
+              return (
+                <button
+                  key={m}
+                  onClick={() => setFilterMode(m)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer capitalize ${
+                    isSelected
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  {m === 'all' ? 'All Items' : m === 'new' ? 'Brand-New' : m.replace('-', ' ')} ({countForMode})
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Content Section */}
         {loading ? (
@@ -89,16 +127,16 @@ export default function FavoritesPage() {
               </div>
             ))}
           </div>
-        ) : favoriteListings.length === 0 ? (
+        ) : filteredFavorites.length === 0 ? (
           <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-10 sm:p-16 text-center max-w-xl mx-auto space-y-4 my-8">
             <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <ShoppingBag className="w-8 h-8" />
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-800">
-              Your wishlist is currently empty
+              {favoriteListings.length === 0 ? 'Your wishlist is currently empty' : 'No items match this filter'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
-              Explore the marketplace and click the heart icon on any second-hand item, brand-new product, or local service to save it here for quick access.
+              Explore the marketplace and tap the heart on any item or local service to save it here for quick comparison and future visits.
             </p>
             <div className="pt-2">
               <Link
@@ -113,7 +151,7 @@ export default function FavoritesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {favoriteListings.map((item) => (
+            {filteredFavorites.map((item) => (
               <ListingCard key={item._id} listing={item} />
             ))}
           </div>
