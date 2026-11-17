@@ -263,10 +263,6 @@ export default function HomePage() {
     };
   }, [mode, selectedCategory, sortBy, radiusKm, conditionFilter, activeCity, user]);
 
-  // Reset category when switching modes
-  useEffect(() => {
-    setSelectedCategory('All');
-  }, [mode]);
 
   // Trigger fetch with cache check
   useEffect(() => {

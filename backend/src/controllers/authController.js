@@ -1,5 +1,331 @@
 import User from '../models/User.js';
+import Otp from '../models/Otp.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/token.js';
+import { sendOtpEmail } from '../utils/email.js';
+
+// @desc    Send 6-digit OTP for signup verification
+// @route   POST /api/auth/send-signup-otp
+export const sendSignupOtp = async (req, res, next) => {
+  try {
+    const { name, email, password, city, neighborhood, coordinates } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and password are required',
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters long',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists. Please log in.',
+      });
+    }
+
+    // Generate random 6-digit numeric OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Remove any previous pending signup OTP for this email
+    await Otp.deleteMany({ email: cleanEmail, purpose: 'signup' });
+
+    // Store OTP with pending registration details
+    await Otp.create({
+      email: cleanEmail,
+      otp,
+      purpose: 'signup',
+      pendingUserData: {
+        name: name.trim(),
+        email: cleanEmail,
+        password,
+        location: {
+          city: city || 'Local Area',
+          neighborhood: neighborhood || '',
+          coordinates: coordinates && coordinates.length === 2 ? coordinates : [0, 0],
+        },
+      },
+    });
+
+    // Send email via Brevo
+    await sendOtpEmail({
+      toEmail: cleanEmail,
+      toName: name.trim(),
+      otp,
+      purpose: 'signup',
+    });
+
+    res.json({
+      success: true,
+      message: `A 6-digit verification code has been sent to ${cleanEmail}. Please enter it to complete registration.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Verify signup OTP & create account
+// @route   POST /api/auth/verify-signup-otp
+export const verifySignupOtp = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and 6-digit verification code are required',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanOtp = otp.toString().trim();
+
+    const otpRecord = await Otp.findOne({ email: cleanEmail, purpose: 'signup' }).sort({
+      createdAt: -1,
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired or was not requested. Please request a new code.',
+      });
+    }
+
+    if (otpRecord.otp !== cleanOtp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect verification code. Please check your email and try again.',
+      });
+    }
+
+    const pendingData = otpRecord.pendingUserData;
+    if (!pendingData) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration session expired. Please start registration again.',
+      });
+    }
+
+    // Verify user doesn't exist already
+    let user = await User.findOne({ email: cleanEmail });
+    if (user) {
+      await Otp.deleteMany({ email: cleanEmail });
+      return res.status(400).json({
+        success: false,
+        message: 'An account with this email already exists. Please log in.',
+      });
+    }
+
+    // Create the verified user
+    user = await User.create({
+      ...pendingData,
+      isVerified: true,
+    });
+
+    // Clean up OTP record
+    await Otp.deleteMany({ email: cleanEmail, purpose: 'signup' });
+
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    user.refreshTokens.push({ token: refreshToken });
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Email verified and account created successfully!',
+      accessToken,
+      refreshToken,
+      user: {
+        _id: user._id.toString(),
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        location: user.location,
+        avatar: user.avatar,
+        role: user.role,
+        favorites: user.favorites || [],
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Send OTP for forgotten password
+// @route   POST /api/auth/forgot-password-otp
+export const sendForgotPasswordOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter your registered email',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account registered with this email address.',
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await Otp.deleteMany({ email: cleanEmail, purpose: 'forgot_password' });
+
+    await Otp.create({
+      email: cleanEmail,
+      otp,
+      purpose: 'forgot_password',
+    });
+
+    await sendOtpEmail({
+      toEmail: cleanEmail,
+      toName: user.name,
+      otp,
+      purpose: 'forgot_password',
+    });
+
+    res.json({
+      success: true,
+      message: `A 6-digit password reset code has been sent to ${cleanEmail}.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reset password with OTP
+// @route   POST /api/auth/reset-password-otp
+export const resetPasswordWithOtp = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email, verification code, and new password are required',
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters long',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanOtp = otp.toString().trim();
+
+    const otpRecord = await Otp.findOne({
+      email: cleanEmail,
+      purpose: 'forgot_password',
+    }).sort({ createdAt: -1 });
+
+    if (!otpRecord) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password reset code has expired. Please request a new code.',
+      });
+    }
+
+    if (otpRecord.otp !== cleanOtp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incorrect verification code. Please check your email.',
+      });
+    }
+
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User account not found',
+      });
+    }
+
+    // Update password (triggers User pre-save hash hook)
+    user.password = newPassword;
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    await user.save();
+
+    // Clean up OTP record
+    await Otp.deleteMany({ email: cleanEmail, purpose: 'forgot_password' });
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully! You can now log in with your new password.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+export const resendOtp = async (req, res, next) => {
+  try {
+    const { email, purpose = 'signup' } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required to resend code',
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const existingOtp = await Otp.findOne({ email: cleanEmail, purpose }).sort({
+      createdAt: -1,
+    });
+
+    if (!existingOtp) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending verification found. Please start over.',
+      });
+    }
+
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    existingOtp.otp = newOtp;
+    existingOtp.createdAt = new Date(); // Reset 10m TTL
+    await existingOtp.save();
+
+    const userName = existingOtp.pendingUserData?.name || 'Member';
+
+    await sendOtpEmail({
+      toEmail: cleanEmail,
+      toName: userName,
+      otp: newOtp,
+      purpose,
+    });
+
+    res.json({
+      success: true,
+      message: `A new 6-digit verification code has been sent to ${cleanEmail}.`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Register a new user
 // @route   POST /api/auth/register

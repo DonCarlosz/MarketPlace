@@ -83,6 +83,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const sendSignupOtp = async (userData) => {
+    const res = await API.post('/auth/send-signup-otp', userData);
+    return res.data;
+  };
+
+  const verifySignupOtp = async (email, otp) => {
+    const res = await API.post('/auth/verify-signup-otp', { email, otp });
+    if (res.data?.success) {
+      const normalized = normalizeUser(res.data.user);
+      localStorage.setItem('accessToken', res.data.accessToken);
+      localStorage.setItem('refreshToken', res.data.refreshToken);
+      localStorage.setItem('user', JSON.stringify(normalized));
+      setUser(normalized);
+      setIsAuthModalOpen(false);
+      return res.data;
+    }
+  };
+
+  const sendForgotPasswordOtp = async (email) => {
+    const res = await API.post('/auth/forgot-password-otp', { email });
+    return res.data;
+  };
+
+  const resetPasswordWithOtp = async (email, otp, newPassword) => {
+    const res = await API.post('/auth/reset-password-otp', { email, otp, newPassword });
+    return res.data;
+  };
+
+  const resendOtp = async (email, purpose = 'signup') => {
+    const res = await API.post('/auth/resend-otp', { email, purpose });
+    return res.data;
+  };
+
   const logout = async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     try {
@@ -110,6 +143,11 @@ export const AuthProvider = ({ children }) => {
         loading,
         login,
         register,
+        sendSignupOtp,
+        verifySignupOtp,
+        sendForgotPasswordOtp,
+        resetPasswordWithOtp,
+        resendOtp,
         logout,
         updateUser,
         isAuthModalOpen,

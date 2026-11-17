@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ModeSwitcher from './ModeSwitcher';
 import ConfirmModal from './ConfirmModal';
@@ -18,6 +18,9 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isMarketRoute = location.pathname === '/market';
 
   const handleLogout = async () => {
     await logout();
@@ -37,7 +40,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Brand Logo & Explore Market Link */}
+          {/* Brand Logo */}
           <div className="flex items-center gap-3 shrink-0">
             <Link to="/" className="flex items-center gap-2 group">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200 group-hover:scale-105 transition">
@@ -47,19 +50,25 @@ export default function Navbar() {
                 LocalMarket
               </span>
             </Link>
-
-            <Link
-              to="/market"
-              className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-indigo-600 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition whitespace-nowrap"
-            >
-              <Compass className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span>Explore Market</span>
-            </Link>
           </div>
 
-          {/* Mode Switcher in Center (visible on tablet and desktop) */}
-          <div className="hidden sm:block">
-            <ModeSwitcher compact />
+          {/* Center Area:
+              - Inside /market: show the 3 dynamic routes (ModeSwitcher) on sm+
+              - Outside /market: show the centered "Explore Market" nav link */}
+          <div className="flex items-center justify-center">
+            {isMarketRoute ? (
+              <div className="hidden sm:block">
+                <ModeSwitcher compact />
+              </div>
+            ) : (
+              <Link
+                to="/market"
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 px-3.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition shadow-sm"
+              >
+                <Compass className="w-4 h-4 text-indigo-600 shrink-0" />
+                <span>Explore Market</span>
+              </Link>
+            )}
           </div>
 
           {/* Right Action Buttons */}
@@ -83,7 +92,7 @@ export default function Navbar() {
                   <MessageSquare className="w-5 h-5" />
                 </Link>
 
-                {/* User Dropdown: Initial circle avatar only (no full name text crowding the navbar) */}
+                {/* User Dropdown: Initial circle avatar only */}
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -186,11 +195,6 @@ export default function Navbar() {
               </button>
             )}
           </div>
-        </div>
-
-        {/* Mobile secondary bar: Mode Switcher */}
-        <div className="sm:hidden py-2 border-t border-slate-100 flex justify-center">
-          <ModeSwitcher compact />
         </div>
       </div>
 

@@ -28,8 +28,8 @@ export default function SafetyBanner() {
           </p>
 
           {/* Tablet & Mobile Message */}
-          <p className="md:hidden text-amber-900 text-[10.5px] font-medium tracking-tight truncate">
-            Meet in public places. Inspect items before paying.
+          <p className="md:hidden text-amber-900 text-[10px] sm:text-[10.5px] font-medium tracking-tight leading-snug">
+            Meet in public. Inspect before paying.
           </p>
         </div>
 
