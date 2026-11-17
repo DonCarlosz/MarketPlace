@@ -227,20 +227,20 @@ export default function LandingPage() {
   const renderSlide = (slideId) => {
     if (slideId === 0) {
       return (
-        <div className="w-full h-full relative bg-[#fafafc] border-b border-slate-200/60 overflow-hidden">
+        <div className="w-full h-full relative bg-[#edf2f7] border-b border-slate-200 overflow-hidden">
           <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-4 sm:gap-6 lg:gap-10">
             {/* Left Content */}
-            <div className="flex-1 min-w-[260px] sm:min-w-[320px] max-w-xl space-y-2 sm:space-y-2.5 z-10">
+            <div className="flex-1 min-w-[260px] sm:min-w-[320px] max-w-xl space-y-2.5 sm:space-y-3 z-10">
               <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
                 Great local finds. Direct deals.
               </h2>
-              <p className="text-xs sm:text-sm font-bold text-slate-700 leading-relaxed max-w-lg">
+              <p className="text-xs sm:text-sm md:text-base font-bold text-slate-700 leading-relaxed max-w-lg">
                 Find pre-owned tech, vehicles, home furniture, and neighborhood handwork with zero wire transfer risks.
               </p>
-              <div className="pt-1">
+              <div className="pt-1.5">
                 <Link
                   to="/market"
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm shadow-md transition"
                 >
                   <span>Explore market</span>
                   <ArrowRight className="w-4 h-4" />
@@ -248,8 +248,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Content: 3 Horizontal Showcases */}
-            <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-5 shrink-0 py-1">
+            {/* Right Content: 3 Horizontal Showcases (Enlarged & Prominent) */}
+            <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 shrink-0 py-2">
               {/* Item 1: Home and Garden */}
               <button
                 type="button"
@@ -262,14 +262,14 @@ export default function LandingPage() {
                 }
                 className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
               >
-                <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 flex items-center justify-center p-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 flex items-center justify-center p-2.5 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=500&q=80"
                     alt="Home and Garden"
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-1.5">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
                   Home and Garden <ChevronRight className="w-3.5 h-3.5" />
                 </span>
               </button>
@@ -286,14 +286,14 @@ export default function LandingPage() {
                 }
                 className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
               >
-                <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 flex items-center justify-center p-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 flex items-center justify-center p-2.5 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=500&q=80"
                     alt="Fashion & Wears"
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-1.5">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
                   Fashion & Wears <ChevronRight className="w-3.5 h-3.5" />
                 </span>
               </button>
@@ -310,14 +310,14 @@ export default function LandingPage() {
                 }
                 className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
               >
-                <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 flex items-center justify-center p-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 flex items-center justify-center p-2.5 bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80"
                     alt="Tech & Tools"
                     className="w-full h-full object-cover rounded-xl"
                   />
                 </div>
-                <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-1.5">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
                   Tech & Tools <ChevronRight className="w-3.5 h-3.5" />
                 </span>
               </button>
@@ -522,7 +522,7 @@ export default function LandingPage() {
 
       {/* 2. Full-Bleed Auto-Switching Hero Banner (1-Direction Infinite Scroll, Fixed Height) */}
       <section className="w-full relative overflow-hidden bg-slate-900 border-b border-slate-200">
-        <div className="relative w-full h-[295px] sm:h-[315px] md:h-[325px] overflow-hidden">
+        <div className="relative w-full h-[320px] sm:h-[340px] md:h-[350px] overflow-hidden">
           {/* Continuous Forward Sliding Track */}
           <div
             className="flex w-full h-full"

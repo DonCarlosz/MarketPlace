@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import ModeSwitcher from './ModeSwitcher';
 import ConfirmModal from './ConfirmModal';
 import {
   Store,
@@ -52,23 +51,19 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Center Area:
-              - Inside /market: show the 3 dynamic routes (ModeSwitcher) on sm+
-              - Outside /market: show the centered "Explore Market" nav link */}
+          {/* Center Area: Persistent Explore Market Nav Button */}
           <div className="flex items-center justify-center">
-            {isMarketRoute ? (
-              <div className="hidden sm:block">
-                <ModeSwitcher compact />
-              </div>
-            ) : (
-              <Link
-                to="/market"
-                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 px-3.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition shadow-sm"
-              >
-                <Compass className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>Explore Market</span>
-              </Link>
-            )}
+            <Link
+              to="/market"
+              className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition shadow-sm border ${
+                isMarketRoute
+                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                  : 'bg-slate-50 text-slate-700 hover:text-indigo-600 hover:bg-slate-100 border-slate-200/80'
+              }`}
+            >
+              <Compass className="w-4 h-4 text-indigo-600 shrink-0" />
+              <span>Explore Market</span>
+            </Link>
           </div>
 
           {/* Right Action Buttons */}
