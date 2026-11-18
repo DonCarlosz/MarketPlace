@@ -203,25 +203,21 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Tablet Menu Toggle (sm:flex lg:hidden: shown ONLY on tablet screens, NOT on mobile) */}
-          <div className="hidden sm:flex lg:hidden items-center gap-2.5">
-            {user && (
-              <Link
-                to="/profile"
-                className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200 shrink-0"
-                title={user.name}
-              >
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  user.name?.charAt(0).toUpperCase() || 'U'
-                )}
-              </Link>
-            )}
+          {/* Tablet Action: Saved Favorites & Hamburger Menu (No profile avatar here - accessible inside drawer) */}
+          <div className="hidden sm:flex lg:hidden items-center gap-2">
+            <Link
+              to="/favorites"
+              className="p-2 text-slate-700 hover:text-rose-500 rounded-xl transition relative flex items-center justify-center"
+              title="Saved Favorites"
+              aria-label="Saved Favorites"
+            >
+              <Heart className="w-5 h-5 text-rose-500" />
+              {favoritesCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {favoritesCount}
+                </span>
+              )}
+            </Link>
 
             {/* Hamburger Menu Button for Tablet */}
             <button
@@ -234,16 +230,23 @@ export default function Navbar() {
             </button>
           </div>
 
-          {/* Mobile Top Header Action: clean logo on left, quick auth on right, NO hamburger menu */}
-          <div className="flex sm:hidden items-center gap-2">
-            {user ? (
-              <Link
-                to="/profile"
-                className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200"
-              >
-                {user.name?.charAt(0).toUpperCase() || 'U'}
-              </Link>
-            ) : (
+          {/* Mobile Top Header: Saved Favorites & Guest Auth (No profile avatar - accessible in bottom nav) */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            <Link
+              to="/favorites"
+              className="p-2 text-slate-700 hover:text-rose-500 rounded-xl transition relative flex items-center justify-center"
+              aria-label="Saved Favorites"
+              title="Saved Favorites"
+            >
+              <Heart className="w-5 h-5 text-rose-500" />
+              {favoritesCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                  {favoritesCount}
+                </span>
+              )}
+            </Link>
+
+            {!user && (
               <button
                 type="button"
                 onClick={() => openAuthModal('login')}
@@ -256,7 +259,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Slide-Over Navigation Drawer for Tablet (Rendered via Portal at document.body with z-[99999] so it appears on top of ALL elements) */}
+      {/* Slide-Over Navigation Drawer for Tablet (Rendered via Portal at document.body with z-[99999] - Pinterest Minimalist Style) */}
       {mobileMenuOpen &&
         typeof document !== 'undefined' &&
         createPortal(
@@ -268,72 +271,34 @@ export default function Navbar() {
             />
 
             {/* Drawer container: full screen height, slides from right */}
-            <div className="fixed top-0 right-0 bottom-0 w-84 max-w-[85vw] bg-white z-[100000] shadow-2xl flex flex-col justify-between p-6 animate-in slide-in-from-right duration-200 overflow-y-auto">
-              {/* Top: Header, Profile & The 5 Routes */}
-              <div className="space-y-5">
-                <div className="flex items-center justify-between pb-3.5 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
-                      <Store className="w-4 h-4" />
-                    </div>
-                    <span className="font-bold text-lg text-slate-900">LocalMarket</span>
+            <div className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white z-[100000] shadow-2xl flex flex-col justify-between p-6 animate-in slide-in-from-right duration-200 overflow-y-auto">
+              {/* Top: Icon-only header & Clean Routes */}
+              <div className="space-y-4">
+                {/* Header: Store Icon on left, Close button on right (No text) */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-xs">
+                    <Store className="w-5 h-5" />
                   </div>
                   <button
                     type="button"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
                     aria-label="Close Menu"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* User Profile Card or Welcome Banner */}
-                {user ? (
-                  <div className="flex items-center gap-3 p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-2xl">
-                    <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
-                      {user.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        user.name?.charAt(0).toUpperCase() || 'U'
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
-                      <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
-                      <div className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold mt-0.5">
-                        <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                        <span>Verified Account</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-2xl space-y-1">
-                    <p className="text-xs font-bold text-slate-800">Welcome to LocalMarket</p>
-                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                      Safe neighborhood marketplace for second-hand finds, new goods, and verified handwork.
-                    </p>
-                  </div>
-                )}
-
-                {/* Primary Nav Routes: Exactly matching Bottom Nav items with high-polish UI */}
-                <nav className="space-y-1 pt-1">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1">
-                    Navigation
-                  </div>
-
+                {/* Nav Routes: Pinterest minimalist style */}
+                <nav className="space-y-1.5 pt-1">
                   {/* 1. Home */}
                   <Link
                     to="/"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                    className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[15px] transition ${
                       isHomeRoute
-                        ? 'bg-indigo-50 text-indigo-700 font-bold'
-                        : 'text-slate-700 hover:bg-slate-50'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50 font-semibold'
                     }`}
                   >
                     <Home className="w-5 h-5 text-indigo-600 shrink-0" />
@@ -344,17 +309,17 @@ export default function Navbar() {
                   <Link
                     to="/market"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                    className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[15px] transition ${
                       isMarketRoute
-                        ? 'bg-indigo-50 text-indigo-700 font-bold'
-                        : 'text-slate-700 hover:bg-slate-50'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50 font-semibold'
                     }`}
                   >
                     <Store className="w-5 h-5 text-indigo-600 shrink-0" />
                     <span>Explore Marketplace</span>
                   </Link>
 
-                  {/* 3. Post a Listing (Accented) */}
+                  {/* 3. Post a Listing */}
                   <Link
                     to="/create"
                     onClick={() => {
@@ -363,7 +328,7 @@ export default function Navbar() {
                         else navigate('/create');
                       });
                     }}
-                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 text-white hover:from-indigo-700 hover:to-indigo-600 shadow-sm shadow-indigo-100 transition"
+                    className="flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[15px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-100 transition"
                   >
                     <PlusCircle className="w-5 h-5 shrink-0" />
                     <span>Post a Listing</span>
@@ -378,10 +343,10 @@ export default function Navbar() {
                         else navigate('/messages');
                       });
                     }}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                    className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[15px] transition ${
                       isMessagesRoute
-                        ? 'bg-indigo-50 text-indigo-700 font-bold'
-                        : 'text-slate-700 hover:bg-slate-50'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50 font-semibold'
                     }`}
                   >
                     <MessageSquare className="w-5 h-5 text-slate-500 shrink-0" />
@@ -392,14 +357,21 @@ export default function Navbar() {
                   <Link
                     to="/favorites"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-[15px] transition ${
                       isFavoritesRoute
-                        ? 'bg-indigo-50 text-indigo-700 font-bold'
-                        : 'text-slate-700 hover:bg-slate-50'
+                        ? 'bg-slate-100 text-slate-900 font-bold'
+                        : 'text-slate-700 hover:bg-slate-50 font-semibold'
                     }`}
                   >
-                    <Heart className="w-5 h-5 text-rose-500 shrink-0" />
-                    <span>Saved Favorites</span>
+                    <div className="flex items-center gap-3.5">
+                      <Heart className="w-5 h-5 text-rose-500 shrink-0" />
+                      <span>Saved Favorites</span>
+                    </div>
+                    {favoritesCount > 0 && (
+                      <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">
+                        {favoritesCount}
+                      </span>
+                    )}
                   </Link>
 
                   {/* 6. Profile (if logged in) */}
@@ -407,10 +379,10 @@ export default function Navbar() {
                     <Link
                       to="/profile"
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                      className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl text-[15px] transition ${
                         isProfileRoute
-                          ? 'bg-indigo-50 text-indigo-700 font-bold'
-                          : 'text-slate-700 hover:bg-slate-50'
+                          ? 'bg-slate-100 text-slate-900 font-bold'
+                          : 'text-slate-700 hover:bg-slate-50 font-semibold'
                       }`}
                     >
                       <UserIcon className="w-5 h-5 text-slate-500 shrink-0" />
@@ -420,8 +392,8 @@ export default function Navbar() {
                 </nav>
               </div>
 
-              {/* Bottom: Auth Actions (Log In, Sign Up, or Log Out) */}
-              <div className="pt-5 border-t border-slate-100 space-y-2">
+              {/* Bottom: Minimalist Auth Actions */}
+              <div className="pt-4 border-t border-slate-100">
                 {user ? (
                   <button
                     type="button"
@@ -429,40 +401,35 @@ export default function Navbar() {
                       setMobileMenuOpen(false);
                       setShowLogoutConfirm(true);
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Log Out</span>
                   </button>
                 ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-1">
-                      Account Access
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          openAuthModal('login');
-                        }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-800 border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
-                      >
-                        <LogIn className="w-4 h-4 text-slate-600" />
-                        <span>Log In</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          openAuthModal('register');
-                        }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition cursor-pointer"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        <span>Sign Up</span>
-                      </button>
-                    </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        openAuthModal('login');
+                      }}
+                      className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl text-sm font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+                    >
+                      <LogIn className="w-4 h-4 text-slate-600" />
+                      <span>Log In</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        openAuthModal('register');
+                      }}
+                      className="flex items-center justify-center gap-1.5 px-4 py-3 rounded-2xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition cursor-pointer"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Sign Up</span>
+                    </button>
                   </div>
                 )}
               </div>
