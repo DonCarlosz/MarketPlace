@@ -470,7 +470,7 @@ export default function ChatPage() {
                         src={
                           activeConversation.listing.images[0].url.startsWith('http')
                             ? activeConversation.listing.images[0].url
-                            : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${activeConversation.listing.images[0].url}`
+                            : `${import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://marketplace-5wy3.onrender.com' : 'http://localhost:5000')}${activeConversation.listing.images[0].url}`
                         }
                         alt=""
                         className="w-full h-full object-cover"

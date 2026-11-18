@@ -239,11 +239,15 @@ export default function ListingDetailPage() {
     );
   }
 
+  const serverBaseUrl =
+    import.meta.env.VITE_API_URL?.replace('/api', '') ||
+    (import.meta.env.PROD ? 'https://marketplace-5wy3.onrender.com' : 'http://localhost:5000');
+
   const images = listing.images?.length > 0
     ? listing.images.map((img) =>
         img.url.startsWith('http')
           ? img.url
-          : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${img.url}`
+          : `${serverBaseUrl}${img.url}`
       )
     : ['https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=1000&q=80'];
 

@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+const DEFAULT_API_URL = import.meta.env.PROD
+  ? 'https://marketplace-5wy3.onrender.com/api'
+  : 'http://localhost:5000/api';
+
+export const API_BASE_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,7 +38,7 @@ API.interceptors.response.use(
       if (refreshToken) {
         try {
           const res = await axios.post(
-            (import.meta.env.VITE_API_URL || 'http://localhost:5000/api') + '/auth/refresh',
+            API_BASE_URL + '/auth/refresh',
             { token: refreshToken }
           );
 

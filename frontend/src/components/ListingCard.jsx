@@ -37,11 +37,15 @@ export default function ListingCard({ listing, layout = 'grid' }) {
 
   const favorited = isFavorite(_id);
 
+  const serverBaseUrl =
+    import.meta.env.VITE_API_URL?.replace('/api', '') ||
+    (import.meta.env.PROD ? 'https://marketplace-5wy3.onrender.com' : 'http://localhost:5000');
+
   const imageUrl =
     images && images.length > 0 && images[0]?.url
       ? images[0].url.startsWith('http')
         ? images[0].url
-        : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${images[0].url}`
+        : `${serverBaseUrl}${images[0].url}`
       : 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=600&q=80';
 
   const handleFavoriteClick = (e) => {
