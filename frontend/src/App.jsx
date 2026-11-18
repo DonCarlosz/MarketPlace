@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import Navbar from './components/Navbar';
+import BottomNav from './components/BottomNav';
 import AuthModal from './components/AuthModal';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
@@ -28,7 +29,7 @@ function AuthRouteRedirect({ view }) {
 
 function Footer() {
   return (
-    <footer className="bg-white border-t border-slate-200 mt-auto pt-12 pb-8 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mb-0">
+    <footer className="bg-white border-t border-slate-200 mt-auto pt-12 pb-8 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 mb-16 sm:mb-0">
       <div className="max-w-7xl mx-auto space-y-10">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Column 1: Buy */}
@@ -140,7 +141,7 @@ function AppContent() {
   return (
     <div
       className={`flex flex-col bg-slate-50 text-slate-900 font-sans ${
-        isChatRoute ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'
+        isChatRoute ? 'h-screen max-h-screen overflow-hidden pb-16 sm:pb-0' : 'min-h-screen pb-16 sm:pb-0'
       }`}
     >
       <Navbar />
@@ -159,6 +160,7 @@ function AppContent() {
         </Routes>
       </div>
       {!isChatRoute && <Footer />}
+      <BottomNav />
     </div>
   );
 }

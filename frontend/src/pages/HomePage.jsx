@@ -331,21 +331,21 @@ export default function HomePage() {
       {/* Hero & Search Header */}
       <section className="bg-white border-b border-slate-200 py-6 sm:py-7 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center space-y-4">
-          {/* Mode Switcher Tabs */}
-          <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
+          {/* Mode Switcher Tabs (Equal 3-column segmented layout with zero wrapping) */}
+          <div className="w-full max-w-sm sm:max-w-md mx-auto p-1 bg-slate-100/90 rounded-2xl sm:rounded-full border border-slate-200/90 shadow-inner grid grid-cols-3 gap-1">
             <button
               type="button"
               onClick={() => {
                 setMode('second-hand');
                 setSelectedCategory('All');
               }}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
+              className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 mode === 'second-hand'
-                  ? 'bg-indigo-600 text-white shadow-indigo-200'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 shrink-0" />
               <span>Second-Hand</span>
             </button>
             <button
@@ -354,13 +354,13 @@ export default function HomePage() {
                 setMode('new');
                 setSelectedCategory('All');
               }}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
+              className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 mode === 'new'
-                  ? 'bg-emerald-600 text-white shadow-emerald-200'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-200'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
               <span>Brand-New</span>
             </button>
             <button
@@ -369,13 +369,13 @@ export default function HomePage() {
                 setMode('service');
                 setSelectedCategory('All');
               }}
-              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
+              className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
                 mode === 'service'
                   ? 'bg-purple-600 text-white shadow-purple-200'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
-              <Wrench className="w-3.5 h-3.5" />
+              <Wrench className="w-3.5 h-3.5 shrink-0" />
               <span>Services</span>
             </button>
           </div>
