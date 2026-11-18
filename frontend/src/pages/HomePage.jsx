@@ -59,10 +59,9 @@ const CATEGORIES_BY_MODE = {
   ],
 };
 
-const POPULAR_SEARCHES = ['Phones', 'Electronics', 'Road Bikes', 'Furniture', 'Barbers', 'Mechanics'];
-
 // Global in-memory cache for instant zero-wait retention
 const listingsCache = new Map();
+let lastMarketScrollY = 0;
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -79,9 +78,6 @@ export default function HomePage() {
     setUserLocation,
   } = useMode();
 
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('newest');
   const [priceFilter, setPriceFilter] = useState({ min: '', max: '' });
   const [conditionFilter, setConditionFilter] = useState('all');
@@ -112,6 +108,28 @@ export default function HomePage() {
       userId: user?._id || user?.id || 'guest',
     });
   };
+
+  const initialKey = getCacheKey();
+  const cachedInitial = listingsCache.get(initialKey);
+
+  // Synchronously initialize state so cached results render instantly with zero delay
+  const [listings, setListings] = useState(() => cachedInitial || []);
+  const [loading, setLoading] = useState(() => !cachedInitial);
+  const [error, setError] = useState(null);
+
+  // Scroll restoration on return to /market
+  useEffect(() => {
+    if (lastMarketScrollY > 0) {
+      window.scrollTo(0, lastMarketScrollY);
+    }
+    const handleScroll = () => {
+      lastMarketScrollY = window.scrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   const fetchListings = async (silent = false) => {
     const cacheKey = getCacheKey();
@@ -366,7 +384,7 @@ export default function HomePage() {
             Discover {mode === 'service' ? 'trusted local services' : 'great items'} in your community.
           </h1>
 
-          {/* eBay-Style Integrated Search Bar */}
+          {/* eBay-Style Integrated Search Bar with Category Dropdown */}
           <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-1">
             <div className="flex items-center bg-white rounded-full shadow-sm border border-slate-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition p-1 sm:p-1.5">
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 ml-3 mr-2 shrink-0" />
@@ -388,16 +406,18 @@ export default function HomePage() {
                     setSearchQuery('');
                     fetchListings(false);
                   }}
-                  className="p-1 text-slate-400 hover:text-slate-600 mr-1"
+                  className="p-1 text-slate-400 hover:text-slate-600 mr-1 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
-              <div className="hidden sm:flex items-center border-l border-slate-200 px-2 shrink-0">
+              {/* Category Dropdown inside Search Input */}
+              <div className="flex items-center border-l border-slate-200 px-2 shrink-0">
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="text-xs font-semibold text-slate-600 bg-transparent focus:outline-none cursor-pointer pr-1"
+                  aria-label="Filter by category"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat}>
@@ -408,51 +428,12 @@ export default function HomePage() {
               </div>
               <button
                 type="submit"
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-full transition shadow-sm shrink-0"
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-full transition shadow-sm shrink-0 cursor-pointer"
               >
                 Search
               </button>
             </div>
           </form>
-
-          {/* Popular Search Keywords */}
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-500 pt-0.5 flex-wrap">
-            <span className="font-bold text-slate-700">Popular:</span>
-            {POPULAR_SEARCHES.map((term) => (
-              <button
-                key={term}
-                type="button"
-                onClick={() => {
-                  setSearchQuery(term);
-                }}
-                className="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition cursor-pointer"
-              >
-                {term}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Category Pills Bar (Horizontal Quick Access) */}
-      <section className="bg-white border-b border-slate-200 overflow-x-auto scrollbar-none py-2.5 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex items-center gap-2">
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat || (cat === 'All' && !selectedCategory);
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
-                  isSelected
-                    ? 'bg-slate-900 text-white shadow-sm scale-[1.02]'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
         </div>
       </section>
 

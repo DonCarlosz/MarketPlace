@@ -26,10 +26,10 @@ export const sendSignupOtp = async (req, res, next) => {
     const cleanEmail = email.toLowerCase().trim();
 
     const existingUser = await User.findOne({ email: cleanEmail });
-    if (existingUser) {
+    if (existingUser && existingUser.isVerified) {
       return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists. Please log in.',
+        message: 'An account with this email is already registered. Please log in or use Forgot Password.',
       });
     }
 
@@ -115,21 +115,28 @@ export const verifySignupOtp = async (req, res, next) => {
       });
     }
 
-    // Verify user doesn't exist already
+    // Verify user doesn't exist already as verified
     let user = await User.findOne({ email: cleanEmail });
-    if (user) {
+    if (user && user.isVerified) {
       await Otp.deleteMany({ email: cleanEmail });
       return res.status(400).json({
         success: false,
-        message: 'An account with this email already exists. Please log in.',
+        message: 'An account with this email is already registered. Please log in.',
       });
     }
 
-    // Create the verified user
-    user = await User.create({
-      ...pendingData,
-      isVerified: true,
-    });
+    if (user && !user.isVerified) {
+      user.name = pendingData.name;
+      user.password = pendingData.password;
+      user.location = pendingData.location;
+      user.isVerified = true;
+      await user.save();
+    } else {
+      user = await User.create({
+        ...pendingData,
+        isVerified: true,
+      });
+    }
 
     // Clean up OTP record
     await Otp.deleteMany({ email: cleanEmail, purpose: 'signup' });

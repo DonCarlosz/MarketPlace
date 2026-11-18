@@ -20,10 +20,12 @@ export const FavoritesProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Fetch full listings for the Favorites page
+  // Fetch full listings for the Favorites page with zero-wait background revalidation
   const fetchFavorites = useCallback(async () => {
     if (!user) return;
-    setLoading(true);
+    if (favoriteListings.length === 0) {
+      setLoading(true);
+    }
     try {
       const res = await API.get('/listings/user/favorites');
       if (res.data?.success) {
@@ -36,7 +38,7 @@ export const FavoritesProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, favoriteListings.length]);
 
   // Check if a specific listing is favorited
   const isFavorite = useCallback(

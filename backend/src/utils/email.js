@@ -94,6 +94,25 @@ export const sendOtpEmail = async ({ toEmail, toName = 'Member', otp, purpose = 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    // If primary sender failed, automatically retry with verified account sender
+    if (SENDER_EMAIL !== 'denrichy111@gmail.com') {
+      console.warn(`[Brevo Email] Sender ${SENDER_EMAIL} failed, falling back to verified sender denrichy111@gmail.com...`);
+      payload.sender.email = 'denrichy111@gmail.com';
+      const fallbackRes = await fetch(BREVO_API_URL, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'api-key': BREVO_API_KEY,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const fallbackData = await fallbackRes.json().catch(() => ({}));
+      if (fallbackRes.ok) {
+        console.log(`[Brevo Email] OTP sent to ${toEmail} successfully via fallback (MessageId: ${fallbackData.messageId})`);
+        return { success: true, messageId: fallbackData.messageId };
+      }
+    }
     const errorMsg = data.message || `Brevo API error (Status ${response.status})`;
     console.error('Failed to send OTP email via Brevo:', data);
     throw new Error(errorMsg);

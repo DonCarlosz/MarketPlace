@@ -31,15 +31,21 @@ import {
   Send,
 } from 'lucide-react';
 
+// Global in-memory cache for instant zero-wait listing recall
+const listingDetailCache = new Map();
+
 export default function ListingDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, openAuthModal } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
 
-  const [listing, setListing] = useState(null);
-  const [relatedListings, setRelatedListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedItem = id ? listingDetailCache.get(id) : null;
+
+  // Synchronous initialization prevents full-page flash when revisiting a listing
+  const [listing, setListing] = useState(() => cachedItem?.listing || null);
+  const [relatedListings, setRelatedListings] = useState(() => cachedItem?.related || []);
+  const [loading, setLoading] = useState(() => !cachedItem);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Zoom / Fullscreen lightbox modal
@@ -60,6 +66,15 @@ export default function ListingDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
+    const cached = id ? listingDetailCache.get(id) : null;
+    if (cached) {
+      setListing(cached.listing);
+      setRelatedListings(cached.related || []);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     const fetchListing = async () => {
       try {
         const res = await API.get(`/listings/${id}`);
@@ -68,6 +83,7 @@ export default function ListingDetailPage() {
           setListing(fetchedListing);
 
           // Fetch related listings
+          let related = [];
           try {
             const relatedRes = await API.get('/listings', {
               params: {
@@ -77,13 +93,16 @@ export default function ListingDetailPage() {
               },
             });
             if (relatedRes.data?.success) {
-              setRelatedListings(
-                (relatedRes.data.listings || []).filter((item) => item._id !== fetchedListing._id)
+              related = (relatedRes.data.listings || []).filter(
+                (item) => item._id !== fetchedListing._id
               );
+              setRelatedListings(related);
             }
           } catch {
             // Ignore related fetch failure
           }
+
+          listingDetailCache.set(id, { listing: fetchedListing, related });
         }
       } catch (err) {
         console.error('Error fetching listing details:', err);

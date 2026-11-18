@@ -12,10 +12,10 @@ export const apiLimiter = rateLimit({
   },
 });
 
-// Stricter limiter for sensitive auth routes (login, register, forgot-password): 10 per 15 minutes
+// Auth limiter for sensitive auth routes (login, register, otp, forgot-password): 100 per 15 minutes
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

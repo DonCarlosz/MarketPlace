@@ -10,11 +10,16 @@ import {
   LogOut,
   Compass,
   Heart,
+  Menu,
+  X,
+  LogIn,
+  UserPlus,
 } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, openAuthModal } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,6 +30,7 @@ export default function Navbar() {
     await logout();
     setShowLogoutConfirm(false);
     setDropdownOpen(false);
+    setMobileMenuOpen(false);
     navigate('/');
   };
 
@@ -33,6 +39,11 @@ export default function Navbar() {
       e.preventDefault();
       openAuthModal('login');
     }
+  };
+
+  const handleDrawerAction = (action) => {
+    setMobileMenuOpen(false);
+    action();
   };
 
   return (
@@ -51,8 +62,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Center Area: Persistent Explore Market Nav Button */}
-          <div className="flex items-center justify-center">
+          {/* Desktop Center Area: Explore Market Nav Button (Visible ONLY on desktop lg+) */}
+          <div className="hidden lg:flex items-center justify-center">
             <Link
               to="/market"
               className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition shadow-sm border ${
@@ -66,8 +77,8 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Right Action Buttons */}
-          <div className="hidden sm:flex items-center gap-3 shrink-0">
+          {/* Desktop Right Action Buttons (Visible ONLY on desktop lg+) */}
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             <Link
               to="/create"
               onClick={handlePostListingClick}
@@ -87,7 +98,7 @@ export default function Navbar() {
                   <MessageSquare className="w-5 h-5" />
                 </Link>
 
-                {/* User Dropdown: Initial circle avatar only */}
+                {/* User Dropdown */}
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -109,7 +120,6 @@ export default function Navbar() {
 
                   {dropdownOpen && (
                     <>
-                      {/* Full-screen invisible dismiss backdrop */}
                       <div
                         className="fixed inset-0 z-40"
                         onClick={() => setDropdownOpen(false)}
@@ -156,14 +166,14 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
-                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition whitespace-nowrap"
+                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-100 transition whitespace-nowrap cursor-pointer"
                 >
                   Log In
                 </button>
                 <button
                   type="button"
                   onClick={() => openAuthModal('register')}
-                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition whitespace-nowrap"
+                  className="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition whitespace-nowrap cursor-pointer"
                 >
                   Sign Up
                 </button>
@@ -171,27 +181,208 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile top header action: avatar or login button */}
-          <div className="flex sm:hidden items-center gap-2">
-            {user ? (
+          {/* Tablet & Mobile Menu Toggle (< lg: 640px to 1023px and < 640px) */}
+          <div className="flex lg:hidden items-center gap-2">
+            {/* Quick avatar link if user is logged in */}
+            {user && (
               <Link
                 to="/profile"
-                className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200"
+                className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200 shrink-0"
+                title={user.name}
               >
-                {user.name?.charAt(0).toUpperCase() || 'U'}
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  user.name?.charAt(0).toUpperCase() || 'U'
+                )}
               </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => openAuthModal('login')}
-                className="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-600 text-white whitespace-nowrap"
-              >
-                Log In
-              </button>
             )}
+
+            {/* Hamburger Menu Button */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 transition focus:outline-none cursor-pointer"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Responsive Slide-Over Navigation Drawer for Tablet & Mobile (< lg) */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm transition-opacity animate-in fade-in"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer container */}
+          <div className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white z-50 shadow-2xl flex flex-col justify-between p-6 animate-in slide-in-from-right duration-200 overflow-y-auto">
+            {/* Top: Header & Profile Summary */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-sm shadow-indigo-200">
+                    <Store className="w-4 h-4" />
+                  </div>
+                  <span className="font-bold text-lg text-slate-900">LocalMarket</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                  aria-label="Close Menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* User profile card or guest banner */}
+              {user ? (
+                <div className="flex items-center gap-3 p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl">
+                  <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      user.name?.charAt(0).toUpperCase() || 'U'
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                    <p className="text-[10px] text-indigo-600 font-semibold mt-0.5">Verified Member</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+                  <p className="text-xs font-bold text-slate-800">Welcome to LocalMarket</p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Trade second-hand goods, shop new items, and hire local handwork with zero fees.
+                  </p>
+                </div>
+              )}
+
+              {/* Navigation Links */}
+              <nav className="space-y-1.5 pt-2">
+                <Link
+                  to="/market"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                    isMarketRoute
+                      ? 'bg-indigo-50 text-indigo-700 font-bold'
+                      : 'text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <Compass className="w-5 h-5 text-indigo-600" />
+                  <span>Explore Marketplace</span>
+                </Link>
+
+                <Link
+                  to="/create"
+                  onClick={(e) => {
+                    handleDrawerAction(() => {
+                      if (!user) openAuthModal('login');
+                      else navigate('/create');
+                    });
+                  }}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-100 transition"
+                >
+                  <PlusCircle className="w-5 h-5" />
+                  <span>Post a Listing</span>
+                </Link>
+
+                <Link
+                  to="/messages"
+                  onClick={(e) => {
+                    handleDrawerAction(() => {
+                      if (!user) openAuthModal('login');
+                      else navigate('/messages');
+                    });
+                  }}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <MessageSquare className="w-5 h-5 text-slate-500" />
+                  <span>Messages & Chat</span>
+                </Link>
+
+                <Link
+                  to="/favorites"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                >
+                  <Heart className="w-5 h-5 text-rose-500" />
+                  <span>Saved Favorites</span>
+                </Link>
+
+                {user && (
+                  <Link
+                    to="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <UserIcon className="w-5 h-5 text-slate-500" />
+                    <span>My Profile & Listings</span>
+                  </Link>
+                )}
+              </nav>
+            </div>
+
+            {/* Bottom: Auth Actions */}
+            <div className="pt-6 border-t border-slate-100 space-y-2">
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Log Out</span>
+                </button>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      openAuthModal('login');
+                    }}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 border border-slate-200 hover:bg-slate-50 transition"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Log In</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      openAuthModal('register');
+                    }}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Sign Up</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logout Confirmation Modal */}
       <ConfirmModal

@@ -87,6 +87,9 @@ const POPULAR_SEARCHES = [
 
 const TRACK_SLIDES = [2, 0, 1, 2, 0];
 
+// Global cache for instant landing page return
+let landingFeaturedCache = null;
+
 export default function LandingPage() {
   const { setMode, userLocation, setSearchQuery, setSelectedCategory } = useMode();
   const { openAuthModal, user } = useAuth();
@@ -94,8 +97,8 @@ export default function LandingPage() {
 
   const [localSearch, setLocalSearch] = useState('');
   const [selectedSearchCat, setSelectedSearchCat] = useState('All');
-  const [featuredListings, setFeaturedListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [featuredListings, setFeaturedListings] = useState(() => landingFeaturedCache || []);
+  const [loading, setLoading] = useState(() => !landingFeaturedCache);
   const [activeFilter, setActiveFilter] = useState(null);
 
   // 1-direction infinite auto-switching Hero banner track
@@ -146,15 +149,19 @@ export default function LandingPage() {
     return () => clearInterval(interval);
   }, [isPlaying, trackIndex]);
 
-  const fetchListingsData = async (cat, term) => {
+  const fetchListingsData = async (cat, term, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const params = { limit: 12, sort: 'newest' };
       if (cat && cat !== 'All') params.category = cat;
       if (term) params.search = term;
       const res = await API.get('/listings', { params });
       if (res.data?.success) {
-        setFeaturedListings(res.data.listings || []);
+        const fresh = res.data.listings || [];
+        if (!cat && !term) {
+          landingFeaturedCache = fresh;
+        }
+        setFeaturedListings(fresh);
       }
     } catch (err) {
       console.error('Failed to load listings:', err);
@@ -164,7 +171,7 @@ export default function LandingPage() {
   };
 
   useEffect(() => {
-    fetchListingsData();
+    fetchListingsData(null, null, !!landingFeaturedCache);
   }, []);
 
   const scrollCarousel = (direction) => {

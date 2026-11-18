@@ -165,12 +165,25 @@ function AppContent() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (pathname !== '/market') {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <ModeProvider>
         <FavoritesProvider>
           <Router>
+            <ScrollToTop />
             <AppContent />
           </Router>
         </FavoritesProvider>

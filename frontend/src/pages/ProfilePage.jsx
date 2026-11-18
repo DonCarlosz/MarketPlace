@@ -20,12 +20,15 @@ import {
   Plus,
 } from 'lucide-react';
 
+// Global cache for instant profile listings return
+let profileListingsCache = null;
+
 export default function ProfilePage() {
   const { user, updateUser, openAuthModal } = useAuth();
   const navigate = useNavigate();
 
-  const [myListings, setMyListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [myListings, setMyListings] = useState(() => profileListingsCache || []);
+  const [loading, setLoading] = useState(() => !profileListingsCache);
   const [tab, setTab] = useState('active'); // 'active' | 'sold'
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -52,7 +55,9 @@ export default function ProfilePage() {
       try {
         const res = await API.get('/listings/user/my-listings');
         if (res.data?.success) {
-          setMyListings(res.data.listings || []);
+          const fresh = res.data.listings || [];
+          profileListingsCache = fresh;
+          setMyListings(fresh);
         }
       } catch (err) {
         console.error('Failed to load user listings:', err);

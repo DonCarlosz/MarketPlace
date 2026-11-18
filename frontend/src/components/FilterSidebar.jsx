@@ -125,35 +125,8 @@ export default function FilterSidebar({
 
       {/* Scrollable Filters Section */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-6 overscroll-contain">
-        {/* 1. Category Tree */}
+        {/* 1. Price Range (Presets + Custom Inputs) */}
         <div>
-          <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
-            Category
-          </h4>
-          <div className="space-y-1">
-            {categories.map((cat) => {
-              const active = selectedCategory === cat || (cat === 'All' && !selectedCategory);
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => onSelectCategory(cat)}
-                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer text-left ${
-                    active
-                      ? 'bg-indigo-50 text-indigo-700 font-bold'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
-                >
-                  <span className="truncate">{cat === 'All' ? 'All Categories' : cat}</span>
-                  {active && <Check className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 2. Price Range (Presets + Custom Inputs) */}
-        <div className="border-t border-slate-100 pt-5">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">
             Price Range (₦)
           </h4>
