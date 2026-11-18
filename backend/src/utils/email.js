@@ -1,20 +1,17 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
-const BREVO_API_KEY = process.env.BREVO_API_KEY;
-const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'akhuemokhanisaiah@gmail.com';
-const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'LocalMarket';
 
-/**
- * Send an OTP verification email using Brevo SMTP API
- * @param {Object} options
- * @param {string} options.toEmail
- * @param {string} options.toName
- * @param {string} options.otp
- * @param {'signup' | 'forgot_password'} options.purpose
- */
 export const sendOtpEmail = async ({ toEmail, toName = 'Member', otp, purpose = 'signup' }) => {
+  const BREVO_API_KEY = process.env.BREVO_API_KEY;
+  const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'akhuemokhanisaiah@gmail.com';
+  const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'LocalMarket';
   const isForgotPassword = purpose === 'forgot_password';
   const subject = isForgotPassword
     ? `LocalMarket: Password Reset Code (${otp})`

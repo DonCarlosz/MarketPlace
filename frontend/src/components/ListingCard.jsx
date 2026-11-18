@@ -2,9 +2,19 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { formatPrice } from '../utils/format';
 import { useFavorites } from '../context/FavoritesContext';
-import { MapPin, Sparkles, RefreshCw, Wrench, Navigation, Heart } from 'lucide-react';
+import {
+  MapPin,
+  Sparkles,
+  RefreshCw,
+  Wrench,
+  Navigation,
+  Heart,
+  ChevronRight,
+  CheckCircle2,
+  Clock,
+} from 'lucide-react';
 
-export default function ListingCard({ listing, compact = false }) {
+export default function ListingCard({ listing, layout = 'grid' }) {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   if (!listing) return null;
@@ -21,6 +31,8 @@ export default function ListingCard({ listing, compact = false }) {
     serviceType,
     distanceKm,
     category,
+    seller,
+    createdAt,
   } = listing;
 
   const favorited = isFavorite(_id);
@@ -60,12 +72,117 @@ export default function ListingCard({ listing, compact = false }) {
     );
   };
 
+  // LIST VIEW LAYOUT (eBay-style horizontal row)
+  if (layout === 'list') {
+    return (
+      <Link
+        to={`/listing/${_id}`}
+        className="group flex flex-col sm:flex-row bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-indigo-400 hover:shadow-md transition duration-200 relative select-none"
+      >
+        {/* Left Thumbnail Image */}
+        <div className="relative w-full sm:w-48 sm:h-44 aspect-video sm:aspect-auto bg-slate-100 overflow-hidden shrink-0">
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+
+          <div className="absolute top-2 left-2 z-10">{getModeBadge()}</div>
+
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
+            className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm backdrop-blur-sm border border-slate-200/60 transition active:scale-90"
+          >
+            <Heart
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-150 ${
+                favorited ? 'text-rose-500 fill-rose-500' : 'text-slate-600 hover:text-rose-500'
+              }`}
+            />
+          </button>
+
+          {mode !== 'service' && condition && condition !== 'not-applicable' && (
+            <span className="absolute bottom-2 left-2 z-10 bg-slate-900/80 text-white text-[8px] sm:text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded backdrop-blur-sm">
+              {condition.replace('-', ' ')}
+            </span>
+          )}
+        </div>
+
+        {/* Center Details */}
+        <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+              <span>{category || 'Community Listing'}</span>
+              {createdAt && (
+                <>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {new Date(createdAt).toLocaleDateString()}
+                  </span>
+                </>
+              )}
+            </div>
+
+            <h3 className="font-bold text-slate-900 text-sm sm:text-base group-hover:text-indigo-600 transition leading-snug mt-1 line-clamp-2">
+              {title}
+            </h3>
+
+            {seller?.name && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5">
+                <span>Sold by <strong>{seller.name}</strong></span>
+                {seller.isVerified && (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" title="Verified Seller" />
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span className="truncate">{location?.city || 'Local Area'}</span>
+            </div>
+
+            {distanceKm !== undefined && distanceKm !== null && (
+              <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
+                <Navigation className="w-2.5 h-2.5 text-indigo-500" />
+                <span>{distanceKm === 0 ? 'Same town' : `${distanceKm} km away`}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Pricing & Action Box */}
+        <div className="p-3.5 sm:p-4 sm:border-l border-t sm:border-t-0 border-slate-100 sm:w-44 shrink-0 flex sm:flex-col justify-between items-center sm:items-end bg-slate-50/50">
+          <div className="text-left sm:text-right">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Price</span>
+            <div className="font-black text-slate-900 text-base sm:text-lg leading-tight mt-0.5">
+              {formatPrice(price, priceType)}
+            </div>
+            <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
+              Direct In-Person Deal
+            </span>
+          </div>
+
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:translate-x-0.5 transition">
+            <span>View</span>
+            <ChevronRight className="w-4 h-4" />
+          </span>
+        </div>
+      </Link>
+    );
+  }
+
+  // STANDARD GRID VIEW LAYOUT (eBay-style compact vertical card)
   return (
     <Link
       to={`/listing/${_id}`}
       className="group flex flex-col bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-slate-200/90 hover:border-indigo-400 hover:shadow-md transition duration-200 relative select-none"
     >
-      {/* Compact Image Container */}
+      {/* Image Container */}
       <div className="relative aspect-square sm:aspect-[4/3] bg-slate-100 overflow-hidden">
         <img
           src={imageUrl}
@@ -74,10 +191,8 @@ export default function ListingCard({ listing, compact = false }) {
           loading="lazy"
         />
 
-        {/* Mode badge top left */}
         <div className="absolute top-2 left-2 z-10">{getModeBadge()}</div>
 
-        {/* eBay-style Floating Heart / Favorite button top right */}
         <button
           type="button"
           onClick={handleFavoriteClick}
@@ -86,14 +201,11 @@ export default function ListingCard({ listing, compact = false }) {
         >
           <Heart
             className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-150 ${
-              favorited
-                ? 'text-rose-500 fill-rose-500'
-                : 'text-slate-600 hover:text-rose-500'
+              favorited ? 'text-rose-500 fill-rose-500' : 'text-slate-600 hover:text-rose-500'
             }`}
           />
         </button>
 
-        {/* Condition tag for physical items at bottom left of image */}
         {mode !== 'service' && condition && condition !== 'not-applicable' && (
           <span className="absolute bottom-2 left-2 z-10 bg-slate-900/80 text-white text-[8px] sm:text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded backdrop-blur-sm">
             {condition.replace('-', ' ')}
@@ -103,19 +215,16 @@ export default function ListingCard({ listing, compact = false }) {
 
       {/* Card Details Body */}
       <div className="p-2.5 sm:p-3 flex flex-col flex-grow justify-between gap-1.5">
-        {/* Prominent Price (eBay style: bold, top of details) */}
         <div>
           <div className="font-black text-slate-900 text-sm sm:text-base leading-tight">
             {formatPrice(price, priceType)}
           </div>
 
-          {/* Title */}
           <h3 className="font-semibold text-slate-800 text-xs sm:text-sm line-clamp-2 mt-1 group-hover:text-indigo-600 transition leading-snug">
             {title}
           </h3>
         </div>
 
-        {/* Sub-info / Category */}
         <div className="text-[11px] text-slate-400 truncate">
           {mode === 'service' && serviceType ? (
             <span className="text-purple-600 font-medium">{serviceType}</span>
@@ -124,7 +233,6 @@ export default function ListingCard({ listing, compact = false }) {
           )}
         </div>
 
-        {/* Location & Distance Footer */}
         <div className="pt-2 mt-auto flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 gap-1.5">
           <div className="flex items-center gap-1 min-w-0 truncate">
             <MapPin className="w-3 h-3 text-indigo-500 shrink-0" />

@@ -5,6 +5,7 @@ import API from '../services/api';
 import { getSocket } from '../services/socket';
 import { resolveCityCoordinates, calculateDistanceKm, NIGERIAN_CITIES } from '../utils/geo';
 import ListingCard from '../components/ListingCard';
+import FilterSidebar from '../components/FilterSidebar';
 import SafetyBanner from '../components/SafetyBanner';
 import {
   Search,
@@ -14,7 +15,10 @@ import {
   Sparkles,
   Wrench,
   AlertCircle,
-  ChevronDown,
+  LayoutGrid,
+  List,
+  RotateCcw,
+  X,
 } from 'lucide-react';
 
 const CATEGORIES_BY_MODE = {
@@ -55,19 +59,6 @@ const CATEGORIES_BY_MODE = {
   ],
 };
 
-const POPULAR_LOCATIONS = [
-  'All Locations',
-  'Uromi',
-  'Abraka',
-  'Ekpoma',
-  'Benin City',
-  'Warri',
-  'Asaba',
-  'Lagos',
-  'Abuja',
-  'Port Harcourt',
-];
-
 const POPULAR_SEARCHES = ['Phones', 'Electronics', 'Road Bikes', 'Furniture', 'Barbers', 'Mechanics'];
 
 // Global in-memory cache for instant zero-wait retention
@@ -94,7 +85,11 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState('newest');
   const [priceFilter, setPriceFilter] = useState({ min: '', max: '' });
   const [conditionFilter, setConditionFilter] = useState('all');
-  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // eBay-Style View Mode: 'grid' vs 'list'
+  const [viewMode, setViewMode] = useState('grid');
+  // Mobile Filter Drawer State
+  const [mobileFilterDrawerOpen, setMobileFilterDrawerOpen] = useState(false);
 
   const socketRef = useRef(null);
   const categories = CATEGORIES_BY_MODE[mode] || CATEGORIES_BY_MODE['second-hand'];
@@ -159,32 +154,26 @@ export default function HomePage() {
       if (res.data?.success) {
         let freshListings = res.data.listings || [];
 
-        // STRICT REQUIREMENT: Users should NOT see what they posted on the marketplace!
-        if (user) {
-          const currentUserId = (user._id || user.id)?.toString();
-          freshListings = freshListings.filter((item) => {
-            const sellerId = (item.seller?._id || item.seller?.id || item.seller)?.toString();
-            return sellerId !== currentUserId;
-          });
-        }
+        // Compute distance in kilometers client-side for immediate display badge
+        const currentCoords =
+          userLocation.coordinates ||
+          user?.location?.coordinates ||
+          (activeCity !== 'All Locations' ? resolveCityCoordinates(activeCity) : null);
 
-        // Compute client-side distances if activeCity is selected
-        if (activeCity && activeCity !== 'All Locations') {
-          const myCoords = resolveCityCoordinates(activeCity);
+        if (currentCoords && currentCoords.length === 2 && currentCoords[0] !== 0) {
           freshListings = freshListings.map((item) => {
-            if (item.location?.coordinates?.length === 2) {
+            if (item.location?.coordinates?.length === 2 && item.location.coordinates[0] !== 0) {
               const d = calculateDistanceKm(
-                myCoords[0],
-                myCoords[1],
-                item.location.coordinates[0],
-                item.location.coordinates[1]
+                currentCoords[1],
+                currentCoords[0],
+                item.location.coordinates[1],
+                item.location.coordinates[0]
               );
               return { ...item, distanceKm: d };
             }
             return item;
           });
 
-          // If a radius limit is set, filter client-side as well
           if (radiusKm && radiusKm !== 'all') {
             freshListings = freshListings.filter(
               (item) => item.distanceKm === null || item.distanceKm <= Number(radiusKm)
@@ -211,13 +200,10 @@ export default function HomePage() {
 
     const handleListingCreated = (newListing) => {
       if (!newListing) return;
-      // Exclude if created by the logged-in user
       if (user) {
         const currentUserId = (user._id || user.id)?.toString();
         const sellerId = (newListing.seller?._id || newListing.seller?.id || newListing.seller)?.toString();
-        if (currentUserId && sellerId && currentUserId === sellerId) {
-          return;
-        }
+        if (currentUserId && sellerId && currentUserId === sellerId) return;
       }
       if (newListing.mode !== mode && mode !== 'all') return;
 
@@ -261,10 +247,9 @@ export default function HomePage() {
         socketRef.current.off('listing_deleted', handleListingDeleted);
       }
     };
-  }, [mode, selectedCategory, sortBy, radiusKm, conditionFilter, activeCity, user]);
+  }, [mode, user]);
 
-
-  // Trigger fetch with cache check
+  // Fetch listings on filter change
   useEffect(() => {
     const cacheKey = getCacheKey();
     const cachedData = listingsCache.get(cacheKey);
@@ -276,10 +261,10 @@ export default function HomePage() {
 
     const timer = setTimeout(() => {
       fetchListings(!!cachedData);
-    }, 150);
+    }, 120);
 
     return () => clearTimeout(timer);
-  }, [mode, selectedCategory, sortBy, radiusKm, conditionFilter, activeCity, user]);
+  }, [mode, selectedCategory, sortBy, radiusKm, conditionFilter, priceFilter, activeCity, user]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -294,6 +279,15 @@ export default function HomePage() {
     });
   };
 
+  const handleResetAll = () => {
+    setSearchQuery('');
+    setSelectedCategory('All');
+    setRadiusKm('all');
+    handleCityChange('All Locations');
+    setPriceFilter({ min: '', max: '' });
+    setConditionFilter('all');
+  };
+
   // Filter listings where current logged in user is NOT the seller
   const currentUserId = (user?._id || user?.id)?.toString();
   const displayListings = currentUserId
@@ -303,18 +297,30 @@ export default function HomePage() {
       })
     : listings;
 
+  const hasActiveFilters =
+    (selectedCategory && selectedCategory !== 'All') ||
+    searchQuery ||
+    priceFilter.min ||
+    priceFilter.max ||
+    conditionFilter !== 'all' ||
+    radiusKm !== 'all' ||
+    activeCity !== 'All Locations';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <SafetyBanner />
 
       {/* Hero & Search Header */}
-      <section className="bg-white border-b border-slate-200 py-6 sm:py-8 px-4 sm:px-6">
+      <section className="bg-white border-b border-slate-200 py-6 sm:py-7 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center space-y-4">
           {/* Mode Switcher Tabs */}
           <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
             <button
               type="button"
-              onClick={() => setMode('second-hand')}
+              onClick={() => {
+                setMode('second-hand');
+                setSelectedCategory('All');
+              }}
               className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
                 mode === 'second-hand'
                   ? 'bg-indigo-600 text-white shadow-indigo-200'
@@ -326,7 +332,10 @@ export default function HomePage() {
             </button>
             <button
               type="button"
-              onClick={() => setMode('new')}
+              onClick={() => {
+                setMode('new');
+                setSelectedCategory('All');
+              }}
               className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
                 mode === 'new'
                   ? 'bg-emerald-600 text-white shadow-emerald-200'
@@ -338,7 +347,10 @@ export default function HomePage() {
             </button>
             <button
               type="button"
-              onClick={() => setMode('service')}
+              onClick={() => {
+                setMode('service');
+                setSelectedCategory('All');
+              }}
               className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition shadow-sm ${
                 mode === 'service'
                   ? 'bg-purple-600 text-white shadow-purple-200'
@@ -350,11 +362,11 @@ export default function HomePage() {
             </button>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
             Discover {mode === 'service' ? 'trusted local services' : 'great items'} in your community.
           </h1>
 
-          {/* eBay-Style Integrated Search Bar with Category Dropdown */}
+          {/* eBay-Style Integrated Search Bar */}
           <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-1">
             <div className="flex items-center bg-white rounded-full shadow-sm border border-slate-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition p-1 sm:p-1.5">
               <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 ml-3 mr-2 shrink-0" />
@@ -369,6 +381,18 @@ export default function HomePage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-800 placeholder-slate-400 py-1"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    fetchListings(false);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-600 mr-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
               <div className="hidden sm:flex items-center border-l border-slate-200 px-2 shrink-0">
                 <select
                   value={selectedCategory}
@@ -400,7 +424,6 @@ export default function HomePage() {
                 type="button"
                 onClick={() => {
                   setSearchQuery(term);
-                  fetchListings(false);
                 }}
                 className="px-2.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition cursor-pointer"
               >
@@ -408,48 +431,10 @@ export default function HomePage() {
               </button>
             ))}
           </div>
-
-          {/* Location & Radius Selector with Nigerian Towns */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 text-xs text-slate-600 pt-1 flex-wrap">
-            {/* Location selector */}
-            <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 transition">
-              <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-              <span className="font-bold text-slate-700">Location:</span>
-              <select
-                value={activeCity}
-                onChange={(e) => handleCityChange(e.target.value)}
-                className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer pr-1"
-              >
-                {POPULAR_LOCATIONS.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Radius selector */}
-            <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200 transition">
-              <span className="font-bold text-slate-700">Radius:</span>
-              <select
-                value={radiusKm}
-                onChange={(e) =>
-                  setRadiusKm(e.target.value === 'all' ? 'all' : Number(e.target.value))
-                }
-                className="bg-transparent text-slate-900 font-bold focus:outline-none cursor-pointer pr-1"
-              >
-                <option value="all">All Distances</option>
-                <option value="15">Within 15 km</option>
-                <option value="35">Within 35 km</option>
-                <option value="75">Within 75 km</option>
-                <option value="150">Within 150 km</option>
-              </select>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Category Pills Bar */}
+      {/* Category Pills Bar (Horizontal Quick Access) */}
       <section className="bg-white border-b border-slate-200 overflow-x-auto scrollbar-none py-2.5 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex items-center gap-2">
           {categories.map((cat) => {
@@ -471,204 +456,280 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Main Grid & Filter Controls */}
+      {/* Main Faceted 2-Column Marketplace Layout */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex-grow w-full">
-        <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200">
-          <div>
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 capitalize">
-              {selectedCategory && selectedCategory !== 'All' ? selectedCategory : 'Available Listings'}
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {displayListings.length} {displayListings.length === 1 ? 'result' : 'results'} from other users nearby
-            </p>
-          </div>
+        <div className="flex gap-8 items-start">
+          {/* Left Faceted Filter Sidebar (Desktop lg+) */}
+          <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-20 max-h-[calc(100vh-6rem)]">
+            <FilterSidebar
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={(cat) => setSelectedCategory(cat)}
+              mode={mode}
+              priceFilter={priceFilter}
+              onPriceChange={(newPrice) => setPriceFilter(newPrice)}
+              conditionFilter={conditionFilter}
+              onConditionChange={(c) => setConditionFilter(c)}
+              activeCity={activeCity}
+              onCityChange={(city) => handleCityChange(city)}
+              radiusKm={radiusKm}
+              onRadiusChange={(r) => setRadiusKm(r)}
+              onResetAll={handleResetAll}
+            />
+          </aside>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
-                filtersOpen || priceFilter.min || priceFilter.max || conditionFilter !== 'all'
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                  : 'border-slate-300 bg-white hover:bg-slate-50 text-slate-700'
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>Filters</span>
-              {(priceFilter.min || priceFilter.max || conditionFilter !== 'all') && (
-                <span className="w-2 h-2 rounded-full bg-indigo-600" />
-              )}
-            </button>
+          {/* Right Results Column */}
+          <div className="flex-1 min-w-0">
+            {/* Top Toolbar: Results count, Mobile Filter trigger, Sort Dropdown & Grid/List View Toggles */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-200">
+              <div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 capitalize">
+                  {selectedCategory && selectedCategory !== 'All' ? selectedCategory : 'Available Listings'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {displayListings.length} {displayListings.length === 1 ? 'result' : 'results'}
+                  {activeCity !== 'All Locations' ? ` near ${activeCity}` : ' in community'}
+                </p>
+              </div>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-white border border-slate-300 text-xs font-semibold rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option value="newest">Sort: Newest</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="popular">Most Viewed</option>
-            </select>
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-between sm:justify-end">
+                {/* Mobile Filter Trigger Button (lg:hidden) */}
+                <button
+                  type="button"
+                  onClick={() => setMobileFilterDrawerOpen(true)}
+                  className={`lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                    hasActiveFilters
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Filters</span>
+                  {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-indigo-600" />}
+                </button>
+
+                {/* Sort Dropdown */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-white border border-slate-300 text-xs font-semibold rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none cursor-pointer"
+                >
+                  <option value="newest">Sort: Newest</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="popular">Most Viewed</option>
+                </select>
+
+                {/* eBay-Style View Mode Toggles: Grid vs List */}
+                <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('grid')}
+                    aria-label="Grid View"
+                    className={`p-1.5 rounded-lg transition ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-indigo-600 shadow-sm font-bold'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title="Grid view"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('list')}
+                    aria-label="List View"
+                    className={`p-1.5 rounded-lg transition ${
+                      viewMode === 'list'
+                        ? 'bg-white text-indigo-600 shadow-sm font-bold'
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                    title="List view"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Filters Strip with (×) quick-remove */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 pb-4 flex-wrap text-xs">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Active:
+                </span>
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100 font-medium">
+                    "{searchQuery}"
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="hover:text-indigo-900 ml-0.5 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {selectedCategory && selectedCategory !== 'All' && (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
+                    Category: {selectedCategory}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategory('All')}
+                      className="hover:text-slate-900 ml-0.5 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {activeCity !== 'All Locations' && (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
+                    {activeCity}
+                    <button
+                      type="button"
+                      onClick={() => handleCityChange('All Locations')}
+                      className="hover:text-slate-900 ml-0.5 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {radiusKm !== 'all' && (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
+                    Within {radiusKm} km
+                    <button
+                      type="button"
+                      onClick={() => setRadiusKm('all')}
+                      className="hover:text-slate-900 ml-0.5 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {(priceFilter.min || priceFilter.max) && (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
+                    ₦{priceFilter.min || '0'} - ₦{priceFilter.max || 'Any'}
+                    <button
+                      type="button"
+                      onClick={() => setPriceFilter({ min: '', max: '' })}
+                      className="hover:text-slate-900 ml-0.5 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                {conditionFilter !== 'all' && (
+                  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium capitalize">
+                    {conditionFilter.replace('-', ' ')}
+                    <button
+                      type="button"
+                      onClick={() => setConditionFilter('all')}
+                      className="hover:text-slate-900 ml-0.5 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="text-xs text-rose-600 hover:underline font-bold ml-1 cursor-pointer"
+                >
+                  Reset all
+                </button>
+              </div>
+            )}
+
+            {/* Listings Display: Grid View or List View */}
+            {loading && displayListings.length === 0 ? (
+              <div
+                className={
+                  viewMode === 'grid'
+                    ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4'
+                    : 'space-y-3'
+                }
+              >
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div
+                    key={n}
+                    className="bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
+                  >
+                    <div className="w-full aspect-square bg-slate-200 rounded-xl"></div>
+                    <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : displayListings.length > 0 ? (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+                  {displayListings.map((item) => (
+                    <ListingCard key={item._id} listing={item} layout="grid" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {displayListings.map((item) => (
+                    <ListingCard key={item._id} listing={item} layout="list" />
+                  ))}
+                </div>
+              )
+            ) : (
+              <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4 max-w-md mx-auto my-6">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <AlertCircle className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-slate-900 text-base">No listings found</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    No items or services match your current query, category, or radius filter.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={handleResetAll}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Active Filter Chips Row */}
-        {(selectedCategory !== 'All' || searchQuery || radiusKm !== 'all' || activeCity !== 'All Locations' || priceFilter.min || priceFilter.max || conditionFilter !== 'all') && (
-          <div className="flex items-center gap-2 pb-4 flex-wrap text-xs">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active:</span>
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100 font-medium">
-                "{searchQuery}"
-                <button type="button" onClick={() => { setSearchQuery(''); fetchListings(false); }} className="hover:text-indigo-900 ml-0.5">×</button>
-              </span>
-            )}
-            {selectedCategory && selectedCategory !== 'All' && (
-              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
-                Category: {selectedCategory}
-                <button type="button" onClick={() => setSelectedCategory('All')} className="hover:text-slate-900 ml-0.5">×</button>
-              </span>
-            )}
-            {activeCity !== 'All Locations' && (
-              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
-                {activeCity}
-                <button type="button" onClick={() => handleCityChange('All Locations')} className="hover:text-slate-900 ml-0.5">×</button>
-              </span>
-            )}
-            {radiusKm !== 'all' && (
-              <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
-                Within {radiusKm} km
-                <button type="button" onClick={() => setRadiusKm('all')} className="hover:text-slate-900 ml-0.5">×</button>
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('All');
-                setRadiusKm('all');
-                handleCityChange('All Locations');
-                setPriceFilter({ min: '', max: '' });
-                setConditionFilter('all');
-              }}
-              className="text-xs text-rose-600 hover:underline font-semibold ml-1 cursor-pointer"
-            >
-              Reset all
-            </button>
-          </div>
-        )}
-
-        {/* Collapsible Filter Panel */}
-        {filtersOpen && (
-          <div className="mb-6 p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in duration-200">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Price Range (₦)</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  placeholder="Min ₦"
-                  value={priceFilter.min}
-                  onChange={(e) => setPriceFilter({ ...priceFilter, min: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-                />
-                <span className="text-slate-400 text-xs">-</span>
-                <input
-                  type="number"
-                  placeholder="Max ₦"
-                  value={priceFilter.max}
-                  onChange={(e) => setPriceFilter({ ...priceFilter, max: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-                />
-              </div>
-            </div>
-
-            {mode !== 'service' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Condition</label>
-                <select
-                  value={conditionFilter}
-                  onChange={(e) => setConditionFilter(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white cursor-pointer font-medium"
-                >
-                  <option value="all">Any Condition</option>
-                  <option value="brand-new">Brand New</option>
-                  <option value="like-new">Like New</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                </select>
-              </div>
-            )}
-
-            <div className="flex items-end gap-2">
-              <button
-                onClick={() => {
-                  setPriceFilter({ min: '', max: '' });
-                  setConditionFilter('all');
-                  fetchListings(false);
-                }}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-xl cursor-pointer"
-              >
-                Reset
-              </button>
-              <button
-                onClick={() => fetchListings(false)}
-                className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm cursor-pointer"
-              >
-                Apply Filters
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Listings Grid with Clean Responsive Breakpoints (2 columns on mobile, up to 5 on desktop) */}
-        {loading && displayListings.length === 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <div
-                key={n}
-                className="bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
-              >
-                <div className="w-full aspect-square bg-slate-200 rounded-xl"></div>
-                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        ) : displayListings.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {displayListings.map((item) => (
-              <ListingCard key={item._id} listing={item} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4 max-w-md mx-auto my-6">
-            <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
-              <AlertCircle className="w-7 h-7" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-slate-900 text-base">No listings found</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                No items or services match your current query, category, or radius filter.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-2 pt-1 flex-wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedCategory('All');
-                  setRadiusKm('all');
-                  handleCityChange('All Locations');
-                  setPriceFilter({ min: '', max: '' });
-                  setConditionFilter('all');
-                }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition"
-              >
-                Clear All Filters
-              </button>
-            </div>
-          </div>
-        )}
       </main>
+
+      {/* Mobile Slide-Over Filter Drawer */}
+      {mobileFilterDrawerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden flex justify-end animate-in fade-in duration-200"
+          onClick={() => setMobileFilterDrawerOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <FilterSidebar
+              categories={categories}
+              selectedCategory={selectedCategory}
+              onSelectCategory={(cat) => setSelectedCategory(cat)}
+              mode={mode}
+              priceFilter={priceFilter}
+              onPriceChange={(newPrice) => setPriceFilter(newPrice)}
+              conditionFilter={conditionFilter}
+              onConditionChange={(c) => setConditionFilter(c)}
+              activeCity={activeCity}
+              onCityChange={(city) => handleCityChange(city)}
+              radiusKm={radiusKm}
+              onRadiusChange={(r) => setRadiusKm(r)}
+              onResetAll={handleResetAll}
+              onClose={() => setMobileFilterDrawerOpen(false)}
+              totalResults={displayListings.length}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
