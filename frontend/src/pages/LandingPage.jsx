@@ -441,9 +441,9 @@ export default function LandingPage() {
 
 
   return (
-    <div className="min-h-screen bg-white flex flex-col pb-16">
+    <div className="min-h-screen bg-white flex flex-col w-full max-w-full overflow-x-hidden">
       {/* 1. eBay-Style Top Search Section (Clean & Tight, Increased Breathing Room) */}
-      <section className="bg-slate-50 border-b border-slate-200/90 pt-3.5 pb-6 sm:pb-7 px-4 sm:px-6 lg:px-8">
+      <section className="bg-slate-50 border-b border-slate-200/90 pt-3.5 pb-6 sm:pb-7 px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden">
         <div className="max-w-7xl mx-auto space-y-2.5">
           <form
             onSubmit={handleSearchSubmit}
@@ -607,7 +607,7 @@ export default function LandingPage() {
       </section>
 
       {/* 3. Category Square Tiles: "Explore by Category" (Image 4 Style) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-10 overflow-hidden">
         <div className="flex items-end justify-between mb-4">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Explore by Category</h2>
@@ -662,7 +662,7 @@ export default function LandingPage() {
       </section>
 
       {/* 4. Horizontal Scrollable Deals Carousel: "Today's Highlights" (Image 5 Style) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
             <div className="inline-flex items-center gap-1.5 flex-wrap">
@@ -736,7 +736,7 @@ export default function LandingPage() {
 
             <div
               ref={carouselRef}
-              className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth pb-4 pt-1 no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0"
+              className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth pb-4 pt-1 no-scrollbar px-1 sm:px-0"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {featuredListings.map((item) => (
@@ -750,7 +750,7 @@ export default function LandingPage() {
       </section>
 
       {/* 5. Light-Themed Promo Showcase Card */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
         <div className="rounded-2xl sm:rounded-3xl bg-slate-100/90 border border-slate-200/90 p-6 sm:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="space-y-4 max-w-xl">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -815,7 +815,7 @@ export default function LandingPage() {
       </section>
 
       {/* 6. The 3 Core Trading Modes: Interactive Pillars */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
         <div className="text-center space-y-1.5 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
             Three Ways to Trade in Your Neighborhood
@@ -943,7 +943,7 @@ export default function LandingPage() {
       </section>
 
       {/* 7. Secondary Lifestyle Promo Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
         <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-900 text-white min-h-[220px] sm:min-h-[250px] flex items-center">
           <img
             src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
@@ -979,7 +979,7 @@ export default function LandingPage() {
       </section>
 
       {/* 8. Safe Local Meetup Blueprint (Trust & Zero-Liability) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 pb-6 overflow-hidden">
         <div className="bg-slate-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-200/90 space-y-6">
           <div className="text-center space-y-1.5 max-w-lg mx-auto">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900">

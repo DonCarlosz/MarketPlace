@@ -325,7 +325,7 @@ export default function HomePage() {
     activeCity !== 'All Locations';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col w-full max-w-full overflow-x-hidden">
       <SafetyBanner />
 
       {/* Hero & Search Header */}

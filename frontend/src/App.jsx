@@ -140,8 +140,10 @@ function AppContent() {
 
   return (
     <div
-      className={`flex flex-col bg-slate-50 text-slate-900 font-sans ${
-        isChatRoute ? 'h-screen max-h-screen overflow-hidden pb-16 sm:pb-0' : 'min-h-screen pb-16 sm:pb-0'
+      className={`flex flex-col bg-slate-50 text-slate-900 font-sans w-full max-w-full overflow-x-hidden ${
+        isChatRoute
+          ? 'h-screen max-h-screen overflow-hidden pb-16 sm:pb-0'
+          : 'min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0'
       }`}
     >
       <Navbar />
