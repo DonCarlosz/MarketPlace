@@ -67,6 +67,31 @@ const listingSchema = new mongoose.Schema(
         caption: { type: String, default: '' },
       },
     ],
+    // Structured Specifications & Flaws
+    itemSpecifics: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    flawDescription: {
+      type: String,
+      maxlength: [500, 'Flaw description cannot exceed 500 characters'],
+      default: '',
+    },
+    // Negotiation & Delivery
+    acceptsOffers: {
+      type: Boolean,
+      default: true,
+    },
+    minimumOfferPrice: {
+      type: Number,
+      default: 0,
+      min: [0, 'Minimum offer cannot be negative'],
+    },
+    allowsDelivery: {
+      type: Boolean,
+      default: false,
+    },
     // Location & Meetup guidance
     location: {
       type: {
