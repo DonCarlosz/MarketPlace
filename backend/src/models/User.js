@@ -94,6 +94,28 @@ const userSchema = new mongoose.Schema(
         ref: 'Listing',
       },
     ],
+    // eBay-Grade Reputation & Feedback Score
+    feedbackScore: {
+      positive: { type: Number, default: 0 },
+      neutral: { type: Number, default: 0 },
+      negative: { type: Number, default: 0 },
+      totalReviews: { type: Number, default: 0 },
+      positivePercentage: { type: Number, default: 100 },
+    },
+    // Detailed Seller Ratings (DSR - 1.0 to 5.0)
+    detailedRatings: {
+      itemAccuracy: { type: Number, default: 5.0 },
+      communication: { type: Number, default: 5.0 },
+      punctuality: { type: Number, default: 5.0 },
+    },
+    verifiedPhone: {
+      type: Boolean,
+      default: false,
+    },
+    verifiedEmail: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

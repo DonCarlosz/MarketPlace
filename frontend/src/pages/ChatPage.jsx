@@ -19,6 +19,15 @@ import {
   Inbox,
   UserX,
   ChevronLeft,
+  Tag,
+  MapPin,
+  Check,
+  X,
+  RotateCcw,
+  Sparkles,
+  Store,
+  Shield,
+  HelpCircle,
 } from 'lucide-react';
 
 export default function ChatPage() {
@@ -37,6 +46,22 @@ export default function ChatPage() {
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // In-Chat Offer State
+  const [makeOfferModalOpen, setMakeOfferModalOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState('');
+  const [offerNote, setOfferNote] = useState('');
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
+
+  // Counter Offer Modal State
+  const [counterModalOpen, setCounterModalOpen] = useState(false);
+  const [counterMessageId, setCounterMessageId] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [counterSubmitting, setCounterSubmitting] = useState(false);
+
+  // Safe Meetup Spot Preset Modal State
+  const [meetupModalOpen, setMeetupModalOpen] = useState(false);
+  const [meetupSubmitting, setMeetupSubmitting] = useState(false);
 
   // Confirm Modal State
   const [confirmModalConfig, setConfirmModalConfig] = useState({
@@ -82,6 +107,12 @@ export default function ChatPage() {
             ? { ...c, lastMessage: newMsg, lastMessageAt: new Date() }
             : c
         )
+      );
+    });
+
+    socketRef.current.on('offer_updated', (updatedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === updatedMsg._id ? updatedMsg : m))
       );
     });
 
@@ -182,16 +213,19 @@ export default function ChatPage() {
     (b) => (b._id || b.id || b)?.toString() === otherUserId
   );
 
-  // TikTok Message Request Logic:
-  // Is this conversation pending acceptance?
+  // Seller vs Buyer Context
+  const isListingSeller =
+    activeConversation?.listing?.seller?.toString() === currentUserId ||
+    (activeConversation?.listing?.seller?._id &&
+      activeConversation.listing.seller._id.toString() === currentUserId);
+
+  // TikTok Message Request Logic
   const isPending = activeConversation?.status === 'pending';
-  // Am I the recipient who needs to accept/decline?
   const amIReceiver =
     (activeConversation?.receiver?._id || activeConversation?.receiver)?.toString() === currentUserId;
-  // Am I the initiator who sent the request?
   const amIInitiator =
     (activeConversation?.initiator?._id || activeConversation?.initiator)?.toString() === currentUserId;
-  // How many messages has the initiator sent so far?
+
   const senderMessageCount =
     activeConversation?.senderMessageCount ||
     messages.filter(
@@ -213,7 +247,7 @@ export default function ChatPage() {
   const displayedConversations =
     inboxTab === 'requests' ? requestsConversations : primaryConversations;
 
-  // Handle Send Message (Single HTTP post, no socket duplicate)
+  // Handle Standard Message Send
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!messageText.trim() || !activeConvId || !user || isSenderLimitReached || isOtherUserBlocked) {
@@ -231,7 +265,6 @@ export default function ChatPage() {
           return [...prev, res.data.message];
         });
 
-        // Update active conversation count/status
         setConversations((prev) =>
           prev.map((c) =>
             c._id === activeConvId
@@ -251,7 +284,114 @@ export default function ChatPage() {
     }
   };
 
-  // Accept Message Request (TikTok style)
+  // Submit In-Chat Price Offer
+  const handleMakeOffer = async (e) => {
+    e.preventDefault();
+    if (!offerAmount || Number(offerAmount) <= 0 || !activeConvId) return;
+
+    setOfferSubmitting(true);
+    try {
+      const res = await API.post(`/chat/conversations/${activeConvId}/messages`, {
+        messageType: 'offer',
+        offer: {
+          amount: Number(offerAmount),
+          note: offerNote.trim(),
+        },
+      });
+
+      if (res.data?.success && res.data.message) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === res.data.message._id)) return prev;
+          return [...prev, res.data.message];
+        });
+        setMakeOfferModalOpen(false);
+        setOfferAmount('');
+        setOfferNote('');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to send offer.');
+    } finally {
+      setOfferSubmitting(false);
+    }
+  };
+
+  // Submit In-Chat Safe Meetup Preset
+  const handleSendMeetupProposal = async (preset) => {
+    if (!activeConvId) return;
+
+    setMeetupSubmitting(true);
+    try {
+      const res = await API.post(`/chat/conversations/${activeConvId}/messages`, {
+        messageType: 'meetup_proposal',
+        meetup: {
+          spotName: preset.name,
+          spotType: preset.type,
+          address: preset.desc,
+        },
+      });
+
+      if (res.data?.success && res.data.message) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === res.data.message._id)) return prev;
+          return [...prev, res.data.message];
+        });
+        setMeetupModalOpen(false);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to send meetup proposal.');
+    } finally {
+      setMeetupSubmitting(false);
+    }
+  };
+
+  // Respond to Offer (Accept / Decline)
+  const handleRespondToOffer = async (messageId, action) => {
+    try {
+      const res = await API.patch(`/chat/messages/${messageId}/offer`, { action });
+      if (res.data?.success) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === messageId ? res.data.message : m))
+        );
+        if (res.data.systemMessage) {
+          setMessages((prev) => [...prev, res.data.systemMessage]);
+        }
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to process offer response.');
+    }
+  };
+
+  // Counter Offer Submit
+  const handleCounterOfferSubmit = async (e) => {
+    e.preventDefault();
+    if (!counterAmount || Number(counterAmount) <= 0 || !counterMessageId) return;
+
+    setCounterSubmitting(true);
+    try {
+      const res = await API.patch(`/chat/messages/${counterMessageId}/offer`, {
+        action: 'counter',
+        counterAmount: Number(counterAmount),
+      });
+
+      if (res.data?.success) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === counterMessageId ? res.data.message : m))
+        );
+        if (res.data.systemMessage) {
+          setMessages((prev) => [...prev, res.data.systemMessage]);
+        }
+        setCounterModalOpen(false);
+        setCounterAmount('');
+        setCounterMessageId(null);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to send counter offer.');
+    } finally {
+      setCounterSubmitting(false);
+    }
+  };
+
+  // Accept Message Request
   const handleAcceptRequest = async () => {
     setActionLoading(true);
     try {
@@ -294,7 +434,7 @@ export default function ChatPage() {
     });
   };
 
-  // Block User (Discreet)
+  // Block User
   const promptBlockUser = () => {
     setMoreMenuOpen(false);
     setConfirmModalConfig({
@@ -327,6 +467,32 @@ export default function ChatPage() {
       alert('Failed to unblock user');
     }
   };
+
+  const listingPrice = Number(activeConversation?.listing?.price) || 0;
+
+  // Safe Meetup Presets
+  const safeMeetupPresets = [
+    {
+      name: 'Busy Shopping Mall / Commercial Plaza',
+      type: 'mall',
+      desc: 'Main public entrance or well-lit food court area with security present.',
+    },
+    {
+      name: 'Bank Lobby / ATM Gallery',
+      type: 'bank',
+      desc: 'Active commercial bank branch lobby or ATM area with CCTV surveillance.',
+    },
+    {
+      name: 'Popular Café or Fast Food Eatery',
+      type: 'cafe',
+      desc: 'Busy eatery (e.g. Chicken Republic, Mega Chicken, Café) during daylight hours.',
+    },
+    {
+      name: 'Police Station / Civic Center Gate',
+      type: 'station',
+      desc: 'Public visitor parking or front gate area of local police division.',
+    },
+  ];
 
   return (
     <div className="flex-1 h-full w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 overflow-hidden flex flex-col">
@@ -451,10 +617,10 @@ export default function ChatPage() {
         >
           {activeConversation ? (
             <>
-              {/* Chat Header with Listing Banner & Discreet More Menu */}
+              {/* Pinned Listing Header with Dual Actions & Offer CTA */}
               <div className="p-3 sm:p-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  {/* Mobile Back to Inbox Button */}
+                  {/* Mobile Back Button */}
                   <button
                     type="button"
                     onClick={() => setActiveConvId(null)}
@@ -464,7 +630,7 @@ export default function ChatPage() {
                     <ChevronLeft className="w-5 h-5" />
                   </button>
 
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
                     {activeConversation.listing?.images?.[0]?.url ? (
                       <img
                         src={
@@ -477,16 +643,19 @@ export default function ChatPage() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
-                        Img
+                        Item
                       </div>
                     )}
                   </div>
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                        {otherUser?.name || 'Seller'}
-                      </h3>
+                      <Link
+                        to={otherUserId ? `/profile/${otherUserId}` : '#'}
+                        className="text-xs sm:text-sm font-bold text-slate-900 truncate hover:text-indigo-600 transition"
+                      >
+                        {otherUser?.name || 'Member'}
+                      </Link>
                       {isOtherUserBlocked && (
                         <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                           Blocked
@@ -506,6 +675,18 @@ export default function ChatPage() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* Make Offer Button for Buyer */}
+                  {!isListingSeller && !isOtherUserBlocked && (
+                    <button
+                      onClick={() => setMakeOfferModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition shadow-xs cursor-pointer"
+                    >
+                      <Tag className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Make Offer</span>
+                      <span className="sm:hidden">Offer</span>
+                    </button>
+                  )}
+
                   {isOtherUserBlocked ? (
                     <button
                       onClick={handleUnblockUser}
@@ -516,14 +697,14 @@ export default function ChatPage() {
                   ) : (
                     <Link
                       to={`/listing/${activeConversation.listing?._id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
+                      className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
                     >
                       <span>View Listing</span>
                       <ExternalLink className="w-3 h-3" />
                     </Link>
                   )}
 
-                  {/* Discreet More Options Dropdown (...) */}
+                  {/* Options Menu */}
                   <div className="relative">
                     <button
                       onClick={() => setMoreMenuOpen(!moreMenuOpen)}
@@ -539,7 +720,7 @@ export default function ChatPage() {
                           className="fixed inset-0 z-40"
                           onClick={() => setMoreMenuOpen(false)}
                         />
-                        <div className="absolute right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in fade-in">
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in fade-in">
                           <Link
                             to={`/listing/${activeConversation.listing?._id}`}
                             onClick={() => setMoreMenuOpen(false)}
@@ -548,6 +729,17 @@ export default function ChatPage() {
                             <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                             View Listing
                           </Link>
+
+                          {otherUserId && (
+                            <Link
+                              to={`/profile/${otherUserId}`}
+                              onClick={() => setMoreMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium"
+                            >
+                              <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
+                              View Seller Scorecard
+                            </Link>
+                          )}
 
                           {!isOtherUserBlocked ? (
                             <button
@@ -576,29 +768,37 @@ export default function ChatPage() {
                 </div>
               </div>
 
-              {/* Safety notice banner inside chat */}
-              <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/60 flex items-center gap-2 text-[11px] text-amber-900 shrink-0">
-                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
-                <span>
-                  <strong>Safety Tip:</strong> Agree on a safe, public meetup place (busy coffee
-                  shops or bank lobbies) and inspect the item before transferring any cash.
-                </span>
+              {/* Safety notice banner */}
+              <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 shrink-0">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>
+                    <strong>Safety Rule:</strong> Inspect item in person at a busy public spot before making payment.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMeetupModalOpen(true)}
+                  className="font-bold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <MapPin className="w-3 h-3 text-amber-600" />
+                  <span>Pick Safe Spot</span>
+                </button>
               </div>
 
-              {/* TikTok-style Request Status Alert for Sender */}
+              {/* TikTok-style Request Status Alert */}
               {isPending && amIInitiator && (
-                <div className="bg-indigo-50/90 border-b border-indigo-100 px-4 py-2.5 text-xs text-indigo-900 flex items-center justify-between gap-3 shrink-0">
+                <div className="bg-indigo-50/90 border-b border-indigo-100 px-4 py-2 text-xs text-indigo-900 flex items-center justify-between gap-3 shrink-0">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
                     <span>
-                      Message request pending acceptance. You can send up to 5 messages (
-                      <strong>{senderMessageCount}/5 sent</strong>).
+                      Message request pending acceptance ({senderMessageCount}/5 sent).
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Messages Flow - ONLY this section scrolls vertically */}
+              {/* Messages Flow */}
               <div className="flex-1 p-4 overflow-y-auto space-y-3 min-h-0">
                 {loadingMessages ? (
                   <div className="text-center py-10 text-xs text-slate-400">Loading conversation...</div>
@@ -606,7 +806,7 @@ export default function ChatPage() {
                   <div className="text-center py-12 text-slate-400 space-y-2">
                     <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
                     <p className="text-xs">
-                      No messages yet. Send a greeting to propose a meetup and check availability!
+                      No messages yet. Send a greeting or propose a price offer to start!
                     </p>
                   </div>
                 ) : (
@@ -614,6 +814,205 @@ export default function ChatPage() {
                     const senderId = (msg.sender?._id || msg.sender?.id || msg.sender)?.toString();
                     const isMe = Boolean(currentUserId && senderId && senderId === currentUserId);
 
+                    // 1. Render System Message
+                    if (msg.messageType === 'system') {
+                      return (
+                        <div key={msg._id || i} className="flex justify-center my-2">
+                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100/90 border border-slate-200 px-3.5 py-1 rounded-full">
+                            {msg.content}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    // 2. Render Interactive In-Chat Offer Message Card
+                    if (msg.messageType === 'offer') {
+                      const offerStatus = msg.offer?.status || 'pending';
+                      const offerVal = Number(msg.offer?.amount) || 0;
+                      const counterVal = Number(msg.offer?.counterAmount) || 0;
+
+                      return (
+                        <div
+                          key={msg._id || i}
+                          className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                        >
+                          <div
+                            className={`max-w-[85%] sm:max-w-[360px] rounded-2xl p-4 space-y-3 shadow-md border ${
+                              isMe
+                                ? 'bg-indigo-900 text-white border-indigo-800'
+                                : 'bg-white text-slate-900 border-indigo-200'
+                            }`}
+                          >
+                            {/* Offer Card Header */}
+                            <div className="flex items-center justify-between border-b border-white/20 pb-2">
+                              <span className="text-xs font-bold flex items-center gap-1.5">
+                                <Tag className="w-3.5 h-3.5 text-amber-300" />
+                                <span>In-Chat Price Offer</span>
+                              </span>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                                  offerStatus === 'accepted'
+                                    ? 'bg-emerald-500 text-white'
+                                    : offerStatus === 'declined'
+                                    ? 'bg-rose-500 text-white'
+                                    : offerStatus === 'countered'
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-amber-400 text-slate-900'
+                                }`}
+                              >
+                                {offerStatus}
+                              </span>
+                            </div>
+
+                            {/* Large Naira Offer Amount */}
+                            <div>
+                              <span className="text-[10px] block opacity-80 uppercase tracking-wider font-semibold">
+                                {isMe ? 'You Offered:' : 'Buyer Offered:'}
+                              </span>
+                              <div className="text-xl sm:text-2xl font-black text-emerald-400">
+                                ₦{offerVal.toLocaleString()} NGN
+                              </div>
+                              {msg.offer?.note && (
+                                <p className="text-xs italic opacity-90 mt-1">"{msg.offer.note}"</p>
+                              )}
+                            </div>
+
+                            {/* Counter Offer Info if present */}
+                            {offerStatus === 'countered' && counterVal > 0 && (
+                              <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-xs">
+                                <span className="text-[10px] uppercase font-bold text-amber-300 block">
+                                  Counter Proposal:
+                                </span>
+                                <span className="text-base font-black text-amber-300">
+                                  ₦{counterVal.toLocaleString()} NGN
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Seller Action Buttons for Pending Offer */}
+                            {isListingSeller && offerStatus === 'pending' && (
+                              <div className="flex items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRespondToOffer(msg._id, 'accept')}
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Accept</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCounterMessageId(msg._id);
+                                    setCounterModalOpen(true);
+                                  }}
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold shadow-sm transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span>Counter</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRespondToOffer(msg._id, 'decline')}
+                                  className="py-1.5 px-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center justify-center cursor-pointer"
+                                  title="Decline"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Buyer Action Buttons for Countered Offer */}
+                            {!isListingSeller && offerStatus === 'countered' && (
+                              <div className="flex items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRespondToOffer(msg._id, 'accept')}
+                                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Accept Counter</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRespondToOffer(msg._id, 'decline')}
+                                  className="py-1.5 px-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center justify-center cursor-pointer"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Decline</span>
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Accepted Banner */}
+                            {offerStatus === 'accepted' && (
+                              <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                                <span>Deal agreed! Pick a safe public meetup spot below.</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <span className="text-[10px] text-slate-400 mt-1 px-1">
+                            {msg.createdAt
+                              ? new Date(msg.createdAt).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : ''}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    // 3. Render Safe Meetup Proposal Message Card
+                    if (msg.messageType === 'meetup_proposal') {
+                      return (
+                        <div
+                          key={msg._id || i}
+                          className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                        >
+                          <div
+                            className={`max-w-[85%] sm:max-w-[340px] rounded-2xl p-4 space-y-2.5 shadow-md border ${
+                              isMe
+                                ? 'bg-indigo-600 text-white border-indigo-700'
+                                : 'bg-white text-slate-800 border-indigo-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 text-xs font-bold">
+                              <MapPin className="w-4 h-4 text-amber-300" />
+                              <span>Safe Public Meetup Proposal</span>
+                            </div>
+
+                            <div className="text-sm font-black text-slate-900 bg-amber-50 p-2.5 rounded-xl border border-amber-200/70">
+                              {msg.meetup?.spotName || 'Designated Public Location'}
+                              {msg.meetup?.address && (
+                                <span className="block text-[11px] font-normal text-slate-600 mt-0.5">
+                                  {msg.meetup.address}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-[10px] opacity-80 leading-relaxed">
+                              Inspect item before hand-delivery or instant bank transfer. Never wire funds upfront.
+                            </p>
+                          </div>
+
+                          <span className="text-[10px] text-slate-400 mt-1 px-1">
+                            {msg.createdAt
+                              ? new Date(msg.createdAt).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : ''}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    // 4. Standard Text Bubble
                     return (
                       <div
                         key={msg._id || i}
@@ -648,7 +1047,7 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* TikTok-Style Acceptance / Decline Action Bar for Receiver */}
+              {/* TikTok Acceptance Action Bar */}
               {isPending && amIReceiver ? (
                 <div className="p-4 bg-white border-t border-slate-200 space-y-3 shrink-0">
                   <div className="text-center space-y-1">
@@ -681,7 +1080,6 @@ export default function ChatPage() {
                   </div>
                 </div>
               ) : isOtherUserBlocked ? (
-                /* Blocked Notice Bar */
                 <div className="p-4 bg-white border-t border-slate-200 text-center space-y-2 shrink-0">
                   <p className="text-xs font-bold text-slate-700">
                     You have blocked {otherUser?.name || 'this user'}.
@@ -694,38 +1092,59 @@ export default function ChatPage() {
                   </button>
                 </div>
               ) : isSenderLimitReached ? (
-                /* 5-Message Limit Reached Notice */
                 <div className="p-4 bg-amber-50/80 border-t border-amber-200 text-center space-y-1 shrink-0">
                   <p className="text-xs font-bold text-amber-900">
                     Message limit reached (5/5).
                   </p>
                   <p className="text-[11px] text-amber-700">
-                    Waiting for {otherUser?.name || 'the seller'} to accept your message request before you can send more messages.
+                    Waiting for {otherUser?.name || 'the seller'} to accept your message request before sending more.
                   </p>
                 </div>
               ) : (
-                /* Standard Message Input Box */
-                <form
-                  onSubmit={handleSendMessage}
-                  className="p-3 bg-white border-t border-slate-200 shrink-0"
-                >
-                  <div className="flex items-center gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 border border-slate-200">
-                    <input
-                      type="text"
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      placeholder={`Message ${otherUser?.name || 'seller'} (ask questions, propose a public meetup)...`}
-                      className="flex-1 bg-transparent border-none text-xs text-slate-800 px-3 py-1.5 focus:outline-none"
-                    />
+                /* Message Input + Quick Actions */
+                <div className="p-3 bg-white border-t border-slate-200 space-y-2 shrink-0">
+                  {/* Quick Action Chips Bar */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+                    {!isListingSeller && (
+                      <button
+                        type="button"
+                        onClick={() => setMakeOfferModalOpen(true)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 text-[11px] shrink-0 transition"
+                      >
+                        <Tag className="w-3 h-3" />
+                        <span>Make Offer</span>
+                      </button>
+                    )}
+
                     <button
-                      type="submit"
-                      disabled={!messageText.trim()}
-                      className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl transition shadow-sm"
+                      type="button"
+                      onClick={() => setMeetupModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 text-[11px] shrink-0 transition"
                     >
-                      <Send className="w-4 h-4" />
+                      <MapPin className="w-3 h-3 text-amber-600" />
+                      <span>Suggest Meetup Spot</span>
                     </button>
                   </div>
-                </form>
+
+                  <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 border border-slate-200">
+                      <input
+                        type="text"
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        placeholder={`Message ${otherUser?.name || 'user'} (agree on price, test item, coordinate meetup)...`}
+                        className="flex-1 bg-transparent border-none text-xs text-slate-800 px-3 py-1.5 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!messageText.trim()}
+                        className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl transition shadow-sm"
+                      >
+                        <Send className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+                </div>
               )}
             </>
           ) : (
@@ -736,6 +1155,228 @@ export default function ChatPage() {
           )}
         </section>
       </div>
+
+      {/* Make In-Chat Offer Modal */}
+      {makeOfferModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 border border-slate-100 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Tag className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-base font-black text-slate-900">Make a Price Offer</h3>
+              </div>
+              <button
+                onClick={() => setMakeOfferModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleMakeOffer} className="space-y-4">
+              <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Listing Price</span>
+                  <span className="text-base font-black text-slate-900">
+                    ₦{listingPrice.toLocaleString()} NGN
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                  Offers Welcome
+                </span>
+              </div>
+
+              {/* Quick % Discount Chips */}
+              {listingPrice > 0 && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1.5">
+                    Quick Preset Discounts
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[5, 10, 15].map((pct) => {
+                      const discountedVal = Math.round(listingPrice * (1 - pct / 100));
+                      return (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setOfferAmount(discountedVal.toString())}
+                          className="p-2 rounded-xl border border-slate-200 text-center hover:bg-indigo-50 hover:border-indigo-200 transition cursor-pointer"
+                        >
+                          <span className="block text-[10px] font-bold text-indigo-600">{pct}% Off</span>
+                          <span className="text-xs font-black text-slate-900">
+                            ₦{discountedVal.toLocaleString()}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Naira Amount */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Your Offer Amount (₦ NGN)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-sm font-bold text-slate-400">₦</span>
+                  <input
+                    type="number"
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                    placeholder="e.g. 150000"
+                    required
+                    min="1"
+                    className="w-full text-xs font-bold pl-8 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+              </div>
+
+              {/* Optional Note */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Optional Note to Seller
+                </label>
+                <input
+                  type="text"
+                  value={offerNote}
+                  onChange={(e) => setOfferNote(e.target.value)}
+                  placeholder="e.g. Ready to meet today at the mall with cash/transfer."
+                  className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMakeOfferModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={offerSubmitting || !offerAmount}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>{offerSubmitting ? 'Sending...' : 'Send Price Offer'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Counter Offer Modal */}
+      {counterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-slate-100 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-amber-500" />
+                <h3 className="text-base font-black text-slate-900">Propose Counter Offer</h3>
+              </div>
+              <button
+                onClick={() => setCounterModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCounterOfferSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Counter Amount (₦ NGN)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-2.5 text-sm font-bold text-slate-400">₦</span>
+                  <input
+                    type="number"
+                    value={counterAmount}
+                    onChange={(e) => setCounterAmount(e.target.value)}
+                    placeholder="e.g. 175000"
+                    required
+                    min="1"
+                    className="w-full text-xs font-bold pl-8 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCounterModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={counterSubmitting || !counterAmount}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-900 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>{counterSubmitting ? 'Proposing...' : 'Send Counter Offer'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Safe Meetup Spot Preset Modal */}
+      {meetupModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border border-slate-100 shadow-2xl relative">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-base font-black text-slate-900">Suggest Safe Public Meetup Spot</h3>
+              </div>
+              <button
+                onClick={() => setMeetupModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Pick a designated high-visibility location to suggest in the chat. Both parties can inspect goods safely.
+            </p>
+
+            <div className="space-y-2.5">
+              {safeMeetupPresets.map((preset, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSendMeetupProposal(preset)}
+                  disabled={meetupSubmitting}
+                  className="w-full text-left p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition cursor-pointer space-y-0.5"
+                >
+                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                    <span>{preset.name}</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500 block pl-5">{preset.desc}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setMeetupModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       <ConfirmModal

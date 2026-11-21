@@ -19,6 +19,27 @@ const messageSchema = new mongoose.Schema(
       trim: true,
       maxlength: [2000, 'Message cannot exceed 2000 characters'],
     },
+    messageType: {
+      type: String,
+      enum: ['text', 'offer', 'meetup_proposal', 'system'],
+      default: 'text',
+    },
+    offer: {
+      amount: { type: Number, default: 0 },
+      status: {
+        type: String,
+        enum: ['pending', 'accepted', 'declined', 'countered'],
+        default: 'pending',
+      },
+      counterAmount: { type: Number, default: 0 },
+      note: { type: String, default: '' },
+    },
+    meetup: {
+      spotName: { type: String, default: '' },
+      spotType: { type: String, default: '' },
+      address: { type: String, default: '' },
+      notes: { type: String, default: '' },
+    },
     readBy: [
       {
         type: mongoose.Schema.Types.ObjectId,

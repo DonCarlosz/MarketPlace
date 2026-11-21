@@ -18,6 +18,7 @@ import listingRoutes from './routes/listingRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,6 +89,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reports', reportRoutes);

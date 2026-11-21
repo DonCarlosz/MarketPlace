@@ -156,6 +156,8 @@ function AppContent() {
           <Route path="/create" element={<CreateListingPage />} />
           <Route path="/messages" element={<ChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/usr/:userId" element={<ProfilePage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/login" element={<AuthRouteRedirect view="login" />} />
           <Route path="/register" element={<AuthRouteRedirect view="register" />} />

@@ -139,8 +139,17 @@ export const getMessages = async (req, res, next) => {
 // @route   POST /api/chat/conversations/:id/messages
 export const sendMessage = async (req, res, next) => {
   try {
-    const { content } = req.body;
+    let { content, text, messageType = 'text', offer, meetup } = req.body;
+    content = content || text;
     const conversationId = req.params.id;
+
+    if (messageType === 'offer' && offer?.amount && (!content || !content.trim())) {
+      content = `🤝 Price Offer: ₦${Number(offer.amount).toLocaleString()}${
+        offer.note ? ` ("${offer.note.trim()}")` : ''
+      }`;
+    } else if (messageType === 'meetup_proposal' && meetup?.spotName && (!content || !content.trim())) {
+      content = `📍 Suggested Public Meetup: ${meetup.spotName}${meetup.address ? ` (${meetup.address})` : ''}`;
+    }
 
     if (!content || !content.trim()) {
       return res.status(400).json({ success: false, message: 'Message content cannot be empty' });
@@ -214,6 +223,9 @@ export const sendMessage = async (req, res, next) => {
       conversation: conversationId,
       sender: req.user._id,
       content: content.trim(),
+      messageType,
+      offer: messageType === 'offer' ? offer : undefined,
+      meetup: messageType === 'meetup_proposal' ? meetup : undefined,
       readBy: [req.user._id],
     });
 
@@ -369,6 +381,79 @@ export const getBlockedUsers = async (req, res, next) => {
     res.json({
       success: true,
       blockedUsers: user.blockedUsers || [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Accept, decline or counter an in-chat price offer
+// @route   PATCH /api/chat/messages/:id/offer
+export const respondToOffer = async (req, res, next) => {
+  try {
+    const { action, counterAmount } = req.body; // 'accept' | 'decline' | 'counter'
+    const messageId = req.params.id;
+
+    if (!['accept', 'decline', 'counter'].includes(action)) {
+      return res.status(400).json({ success: false, message: 'Invalid action' });
+    }
+
+    const message = await Message.findById(messageId);
+    if (!message || message.messageType !== 'offer') {
+      return res.status(404).json({ success: false, message: 'Offer message not found' });
+    }
+
+    const conversation = await Conversation.findById(message.conversation);
+    const isParticipant = conversation?.participants.some(
+      (p) => p.toString() === req.user._id.toString()
+    );
+    if (!isParticipant) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (action === 'accept') {
+      message.offer.status = 'accepted';
+    } else if (action === 'decline') {
+      message.offer.status = 'declined';
+    } else if (action === 'counter') {
+      message.offer.status = 'countered';
+      message.offer.counterAmount = Number(counterAmount) || 0;
+    }
+    await message.save();
+
+    const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatar');
+
+    // Create a system message in chat
+    const actionText =
+      action === 'accept'
+        ? `🎉 Offer of ₦${Number(message.offer.amount).toLocaleString()} was accepted!`
+        : action === 'counter'
+        ? `🔄 Counter-offer of ₦${Number(counterAmount).toLocaleString()} proposed.`
+        : `❌ Offer of ₦${Number(message.offer.amount).toLocaleString()} was declined.`;
+
+    const systemMsg = await Message.create({
+      conversation: conversation._id,
+      sender: req.user._id,
+      content: actionText,
+      messageType: 'system',
+      readBy: [req.user._id],
+    });
+    const populatedSystemMsg = await Message.findById(systemMsg._id).populate('sender', 'name avatar');
+
+    conversation.lastMessage = systemMsg._id;
+    conversation.lastMessageAt = new Date();
+    await conversation.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`conv_${conversation._id}`).emit('offer_updated', populatedMessage);
+      io.to(`conv_${conversation._id}`).emit('receive_message', populatedSystemMsg);
+    }
+
+    res.json({
+      success: true,
+      message: populatedMessage,
+      systemMessage: populatedSystemMsg,
     });
   } catch (error) {
     next(error);

@@ -29,6 +29,7 @@ import {
   Shield,
   ArrowRight,
   Send,
+  ExternalLink,
 } from 'lucide-react';
 
 // Global in-memory cache for instant zero-wait listing recall
@@ -41,11 +42,15 @@ export default function ListingDetailPage() {
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const cachedItem = id ? listingDetailCache.get(id) : null;
+  const currentUserId = (user?._id || user?.id)?.toString();
 
   // Synchronous initialization prevents full-page flash when revisiting a listing
   const [listing, setListing] = useState(() => cachedItem?.listing || null);
   const [relatedListings, setRelatedListings] = useState(() => cachedItem?.related || []);
   const [loading, setLoading] = useState(() => !cachedItem);
+
+  const sellerId = (listing?.seller?._id || listing?.seller?.id || listing?.seller)?.toString();
+  const isOwnListing = Boolean(currentUserId && sellerId && currentUserId === sellerId);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Zoom / Fullscreen lightbox modal
@@ -177,7 +182,12 @@ export default function ListingDetailPage() {
         } for "${listing.title}". Let me know if that works for you!`;
 
         await API.post(`/chat/conversations/${conversationId}/messages`, {
-          text: messageText,
+          messageType: 'offer',
+          offer: {
+            amount: Number(offerAmount),
+            note: offerNote.trim(),
+          },
+          content: messageText,
         });
 
         setOfferSuccess(true);
@@ -538,23 +548,29 @@ export default function ListingDetailPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-base flex items-center justify-center border border-indigo-200 shrink-0">
+                <Link
+                  to={sellerId ? `/profile/${sellerId}` : '#'}
+                  className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-base flex items-center justify-center border border-indigo-200 shrink-0 overflow-hidden hover:opacity-90 transition"
+                >
                   {listing.seller?.avatar ? (
                     <img
                       src={listing.seller.avatar}
                       alt={listing.seller.name}
-                      className="w-full h-full rounded-2xl object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     listing.seller?.name?.charAt(0).toUpperCase() || 'U'
                   )}
-                </div>
+                </Link>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <h5 className="font-bold text-slate-900 text-sm truncate">
+                    <Link
+                      to={sellerId ? `/profile/${sellerId}` : '#'}
+                      className="font-bold text-slate-900 text-sm truncate hover:text-indigo-600 transition"
+                    >
                       {listing.seller?.name || 'Local User'}
-                    </h5>
+                    </Link>
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" title="Verified Member" />
                   </div>
                   <p className="text-xs text-slate-500 truncate">
@@ -586,6 +602,16 @@ export default function ListingDetailPage() {
                 <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 italic">
                   "{listing.seller.bio}"
                 </p>
+              )}
+
+              {sellerId && (
+                <Link
+                  to={`/profile/${sellerId}`}
+                  className="flex items-center justify-center gap-1.5 w-full text-center text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/80 py-2.5 rounded-xl border border-indigo-200/60 transition"
+                >
+                  <span>View Seller Profile & Scorecard</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </Link>
               )}
             </div>
 
