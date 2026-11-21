@@ -930,8 +930,12 @@ export default function ProfilePage() {
  >
  <div className="flex items-start justify-between gap-3">
  <div className="flex items-center gap-2.5">
- <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100 shrink-0">
- {rev.buyer?.name?.charAt(0).toUpperCase() || 'B'}
+ <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100 shrink-0 overflow-hidden">
+ {rev.buyer?.avatar ? (
+ <img src={rev.buyer.avatar} alt={rev.buyer?.name} className="w-full h-full object-cover" />
+ ) : (
+ rev.buyer?.name?.charAt(0).toUpperCase() || 'B'
+ )}
  </div>
  <div>
  <div className="flex items-center gap-1.5">

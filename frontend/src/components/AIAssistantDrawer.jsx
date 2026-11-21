@@ -94,8 +94,8 @@ export default function AIAssistantDrawer() {
       if (isDraggingRef.current) {
         if (moveEvt.cancelable) moveEvt.preventDefault();
 
-        const btnWidth = launcherRef.current?.offsetWidth || 160;
-        const btnHeight = launcherRef.current?.offsetHeight || 44;
+        const btnWidth = launcherRef.current?.offsetWidth || 52;
+        const btnHeight = launcherRef.current?.offsetHeight || 52;
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
 
@@ -286,15 +286,12 @@ export default function AIAssistantDrawer() {
           <button
             type="button"
             onClick={handleLauncherClick}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs border border-indigo-500 transition-all cursor-pointer group shadow-none"
-            title="Drag to reposition across the screen or click to ask AI"
+            aria-label="Ask LocalMarket AI"
+            className="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 transition-all cursor-pointer flex items-center justify-center relative group active:scale-95 shadow-none"
+            title="Ask LocalMarket AI (drag anywhere to move)"
           >
-            <GripVertical className="w-3.5 h-3.5 text-indigo-300 opacity-60 group-hover:opacity-100 shrink-0" />
-            <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            </div>
-            <span>Ask LocalMarket AI</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <Sparkles className="w-5 h-5 text-amber-300 transition-transform group-hover:scale-110" />
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-indigo-600" />
           </button>
         </div>
       )}

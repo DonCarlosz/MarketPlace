@@ -11,7 +11,7 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 export const sendOtpEmail = async ({ toEmail, toName = 'Member', otp, purpose = 'signup' }) => {
   const BREVO_API_KEY = process.env.BREVO_API_KEY;
   const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'denrichy111@gmail.com';
-  const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'LocalMarket';
+  const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'MarketPlace';
   const isForgotPassword = purpose === 'forgot_password';
 
   const subject = isForgotPassword
@@ -86,7 +86,7 @@ LocalMarket - Safe, direct neighborhood buying & selling
   const payload = {
     sender: { name: SENDER_NAME, email: SENDER_EMAIL },
     to: [{ email: toEmail, name: toName }],
-    replyTo: { email: 'akhuemokhanisaiah@gmail.com', name: 'LocalMarket Support' },
+    replyTo: { email: SENDER_EMAIL, name: SENDER_NAME },
     subject,
     textContent,
     htmlContent,

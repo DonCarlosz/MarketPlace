@@ -713,8 +713,12 @@ export default function ChatPage() {
  isSelected ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50'
  }`}
  >
- <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200">
- {partner?.name?.charAt(0).toUpperCase() || 'U'}
+ <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200 overflow-hidden">
+ {partner?.avatar ? (
+ <img src={partner.avatar} alt={partner?.name} className="w-full h-full object-cover" />
+ ) : (
+ partner?.name?.charAt(0).toUpperCase() || 'U'
+ )}
  </div>
 
  <div className="flex-1 min-w-0">
