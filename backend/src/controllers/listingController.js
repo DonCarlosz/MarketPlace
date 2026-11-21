@@ -1,5 +1,6 @@
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import Review from '../models/Review.js';
 import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo.js';
 
 // @desc    Get all listings with filtering, search, and radius/proximity support
@@ -134,7 +135,7 @@ export const getListingById = async (req, res, next) => {
   try {
     const listing = await Listing.findById(req.params.id).populate(
       'seller',
-      'name email avatar location isVerified createdAt bio'
+      'name email avatar location isVerified createdAt bio feedbackScore detailedRatings'
     );
 
     if (!listing) {
@@ -145,12 +146,41 @@ export const getListingById = async (req, res, next) => {
     }
 
     // Increment views asynchronously
-    listing.views += 1;
+    listing.views = (listing.views || 0) + 1;
     await listing.save();
+
+    // Calculate real live metrics for seller
+    const sellerId = listing.seller?._id || listing.seller;
+    const [itemsSoldCount, totalReviews, allReviews, activeListingsCount] = await Promise.all([
+      Listing.countDocuments({ seller: sellerId, status: { $in: ['sold', 'completed'] } }),
+      Review.countDocuments({ seller: sellerId }),
+      Review.find({ seller: sellerId }).select('stars ratingType itemAccuracy communication punctuality'),
+      Listing.countDocuments({ seller: sellerId, status: 'active' }),
+    ]);
+
+    let positiveCount = 0;
+    let sumStars = 0;
+    allReviews.forEach((r) => {
+      sumStars += r.stars || 5;
+      if (r.ratingType === 'positive' || (r.stars || 5) >= 4) positiveCount++;
+    });
+
+    const averageRating = totalReviews > 0 ? Number((sumStars / totalReviews).toFixed(1)) : 5.0;
+    const positivePercentage =
+      totalReviews > 0 ? Math.round((positiveCount / totalReviews) * 100) : 100;
 
     res.json({
       success: true,
       listing,
+      sellerStats: {
+        itemsSoldCount,
+        totalReviews,
+        averageRating,
+        positivePercentage,
+        activeListingsCount,
+        hasReviews: totalReviews > 0,
+        responseBadge: 'Replies fast',
+      },
     });
   } catch (error) {
     next(error);
@@ -376,10 +406,28 @@ export const toggleFavorite = async (req, res, next) => {
     }
 
     const isFav = user.favorites.some((fav) => fav.toString() === listingId);
+    let updatedFavoritesCount = 0;
+
     if (isFav) {
       user.favorites = user.favorites.filter((fav) => fav.toString() !== listingId);
+      const updatedListing = await Listing.findByIdAndUpdate(
+        listingId,
+        { $inc: { favoritesCount: -1 } },
+        { new: true }
+      );
+      if (updatedListing && updatedListing.favoritesCount < 0) {
+        updatedListing.favoritesCount = 0;
+        await updatedListing.save();
+      }
+      updatedFavoritesCount = updatedListing?.favoritesCount || 0;
     } else {
       user.favorites.push(listingId);
+      const updatedListing = await Listing.findByIdAndUpdate(
+        listingId,
+        { $inc: { favoritesCount: 1 } },
+        { new: true }
+      );
+      updatedFavoritesCount = updatedListing?.favoritesCount || 1;
     }
 
     await user.save();
@@ -388,6 +436,7 @@ export const toggleFavorite = async (req, res, next) => {
       success: true,
       isFavorite: !isFav,
       favorites: user.favorites,
+      favoritesCount: updatedFavoritesCount,
     });
   } catch (error) {
     next(error);

@@ -11,7 +11,7 @@ export const getConversations = async (req, res, next) => {
       participants: req.user._id,
     })
       .populate('participants', 'name avatar location isVerified')
-      .populate('listing', 'title price mode images status location')
+      .populate('listing', 'title price mode images status location preferredMeetup seller')
       .populate('lastMessage')
       .populate('initiator', 'name avatar')
       .populate('receiver', 'name avatar')
@@ -72,7 +72,7 @@ export const createOrGetConversation = async (req, res, next) => {
       participants: { $all: [req.user._id, listing.seller] },
     })
       .populate('participants', 'name avatar location isVerified')
-      .populate('listing', 'title price mode images status location preferredMeetup')
+      .populate('listing', 'title price mode images status location preferredMeetup seller')
       .populate('lastMessage')
       .populate('initiator', 'name avatar')
       .populate('receiver', 'name avatar');
@@ -89,7 +89,7 @@ export const createOrGetConversation = async (req, res, next) => {
 
       conversation = await Conversation.findById(conversation._id)
         .populate('participants', 'name avatar location isVerified')
-        .populate('listing', 'title price mode images status location preferredMeetup')
+        .populate('listing', 'title price mode images status location preferredMeetup seller')
         .populate('initiator', 'name avatar')
         .populate('receiver', 'name avatar');
     }
@@ -107,14 +107,19 @@ export const createOrGetConversation = async (req, res, next) => {
 // @route   GET /api/chat/conversations/:id/messages
 export const getMessages = async (req, res, next) => {
   try {
-    const conversation = await Conversation.findById(req.params.id);
+    const conversation = await Conversation.findById(req.params.id)
+      .populate('participants', 'name avatar location isVerified')
+      .populate('listing', 'title price mode images status location preferredMeetup seller')
+      .populate('lastMessage')
+      .populate('initiator', 'name avatar')
+      .populate('receiver', 'name avatar');
 
     if (!conversation) {
       return res.status(404).json({ success: false, message: 'Conversation not found' });
     }
 
     const isParticipant = conversation.participants.some(
-      (p) => p.toString() === req.user._id.toString()
+      (p) => (p._id || p).toString() === req.user._id.toString()
     );
 
     if (!isParticipant) {

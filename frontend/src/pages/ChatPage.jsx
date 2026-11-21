@@ -28,6 +28,11 @@ import {
   Store,
   Shield,
   HelpCircle,
+  CheckCircle,
+  Star,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
 } from 'lucide-react';
 
 export default function ChatPage() {
@@ -62,6 +67,16 @@ export default function ChatPage() {
   // Safe Meetup Spot Preset Modal State
   const [meetupModalOpen, setMeetupModalOpen] = useState(false);
   const [meetupSubmitting, setMeetupSubmitting] = useState(false);
+
+  // Leave Feedback / Review Modal State (In-Chat)
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [reviewType, setReviewType] = useState('positive');
+  const [reviewStars, setReviewStars] = useState(5);
+  const [reviewAccuracy, setReviewAccuracy] = useState(5);
+  const [reviewCommunication, setReviewCommunication] = useState(5);
+  const [reviewPunctuality, setReviewPunctuality] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   // Confirm Modal State
   const [confirmModalConfig, setConfirmModalConfig] = useState({
@@ -217,7 +232,9 @@ export default function ChatPage() {
   const isListingSeller =
     activeConversation?.listing?.seller?.toString() === currentUserId ||
     (activeConversation?.listing?.seller?._id &&
-      activeConversation.listing.seller._id.toString() === currentUserId);
+      activeConversation.listing.seller._id.toString() === currentUserId) ||
+    ((activeConversation?.receiver?._id || activeConversation?.receiver)?.toString() === currentUserId &&
+      (activeConversation?.initiator?._id || activeConversation?.initiator)?.toString() !== currentUserId);
 
   // TikTok Message Request Logic
   const isPending = activeConversation?.status === 'pending';
@@ -388,6 +405,58 @@ export default function ChatPage() {
       alert(err.response?.data?.message || 'Failed to send counter offer.');
     } finally {
       setCounterSubmitting(false);
+    }
+  };
+
+  // Mark Listing as Sold (Seller live deal completion)
+  const handleMarkListingSold = async (listingId) => {
+    if (!listingId) return;
+    try {
+      const res = await API.patch(`/listings/${listingId}/status`, { status: 'sold' });
+      if (res.data?.success) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c._id === activeConvId
+              ? { ...c, listing: { ...c.listing, status: 'sold' } }
+              : c
+          )
+        );
+        alert('Listing has been marked as sold! Your completed deals counter has been updated.');
+      }
+    } catch {
+      alert('Failed to update listing status');
+    }
+  };
+
+  // Submit In-Chat Seller Feedback (Buyer live review submission)
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!reviewComment.trim() || !otherUserId) {
+      alert('Please provide feedback comments.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      const res = await API.post(`/users/${otherUserId}/reviews`, {
+        listingId: activeConversation?.listing?._id,
+        ratingType: reviewType,
+        stars: reviewStars,
+        itemAccuracy: reviewAccuracy,
+        communication: reviewCommunication,
+        punctuality: reviewPunctuality,
+        comment: reviewComment.trim(),
+      });
+
+      if (res.data?.success) {
+        alert('Feedback submitted successfully! The seller score and 12-month scorecard have been updated.');
+        setReviewModalOpen(false);
+        setReviewComment('');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to submit feedback.');
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -946,11 +1015,40 @@ export default function ChatPage() {
                               </div>
                             )}
 
-                            {/* Accepted Banner */}
+                            {/* Accepted Banner & Deal Actions */}
                             {offerStatus === 'accepted' && (
-                              <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
-                                <span>Deal agreed! Pick a safe public meetup spot below.</span>
+                              <div className="space-y-2 pt-1">
+                                <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                                  <span>Deal agreed! Pick a safe public meetup spot below.</span>
+                                </div>
+
+                                {isListingSeller ? (
+                                  activeConversation?.listing?.status === 'sold' ? (
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/30 border border-emerald-400/50 text-[11px] font-bold text-emerald-200">
+                                      <CheckCircle className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                                      <span>Listing Marked as Sold (Deal Completed)</span>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkListingSold(activeConversation?.listing?._id)}
+                                      className="w-full py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                    >
+                                      <CheckCircle className="w-3.5 h-3.5" />
+                                      <span>Mark Listing as Sold</span>
+                                    </button>
+                                  )
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setReviewModalOpen(true)}
+                                    className="w-full py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                                    <span>Leave Seller Feedback</span>
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1374,6 +1472,188 @@ export default function ChatPage() {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Seller Feedback Modal */}
+      {reviewModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                <h3 className="text-base font-black text-slate-900">Leave Seller Feedback</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReviewModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Share your honest experience with {otherUser?.name || 'the seller'}. This directly updates their public reputation score and 12-month scorecard.
+            </p>
+
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              {/* Overall Experience Type */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Overall Rating</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReviewType('positive')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      reviewType === 'positive'
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span>Positive</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewType('neutral')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      reviewType === 'neutral'
+                        ? 'border-amber-500 bg-amber-50 text-amber-700'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                    <span>Neutral</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReviewType('negative')}
+                    className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                      reviewType === 'negative'
+                        ? 'border-rose-500 bg-rose-50 text-rose-700'
+                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <ThumbsDown className="w-3.5 h-3.5" />
+                    <span>Negative</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Star Rating */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Star Rating ({reviewStars} / 5)</label>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4, 5].map((starVal) => (
+                    <button
+                      key={starVal}
+                      type="button"
+                      onClick={() => setReviewStars(starVal)}
+                      className="p-1 cursor-pointer transition hover:scale-110"
+                    >
+                      <Star
+                        className={`w-6 h-6 ${
+                          starVal <= reviewStars
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-200'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Detailed Breakdown */}
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                  Detailed Criteria
+                </span>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-700 font-medium">Item Description Accuracy</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setReviewAccuracy(s)}
+                        className={`w-5 h-5 rounded text-[10px] font-bold ${
+                          s <= reviewAccuracy ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-700 font-medium">Communication</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setReviewCommunication(s)}
+                        className={`w-5 h-5 rounded text-[10px] font-bold ${
+                          s <= reviewCommunication ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-700 font-medium">Punctuality</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setReviewPunctuality(s)}
+                        className={`w-5 h-5 rounded text-[10px] font-bold ${
+                          s <= reviewPunctuality ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Comments Textarea */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Detailed Feedback</label>
+                <textarea
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  placeholder="Describe the transaction, punctuality, and item condition..."
+                  rows={3}
+                  required
+                  className="w-full text-xs rounded-2xl border border-slate-200 p-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReviewModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={reviewSubmitting || !reviewComment.trim()}
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm disabled:opacity-50 cursor-pointer"
+                >
+                  {reviewSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

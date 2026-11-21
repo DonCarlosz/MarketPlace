@@ -47,6 +47,7 @@ export default function ListingDetailPage() {
   // Synchronous initialization prevents full-page flash when revisiting a listing
   const [listing, setListing] = useState(() => cachedItem?.listing || null);
   const [relatedListings, setRelatedListings] = useState(() => cachedItem?.related || []);
+  const [sellerStats, setSellerStats] = useState(() => cachedItem?.sellerStats || null);
   const [loading, setLoading] = useState(() => !cachedItem);
 
   const sellerId = (listing?.seller?._id || listing?.seller?.id || listing?.seller)?.toString();
@@ -75,6 +76,7 @@ export default function ListingDetailPage() {
     if (cached) {
       setListing(cached.listing);
       setRelatedListings(cached.related || []);
+      setSellerStats(cached.sellerStats || null);
       setLoading(false);
     } else {
       setLoading(true);
@@ -85,7 +87,9 @@ export default function ListingDetailPage() {
         const res = await API.get(`/listings/${id}`);
         if (res.data?.success) {
           const fetchedListing = res.data.listing;
+          const fetchedStats = res.data.sellerStats || null;
           setListing(fetchedListing);
+          setSellerStats(fetchedStats);
 
           // Fetch related listings
           let related = [];
@@ -107,7 +111,7 @@ export default function ListingDetailPage() {
             // Ignore related fetch failure
           }
 
-          listingDetailCache.set(id, { listing: fetchedListing, related });
+          listingDetailCache.set(id, { listing: fetchedListing, related, sellerStats: fetchedStats });
         }
       } catch (err) {
         console.error('Error fetching listing details:', err);
@@ -456,10 +460,16 @@ export default function ListingDetailPage() {
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
               {/* Urgency & Social Proof Ribbons */}
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>{listing.views || 18} viewed recently</span>
+                <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                  <Eye className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{(listing.views || 1).toLocaleString()} {listing.views === 1 ? 'view' : 'views'}</span>
                 </span>
+                {listing.favoritesCount > 0 && (
+                  <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                    <span>{listing.favoritesCount} watching</span>
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-[11px] font-medium">
                   <Clock className="w-3 h-3 text-slate-400" />
                   <span>Posted {new Date(listing.createdAt).toLocaleDateString()}</span>
@@ -543,7 +553,11 @@ export default function ListingDetailPage() {
                 </h4>
                 <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
                   <ThumbsUp className="w-3 h-3" />
-                  <span>99.4% Positive</span>
+                  <span>
+                    {sellerStats?.hasReviews
+                      ? `${sellerStats.positivePercentage}% Positive`
+                      : 'Verified Member'}
+                  </span>
                 </div>
               </div>
 
@@ -579,22 +593,30 @@ export default function ListingDetailPage() {
                 </div>
               </div>
 
-              {/* 3-Point Seller Metrics */}
+              {/* 3-Point Seller Metrics (Fully Backend-Driven) */}
               <div className="grid grid-cols-3 gap-2 pt-1 text-center border-t border-slate-100">
                 <div className="p-2 bg-slate-50 rounded-xl">
                   <span className="text-[10px] text-slate-400 block font-medium">Rating</span>
                   <div className="inline-flex items-center gap-0.5 text-xs font-bold text-amber-600">
                     <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                    <span>4.9</span>
+                    <span>
+                      {sellerStats?.hasReviews
+                        ? `${sellerStats.averageRating.toFixed(1)}`
+                        : 'New'}
+                    </span>
                   </div>
                 </div>
                 <div className="p-2 bg-slate-50 rounded-xl">
                   <span className="text-[10px] text-slate-400 block font-medium">Deals</span>
-                  <span className="text-xs font-bold text-slate-800">24+ Sold</span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {sellerStats ? `${sellerStats.itemsSoldCount} Sold` : '0 Sold'}
+                  </span>
                 </div>
                 <div className="p-2 bg-slate-50 rounded-xl">
                   <span className="text-[10px] text-slate-400 block font-medium">Response</span>
-                  <span className="text-xs font-bold text-indigo-700">~15 mins</span>
+                  <span className="text-xs font-bold text-indigo-700">
+                    {sellerStats?.responseBadge || 'Replies fast'}
+                  </span>
                 </div>
               </div>
 

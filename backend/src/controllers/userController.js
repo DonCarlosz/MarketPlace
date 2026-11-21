@@ -72,11 +72,17 @@ export const getUserProfile = async (req, res, next) => {
       punctuality: totalReviews > 0 ? Number((totalPunctuality / totalReviews).toFixed(1)) : 5.0,
     };
 
-    // Count active listings
-    const activeListingsCount = await Listing.countDocuments({
-      seller: user._id,
-      status: 'active',
-    });
+    // Count active and completed listings
+    const [activeListingsCount, itemsSoldCount] = await Promise.all([
+      Listing.countDocuments({
+        seller: user._id,
+        status: 'active',
+      }),
+      Listing.countDocuments({
+        seller: user._id,
+        status: { $in: ['sold', 'completed'] },
+      }),
+    ]);
 
     res.json({
       success: true,
@@ -91,6 +97,7 @@ export const getUserProfile = async (req, res, next) => {
         verifiedPhone: user.verifiedPhone ?? false,
         createdAt: user.createdAt,
         activeListingsCount,
+        itemsSoldCount,
       },
       reputation: {
         scorecardMatrix: matrix,
@@ -100,6 +107,7 @@ export const getUserProfile = async (req, res, next) => {
         neutralCount,
         negativeCount,
         detailedRatings,
+        itemsSoldCount,
       },
     });
   } catch (error) {
