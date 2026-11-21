@@ -36,6 +36,7 @@ import {
  Compass,
  Loader2,
  Search,
+ ShieldAlert,
 } from 'lucide-react';
 
 export default function ChatPage() {
@@ -84,6 +85,9 @@ export default function ChatPage() {
  const [reviewPunctuality, setReviewPunctuality] = useState(5);
  const [reviewComment, setReviewComment] = useState('');
  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
+ // AI Deal Safety Checklist Modal State
+ const [aiSafetyModalOpen, setAiSafetyModalOpen] = useState(false);
 
  // Confirm Modal State
  const [confirmModalConfig, setConfirmModalConfig] = useState({
@@ -908,21 +912,31 @@ export default function ChatPage() {
  </div>
 
  {/* Safety notice banner */}
- <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 shrink-0">
+ <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 shrink-0 flex-wrap gap-2">
  <div className="flex items-center gap-2">
  <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
  <span>
  <strong>Safety Rule:</strong> Inspect item in person at a busy public spot before making payment.
  </span>
  </div>
+ <div className="flex items-center gap-3">
+ <button
+ type="button"
+ onClick={() => setAiSafetyModalOpen(true)}
+ className="font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 cursor-pointer"
+ >
+ <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+ <span>AI Inspection Tips</span>
+ </button>
  <button
  type="button"
  onClick={() => setMeetupModalOpen(true)}
  className="font-bold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
  >
- <MapPin className="w-3 h-3 text-amber-600" />
+ <MapPin className="w-3.5 h-3.5 text-amber-600" />
  <span>Pick Safe Spot</span>
  </button>
+ </div>
  </div>
 
  {/* TikTok-style Request Status Alert */}
@@ -1025,6 +1039,21 @@ export default function ChatPage() {
  <span className="text-base font-black text-amber-300">
  ₦{counterVal.toLocaleString()} NGN
  </span>
+ </div>
+ )}
+
+ {/* AI Negotiation Coach Insight */}
+ {offerStatus === 'pending' && (activeConversation?.listing?.price || 0) > 0 && (
+ <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-xs space-y-1">
+ <div className="flex items-center gap-1.5 font-bold text-amber-300">
+ <Sparkles className="w-3.5 h-3.5" />
+ <span>AI Negotiation Coach</span>
+ </div>
+ <p className="text-[11px] opacity-90 leading-snug">
+ {Math.round((((activeConversation.listing.price - offerVal) / activeConversation.listing.price) * 100)) > 0
+ ? `This offer is ${Math.round((((activeConversation.listing.price - offerVal) / activeConversation.listing.price) * 100))}% below the asking price of ₦${activeConversation.listing.price.toLocaleString()}. Recommended counter is around ₦${Math.round(activeConversation.listing.price * 0.92).toLocaleString()}.`
+ : `This offer meets or exceeds the asking price! Confirm the safe meeting spot for physical inspection.`}
+ </p>
  </div>
  )}
 
@@ -1226,6 +1255,13 @@ export default function ChatPage() {
  }
 
  // 4. Standard Text Bubble
+ const isSuspicious =
+ !isMe &&
+ msg.content &&
+ /(?:send|wire|pay|transfer)\s+(?:transport|delivery|fare|advance|commitment|deposit)|pay\s+before\s+seeing|chat\s+on\s+whatsapp\s+only|take\s+this\s+offline|fake\s+alert|credited\s+your\s+account|release\s+the\s+item/i.test(
+ msg.content
+ );
+
  return (
  <div
  key={msg._id || i}
@@ -1240,6 +1276,19 @@ export default function ChatPage() {
  >
  {msg.content}
  </div>
+
+ {isSuspicious && (
+ <div className="mt-1.5 max-w-[85%] p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] flex items-start gap-2">
+ <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+ <div className="space-y-0.5 leading-snug">
+ <span className="font-bold block">Safety Alert: Potential High-Risk Request</span>
+ <span>
+ Counterparty may have requested advance payment, transport money, or off-platform contact. LocalMarket strongly advises meeting in a public spot and physically inspecting items before sending any money.
+ </span>
+ </div>
+ </div>
+ )}
+
  <span className="text-[10px] text-slate-400 mt-1 px-1">
  {msg.createdAt
  ? new Date(msg.createdAt).toLocaleTimeString([], {
@@ -1918,6 +1967,129 @@ export default function ChatPage() {
  </button>
  </div>
  </form>
+ </div>
+ </div>
+ )}
+
+ {/* AI Deal Safety Checklist Modal */}
+ {aiSafetyModalOpen && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+ <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 relative shadow-none">
+ <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ <div className="flex items-center gap-2.5">
+ <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+ <Sparkles className="w-4 h-4 text-amber-300" />
+ </div>
+ <div>
+ <h3 className="font-black text-slate-900 text-sm">AI Deal Safety & Inspection Checklist</h3>
+ <p className="text-[11px] text-slate-500">
+ Smart precautions tailored to this {activeConversation?.listing?.category || 'item'}
+ </p>
+ </div>
+ </div>
+ <button
+ type="button"
+ onClick={() => setAiSafetyModalOpen(false)}
+ className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+ >
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+
+ <div className="space-y-3.5 text-xs">
+ <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between text-indigo-950">
+ <div className="truncate">
+ <span className="font-bold block truncate">{activeConversation?.listing?.title || 'Item'}</span>
+ <span className="text-[11px] text-indigo-700">
+ Asking Price: {formatPrice(activeConversation?.listing?.price)} • {activeConversation?.listing?.location?.city || 'Nigeria'}
+ </span>
+ </div>
+ <span className="px-2.5 py-1 rounded-full bg-white text-indigo-700 font-bold text-[10px] border border-indigo-200 shrink-0 ml-2">
+ {activeConversation?.listing?.mode === 'service' ? 'Local Service' : 'Physical Good'}
+ </span>
+ </div>
+
+ <div className="space-y-2">
+ <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+ Physical Verification Steps Before Paying
+ </span>
+
+ <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+ {activeConversation?.listing?.category?.toLowerCase().includes('phone') ||
+ activeConversation?.listing?.category?.toLowerCase().includes('computer') ||
+ activeConversation?.listing?.category?.toLowerCase().includes('tech') ? (
+ <>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>IMEI & System Reset:</strong> Dial *#06# to verify matching IMEI; confirm iCloud / Google account is fully signed out.</span>
+ </div>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Hardware Tests:</strong> Test all touch corners, cameras, speakers, Wi-Fi connectivity, and charging port.</span>
+ </div>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Battery Health:</strong> Inspect battery health in system settings and ensure device does not overheat.</span>
+ </div>
+ </>
+ ) : activeConversation?.listing?.category?.toLowerCase().includes('appliance') ||
+ activeConversation?.listing?.category?.toLowerCase().includes('electronic') ? (
+ <>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Live Power Test:</strong> Power on the device in the presence of the seller. For TVs, check panel for lines or dead pixels.</span>
+ </div>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Coil & Engine (Generators):</strong> Inspect copper coil winding color, check oil level, and test cold start under load.</span>
+ </div>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Loading Access:</strong> Ensure meeting spot has car pull-up access for safe vehicle loading.</span>
+ </div>
+ </>
+ ) : (
+ <>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Inspection in Daylight:</strong> Test and verify all functions, zippers, materials, and accessories in daylight.</span>
+ </div>
+ <div className="flex items-start gap-2">
+ <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+ <span><strong>Milestones (Services):</strong> Agree on milestone deliverables before physical work starts; never pay full amount upfront.</span>
+ </div>
+ </>
+ )}
+
+ <div className="flex items-start gap-2 pt-1 border-t border-slate-200">
+ <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+ <span><strong>Bank Payment Safety:</strong> Verify bank transfer balance directly inside your official banking app. Never rely on SMS notifications alone.</span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div className="flex items-center justify-between pt-2">
+ <button
+ type="button"
+ onClick={() => {
+ setAiSafetyModalOpen(false);
+ setMeetupModalOpen(true);
+ }}
+ className="text-xs font-bold text-indigo-700 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+ >
+ <MapPin className="w-3.5 h-3.5" />
+ <span>Suggest Safe Spot</span>
+ </button>
+
+ <button
+ type="button"
+ onClick={() => setAiSafetyModalOpen(false)}
+ className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer"
+ >
+ Got It
+ </button>
+ </div>
  </div>
  </div>
  )}

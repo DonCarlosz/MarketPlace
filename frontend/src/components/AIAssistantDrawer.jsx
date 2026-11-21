@@ -19,6 +19,7 @@ import {
   Tag,
   ArrowRight,
   RotateCcw,
+  GripVertical,
 } from 'lucide-react';
 
 const SUGGESTED_PROMPTS = [
@@ -45,6 +46,101 @@ export default function AIAssistantDrawer() {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Draggable Floating Launcher Position State
+  const [btnPos, setBtnPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('localmarket_ai_btn_pos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.left === 'number' && typeof parsed.top === 'number') {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ startX: 0, startY: 0, initialLeft: 0, initialTop: 0 });
+  const launcherRef = useRef(null);
+
+  const handlePointerDown = (e) => {
+    if (e.button && e.button !== 0) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const rect = launcherRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    isDraggingRef.current = false;
+    dragStartRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initialLeft: rect.left,
+      initialTop: rect.top,
+    };
+
+    const handlePointerMove = (moveEvt) => {
+      const curX = moveEvt.touches ? moveEvt.touches[0].clientX : moveEvt.clientX;
+      const curY = moveEvt.touches ? moveEvt.touches[0].clientY : moveEvt.clientY;
+      const deltaX = curX - dragStartRef.current.startX;
+      const deltaY = curY - dragStartRef.current.startY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        isDraggingRef.current = true;
+      }
+
+      if (isDraggingRef.current) {
+        if (moveEvt.cancelable) moveEvt.preventDefault();
+
+        const btnWidth = launcherRef.current?.offsetWidth || 160;
+        const btnHeight = launcherRef.current?.offsetHeight || 44;
+        const winWidth = window.innerWidth;
+        const winHeight = window.innerHeight;
+
+        let newLeft = dragStartRef.current.initialLeft + deltaX;
+        let newTop = dragStartRef.current.initialTop + deltaY;
+
+        newLeft = Math.max(8, Math.min(newLeft, winWidth - btnWidth - 8));
+        newTop = Math.max(8, Math.min(newTop, winHeight - btnHeight - 8));
+
+        setBtnPos({ left: newLeft, top: newTop });
+      }
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mouseup', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('touchend', handlePointerUp);
+
+      if (isDraggingRef.current) {
+        setBtnPos((current) => {
+          if (current) {
+            try {
+              localStorage.setItem('localmarket_ai_btn_pos', JSON.stringify(current));
+            } catch {}
+          }
+          return current;
+        });
+      }
+    };
+
+    window.addEventListener('mousemove', handlePointerMove, { passive: false });
+    window.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('touchend', handlePointerUp);
+  };
+
+  const handleLauncherClick = (e) => {
+    if (isDraggingRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    setIsOpen(true);
+  };
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -170,18 +266,35 @@ export default function AIAssistantDrawer() {
 
   return (
     <>
-      {/* Floating Pill Launcher */}
+      {/* Draggable Floating Pill Launcher */}
       {!isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40">
+        <div
+          ref={launcherRef}
+          onMouseDown={handlePointerDown}
+          onTouchStart={handlePointerDown}
+          style={
+            btnPos
+              ? { position: 'fixed', left: `${btnPos.left}px`, top: `${btnPos.top}px`, zIndex: 40 }
+              : undefined
+          }
+          className={
+            btnPos
+              ? 'select-none touch-none cursor-grab active:cursor-grabbing'
+              : 'fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 select-none touch-none cursor-grab active:cursor-grabbing'
+          }
+        >
           <button
-            onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs border border-indigo-500 transition-all cursor-pointer group"
+            type="button"
+            onClick={handleLauncherClick}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs border border-indigo-500 transition-all cursor-pointer group shadow-none"
+            title="Drag to reposition across the screen or click to ask AI"
           >
+            <GripVertical className="w-3.5 h-3.5 text-indigo-300 opacity-60 group-hover:opacity-100 shrink-0" />
             <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             </div>
             <span>Ask LocalMarket AI</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
           </button>
         </div>
       )}

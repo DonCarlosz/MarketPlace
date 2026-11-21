@@ -145,6 +145,162 @@ const NIGERIAN_SAFE_HUBS = {
       lng: 7.0398,
     },
   ],
+  uromi: [
+    {
+      name: 'Uromi Main Market Commercial Bank Plaza',
+      address: 'Market Road, Uromi, Edo State',
+      locationType: 'commercial_plaza',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet in the wide commercial bank parking plaza directly facing Uromi Main Market on Market Road. Open space with ample room for vehicle pull-up, loading, and daylight inspection.',
+      lat: 6.7032,
+      lng: 6.3265,
+    },
+    {
+      name: 'First Bank PLC ATM Gallery & Forecourt',
+      address: 'Market Road, Uromi, Edo State',
+      locationType: 'bank_security_zone',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet in the paved forecourt outside the First Bank ATM foyer on Market Road. Guarded with CCTV camera surveillance and continuous public activity.',
+      lat: 6.7045,
+      lng: 6.3278,
+    },
+    {
+      name: 'Zenith Bank Commercial Concourse',
+      address: 'Mission Road, Uromi, Edo State',
+      locationType: 'bank_security_zone',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet in the customer parking forecourt outside Zenith Bank on Mission Road. Well-lit central commercial area with professional security personnel on duty.',
+      lat: 6.7018,
+      lng: 6.3235,
+    },
+    {
+      name: 'TotalEnergies Station Forecourt (Uromi-Ubiaja Road)',
+      address: 'Uromi-Ubiaja Road, Uromi, Edo State',
+      locationType: 'fuel_station_forecourt',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet on the illuminated station forecourt near the convenience mart on Ubiaja Road. Excellent vehicle pull-up space and open access for large electronics and generator inspection.',
+      lat: 6.699,
+      lng: 6.329,
+    },
+    {
+      name: 'NNPC Mega Station Open Concourse (Angle 90)',
+      address: 'Nova Road / Angle 90 Junction, Uromi, Edo State',
+      locationType: 'fuel_station_forecourt',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet on the wide paved forecourt at Angle 90 junction. High foot-traffic open space with clear line of sight, vehicle parking, and constant commercial activity.',
+      lat: 6.708,
+      lng: 6.321,
+    },
+  ],
+  ekpoma: [
+    {
+      name: 'Ambrose Alli University (AAU) Main Security Gate Plaza',
+      address: 'Benin-Auchi Expressway, Ekpoma, Edo State',
+      locationType: 'commercial_plaza',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet on the open paved plaza outside the AAU main campus entrance security checkpoint. High student traffic and round-the-clock security presence.',
+      lat: 6.7461,
+      lng: 6.1384,
+    },
+    {
+      name: 'First Bank Forecourt & ATM Gallery',
+      address: 'Benin-Auchi Expressway, Eguare, Ekpoma, Edo State',
+      locationType: 'bank_security_zone',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet in the paved front parking area outside First Bank. CCTV coverage and active daylight trading hub.',
+      lat: 6.7423,
+      lng: 6.1412,
+    },
+    {
+      name: 'TotalEnergies Station Forecourt (Ekpoma)',
+      address: 'Expressway / Market Junction, Ekpoma, Edo State',
+      locationType: 'fuel_station_forecourt',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet on the wide, illuminated fuel station forecourt. Great vehicle loading clearance for electronics and appliances.',
+      lat: 6.7388,
+      lng: 6.1365,
+    },
+  ],
+  auchi: [
+    {
+      name: 'Auchi Polytechnic Main Security Gate & Commercial Plaza',
+      address: 'Poly Road, Auchi, Edo State',
+      locationType: 'commercial_plaza',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet on the open commercial plaza near the Auchi Poly main entrance gate. High visibility and active campus security.',
+      lat: 7.0674,
+      lng: 6.2751,
+    },
+    {
+      name: 'Zenith Bank Commercial Forecourt',
+      address: 'Warrake Road, Auchi, Edo State',
+      locationType: 'bank_security_zone',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet in the customer parking lot outside Zenith Bank on Warrake Road. Safe public commercial zone.',
+      lat: 7.0712,
+      lng: 6.2798,
+    },
+  ],
+  warri: [
+    {
+      name: 'Delta Mall (Shoprite) Open Parking Plaza',
+      address: 'Effurun Roundabout, Effurun/Warri, Delta State',
+      locationType: 'mall_entrance',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet in the open customer parking lot near the main Shoprite glass entrance. Ample space for vehicle loading and strong security presence.',
+      lat: 5.5562,
+      lng: 5.7821,
+    },
+    {
+      name: 'TotalEnergies Station Forecourt (Airport Road)',
+      address: 'Airport Road, Effurun/Warri, Delta State',
+      locationType: 'fuel_station_forecourt',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet on the wide open station forecourt near the mart. Safe, high foot-traffic zone with vehicle pull-up clearance.',
+      lat: 5.5398,
+      lng: 5.7645,
+    },
+  ],
+  asaba: [
+    {
+      name: 'Asaba Mall (Shoprite) Open Parking Concourse',
+      address: 'Okpanam Road, Asaba, Delta State',
+      locationType: 'mall_entrance',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet in the wide surface car park near the mall main entrance. Well-lit, 24/7 security, and vehicle pull-up access.',
+      lat: 6.2085,
+      lng: 6.6942,
+    },
+    {
+      name: 'Zenith Bank Commercial Area (Nnebisi Road)',
+      address: 'Nnebisi Road, Asaba, Delta State',
+      locationType: 'bank_security_zone',
+      spaceTag: '24/7 Security & CCTV',
+      plainDescription: 'Meet in the customer parking foyer outside Zenith Bank on Nnebisi Road. Active public commercial street with CCTV.',
+      lat: 6.1956,
+      lng: 6.7214,
+    },
+  ],
+  enugu: [
+    {
+      name: 'Polo Park Mall (Shoprite) Car Park',
+      address: 'Abakaliki Road, GRA, Enugu, Enugu State',
+      locationType: 'mall_entrance',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet in the open surface parking lot near the Shoprite entrance. Ample space for vehicle loading and professional security attendance.',
+      lat: 6.4521,
+      lng: 7.5098,
+    },
+    {
+      name: 'Spar Mall Open Forecourt',
+      address: 'Zik Avenue, Enugu, Enugu State',
+      locationType: 'supermarket_plaza',
+      spaceTag: 'Open Space & Vehicle Accessible',
+      plainDescription: 'Meet in the open customer parking forecourt. Great space for vehicle pull-up and bulky item checks.',
+      lat: 6.4367,
+      lng: 7.4981,
+    },
+  ],
 };
 
 /**
@@ -230,10 +386,22 @@ export async function getSmartSafeMeetupSpots({
 
   if (listingId) {
     try {
-      const listing = await Listing.findById(listingId).select('title category mode price');
+      const listing = await Listing.findById(listingId).select('title category mode price location');
       if (listing) {
         itemTitle = listing.title;
         itemCategory = listing.category;
+        // Auto-fill coordinates from listing if not provided by browser GPS
+        if ((!lat || !lng) && listing.location?.coordinates && listing.location.coordinates.length === 2) {
+          lng = listing.location.coordinates[0];
+          lat = listing.location.coordinates[1];
+        }
+        // Use listing city if city was defaulted to Lagos or omitted
+        if ((!city || city.toLowerCase() === 'lagos') && listing.location?.city) {
+          city = listing.location.city;
+        }
+        if (!neighborhood && listing.location?.neighborhood) {
+          neighborhood = listing.location.neighborhood;
+        }
       }
     } catch {
       // Continue with default
@@ -247,13 +415,56 @@ export async function getSmartSafeMeetupSpots({
     candidatePlaces = await fetchOverpassNearbyPlaces(lat, lng, 3500);
   }
 
-  // If Overpass returned few results or lat/lng not provided, blend with curated regional hubs
-  const normalizedCity = (city || 'lagos').toLowerCase().trim();
-  const regionalHubs =
-    NIGERIAN_SAFE_HUBS[normalizedCity] ||
-    Object.keys(NIGERIAN_SAFE_HUBS).find((k) => normalizedCity.includes(k))
-      ? NIGERIAN_SAFE_HUBS[Object.keys(NIGERIAN_SAFE_HUBS).find((k) => normalizedCity.includes(k))]
-      : NIGERIAN_SAFE_HUBS.lagos;
+  // Identify matching regional hubs for this specific city
+  const normalizedCity = (city || '').toLowerCase().trim();
+  const matchedKey = Object.keys(NIGERIAN_SAFE_HUBS).find(
+    (k) => normalizedCity.includes(k) || k.includes(normalizedCity)
+  );
+
+  let regionalHubs = matchedKey ? NIGERIAN_SAFE_HUBS[matchedKey] : [];
+
+  // If no predefined hubs and Overpass returned no places, build city-specific verified hubs (NEVER default to Lagos)
+  if (regionalHubs.length === 0 && candidatePlaces.length === 0) {
+    const cityName = city || 'Nigeria';
+    regionalHubs = [
+      {
+        name: `${cityName} Main Commercial Bank Plaza & ATM Forecourt`,
+        address: `Market Road / Commercial Axis, ${cityName}`,
+        locationType: 'bank_security_zone',
+        spaceTag: '24/7 Security & CCTV',
+        plainDescription: `Meet outside the main commercial bank ATM gallery in ${cityName}. Paved forecourt, CCTV surveillance, and high public activity.`,
+        lat: lat || 6.7032,
+        lng: lng || 6.3265,
+      },
+      {
+        name: `${cityName} Central Market Main Gate Plaza`,
+        address: `Main Market Road, ${cityName}`,
+        locationType: 'commercial_plaza',
+        spaceTag: 'Open Space & Vehicle Accessible',
+        plainDescription: `Meet on the open paved plaza directly facing the central market in ${cityName}. High visibility with room for vehicle loading and daylight inspection.`,
+        lat: lat || 6.7045,
+        lng: lng || 6.3278,
+      },
+      {
+        name: `TotalEnergies Mega Station Forecourt (${cityName})`,
+        address: `Major Expressway / Commercial Junction, ${cityName}`,
+        locationType: 'fuel_station_forecourt',
+        spaceTag: 'Open Space & Vehicle Accessible',
+        plainDescription: `Meet on the open illuminated forecourt near the convenience mart in ${cityName}. Excellent parking space for vehicle loading and bulky item inspection.`,
+        lat: lat || 6.699,
+        lng: lng || 6.329,
+      },
+      {
+        name: `NNPC Mega Station Open Concourse (${cityName})`,
+        address: `Central Commercial Bypass, ${cityName}`,
+        locationType: 'fuel_station_forecourt',
+        spaceTag: 'Open Space & CCTV Monitored',
+        plainDescription: `Meet in the open customer parking area in ${cityName}. Active commercial zone with round-the-clock lighting and security attendance.`,
+        lat: lat || 6.708,
+        lng: lng || 6.321,
+      },
+    ];
+  }
 
   const combinedCandidates = [...candidatePlaces, ...regionalHubs].slice(0, 10);
 
@@ -264,7 +475,11 @@ export async function getSmartSafeMeetupSpots({
     const prompt = `
 You are the LocalMarket Safe Meetup Reasoner.
 Item being traded: "${itemTitle}" (Category: "${itemCategory}")
-User Location Context: Lat: ${lat || 'unknown'}, Lng: ${lng || 'unknown'}, City: "${city}", Neighborhood: "${neighborhood}".
+Target City: "${city}" (Neighborhood: "${neighborhood || 'Central'}")
+User Location Context: Lat: ${lat || 'unknown'}, Lng: ${lng || 'unknown'}.
+
+CRITICAL CITY CONSTRAINT:
+All recommended venues MUST be located strictly within or immediately around "${city}". NEVER suggest venues in Lagos or other distant states when the target city is "${city}"!
 
 Raw Venue Candidates:
 ${JSON.stringify(combinedCandidates, null, 2)}
