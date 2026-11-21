@@ -161,8 +161,15 @@ export const getListingById = async (req, res, next) => {
     let positiveCount = 0;
     let sumStars = 0;
     allReviews.forEach((r) => {
-      sumStars += r.stars || 5;
-      if (r.ratingType === 'positive' || (r.stars || 5) >= 4) positiveCount++;
+      let s = Number(r.stars);
+      if (isNaN(s) || s < 1) s = r.ratingType === 'negative' ? 1 : r.ratingType === 'neutral' ? 3 : 5;
+      if (r.ratingType === 'negative' && s > 2) {
+        s = Math.min(2, Math.round(((r.itemAccuracy || 2) + (r.communication || 2) + (r.punctuality || 2)) / 3));
+      }
+      sumStars += s;
+      if (r.ratingType === 'positive') {
+        positiveCount++;
+      }
     });
 
     const averageRating = totalReviews > 0 ? Number((sumStars / totalReviews).toFixed(1)) : 5.0;

@@ -38,6 +38,12 @@ const messageSchema = new mongoose.Schema(
       spotName: { type: String, default: '' },
       spotType: { type: String, default: '' },
       address: { type: String, default: '' },
+      spaceTag: { type: String, default: '' },
+      plainDescription: { type: String, default: '' },
+      mapUrl: { type: String, default: '' },
+      distance: { type: String, default: '' },
+      lat: { type: Number },
+      lng: { type: Number },
       notes: { type: String, default: '' },
     },
     readBy: [

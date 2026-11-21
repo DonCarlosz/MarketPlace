@@ -10,6 +10,7 @@ import {
   unblockUser,
   getBlockedUsers,
   respondToOffer,
+  suggestSafeMeetupSpots,
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -33,5 +34,8 @@ router.patch('/conversations/:id/decline', declineConversation);
 router.post('/block/:userId', blockUser);
 router.post('/unblock/:userId', unblockUser);
 router.get('/blocked-users', getBlockedUsers);
+
+// Smart Geo-AI Safe Meetup Discovery
+router.post('/suggest-safe-spots', suggestSafeMeetupSpots);
 
 export default router;

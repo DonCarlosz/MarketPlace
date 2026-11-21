@@ -2,6 +2,7 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import { getSmartSafeMeetupSpots } from '../services/safePlacesService.js';
 
 // @desc    Get all conversations for the authenticated user
 // @route   GET /api/chat/conversations
@@ -459,6 +460,29 @@ export const respondToOffer = async (req, res, next) => {
       success: true,
       message: populatedMessage,
       systemMessage: populatedSystemMsg,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Suggest smart geo-AI safe public meetup spots based on location & item bulkiness
+// @route   POST /api/chat/suggest-safe-spots
+export const suggestSafeMeetupSpots = async (req, res, next) => {
+  try {
+    const { lat, lng, city, neighborhood, listingId } = req.body;
+    const userCity = city || req.user?.location?.city || 'Lagos';
+    const spots = await getSmartSafeMeetupSpots({
+      lat: lat ? Number(lat) : null,
+      lng: lng ? Number(lng) : null,
+      city: userCity,
+      neighborhood: neighborhood || req.user?.location?.neighborhood || '',
+      listingId,
+    });
+
+    res.json({
+      success: true,
+      spots,
     });
   } catch (error) {
     next(error);

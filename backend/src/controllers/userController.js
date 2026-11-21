@@ -185,15 +185,36 @@ export const submitReview = async (req, res, next) => {
       });
     }
 
+    const validRatingType = ['positive', 'neutral', 'negative'].includes(ratingType) ? ratingType : 'positive';
+
+    // Automatically derive or clamp stars to match ratingType
+    let parsedStars = Number(stars);
+    const parsedAccuracy = Math.max(1, Math.min(5, Number(itemAccuracy) || 3));
+    const parsedComm = Math.max(1, Math.min(5, Number(communication) || 3));
+    const parsedPunct = Math.max(1, Math.min(5, Number(punctuality) || 3));
+    const calculatedAverage = Math.round((parsedAccuracy + parsedComm + parsedPunct) / 3);
+
+    if (isNaN(parsedStars) || parsedStars < 1) {
+      parsedStars = calculatedAverage;
+    }
+
+    if (validRatingType === 'negative') {
+      parsedStars = Math.min(2, Math.min(parsedStars, calculatedAverage));
+    } else if (validRatingType === 'neutral') {
+      parsedStars = Math.min(3, Math.max(2, parsedStars));
+    } else if (validRatingType === 'positive') {
+      parsedStars = Math.max(4, parsedStars);
+    }
+
     const review = await Review.create({
       seller: sellerId,
       buyer: buyerId,
       listing: listingId || null,
-      ratingType: ['positive', 'neutral', 'negative'].includes(ratingType) ? ratingType : 'positive',
-      stars: Math.max(1, Math.min(5, Number(stars) || 5)),
-      itemAccuracy: Math.max(1, Math.min(5, Number(itemAccuracy) || 5)),
-      communication: Math.max(1, Math.min(5, Number(communication) || 5)),
-      punctuality: Math.max(1, Math.min(5, Number(punctuality) || 5)),
+      ratingType: validRatingType,
+      stars: parsedStars,
+      itemAccuracy: parsedAccuracy,
+      communication: parsedComm,
+      punctuality: parsedPunct,
       comment: comment.trim(),
     });
 
@@ -214,13 +235,13 @@ export const submitReview = async (req, res, next) => {
       if (r.ratingType === 'positive') positive++;
       else if (r.ratingType === 'neutral') neutral++;
       else if (r.ratingType === 'negative') negative++;
-      sumAccuracy += r.itemAccuracy || 5;
-      sumComm += r.communication || 5;
-      sumPunct += r.punctuality || 5;
+      sumAccuracy += r.itemAccuracy || 3;
+      sumComm += r.communication || 3;
+      sumPunct += r.punctuality || 3;
     });
 
     const total = allReviews.length;
-    const positivePercentage = total > 0 ? Math.round((positive / (positive + negative || 1)) * 100) : 100;
+    const positivePercentage = total > 0 ? Math.round((positive / total) * 100) : 100;
 
     await User.findByIdAndUpdate(sellerId, {
       'feedbackScore.positive': positive,

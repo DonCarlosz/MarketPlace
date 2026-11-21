@@ -844,7 +844,13 @@ export default function ProfilePage() {
  <div className="grid grid-cols-3 gap-2">
  <button
  type="button"
- onClick={() => setReviewType('positive')}
+ onClick={() => {
+ setReviewType('positive');
+ setReviewStars(5);
+ setReviewAccuracy(5);
+ setReviewCommunication(5);
+ setReviewPunctuality(5);
+ }}
  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
  reviewType === 'positive'
  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 ring-2 ring-emerald-200'
@@ -857,7 +863,13 @@ export default function ProfilePage() {
 
  <button
  type="button"
- onClick={() => setReviewType('neutral')}
+ onClick={() => {
+ setReviewType('neutral');
+ setReviewStars(3);
+ setReviewAccuracy(3);
+ setReviewCommunication(3);
+ setReviewPunctuality(3);
+ }}
  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
  reviewType === 'neutral'
  ? 'bg-slate-100 border-slate-300 text-slate-800 ring-2 ring-slate-200'
@@ -870,7 +882,13 @@ export default function ProfilePage() {
 
  <button
  type="button"
- onClick={() => setReviewType('negative')}
+ onClick={() => {
+ setReviewType('negative');
+ setReviewStars(1);
+ setReviewAccuracy(1);
+ setReviewCommunication(1);
+ setReviewPunctuality(1);
+ }}
  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
  reviewType === 'negative'
  ? 'bg-rose-50 border-rose-300 text-rose-800 ring-2 ring-rose-200'
@@ -883,6 +901,34 @@ export default function ProfilePage() {
  </div>
  </div>
 
+ {/* Overall Star Rating */}
+ <div>
+ <label className="block text-xs font-bold text-slate-700 mb-1">
+ Overall Star Rating ({reviewStars} / 5)
+ </label>
+ <div className="flex items-center gap-1.5 py-1">
+ {[1, 2, 3, 4, 5].map((s) => (
+ <button
+ key={s}
+ type="button"
+ onClick={() => {
+ setReviewStars(s);
+ if (s <= 2) setReviewType('negative');
+ else if (s === 3) setReviewType('neutral');
+ else setReviewType('positive');
+ }}
+ className="p-1 cursor-pointer transition hover:scale-110"
+ >
+ <Star
+ className={`w-6 h-6 ${
+ s <= reviewStars ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+ }`}
+ />
+ </button>
+ ))}
+ </div>
+ </div>
+
  {/* Detailed Star Ratings */}
  <div className="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs">
  <div className="flex items-center justify-between">
@@ -892,8 +938,15 @@ export default function ProfilePage() {
  <button
  key={s}
  type="button"
- onClick={() => setReviewAccuracy(s)}
- className="p-0.5 text-amber-500"
+ onClick={() => {
+ setReviewAccuracy(s);
+ const avg = Math.max(1, Math.min(5, Math.round((s + reviewCommunication + reviewPunctuality) / 3)));
+ setReviewStars(avg);
+ if (avg <= 2) setReviewType('negative');
+ else if (avg === 3) setReviewType('neutral');
+ else setReviewType('positive');
+ }}
+ className="p-0.5 text-amber-500 cursor-pointer"
  >
  <Star className={`w-4 h-4 ${s <= reviewAccuracy ? 'fill-amber-500' : 'text-slate-300'}`} />
  </button>
@@ -908,8 +961,15 @@ export default function ProfilePage() {
  <button
  key={s}
  type="button"
- onClick={() => setReviewCommunication(s)}
- className="p-0.5 text-amber-500"
+ onClick={() => {
+ setReviewCommunication(s);
+ const avg = Math.max(1, Math.min(5, Math.round((reviewAccuracy + s + reviewPunctuality) / 3)));
+ setReviewStars(avg);
+ if (avg <= 2) setReviewType('negative');
+ else if (avg === 3) setReviewType('neutral');
+ else setReviewType('positive');
+ }}
+ className="p-0.5 text-amber-500 cursor-pointer"
  >
  <Star className={`w-4 h-4 ${s <= reviewCommunication ? 'fill-amber-500' : 'text-slate-300'}`} />
  </button>
@@ -924,8 +984,15 @@ export default function ProfilePage() {
  <button
  key={s}
  type="button"
- onClick={() => setReviewPunctuality(s)}
- className="p-0.5 text-amber-500"
+ onClick={() => {
+ setReviewPunctuality(s);
+ const avg = Math.max(1, Math.min(5, Math.round((reviewAccuracy + reviewCommunication + s) / 3)));
+ setReviewStars(avg);
+ if (avg <= 2) setReviewType('negative');
+ else if (avg === 3) setReviewType('neutral');
+ else setReviewType('positive');
+ }}
+ className="p-0.5 text-amber-500 cursor-pointer"
  >
  <Star className={`w-4 h-4 ${s <= reviewPunctuality ? 'fill-amber-500' : 'text-slate-300'}`} />
  </button>

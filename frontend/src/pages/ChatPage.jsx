@@ -33,6 +33,9 @@ import {
  ThumbsUp,
  ThumbsDown,
  Minus,
+ Compass,
+ Loader2,
+ Search,
 } from 'lucide-react';
 
 export default function ChatPage() {
@@ -67,6 +70,10 @@ export default function ChatPage() {
  // Safe Meetup Spot Preset Modal State
  const [meetupModalOpen, setMeetupModalOpen] = useState(false);
  const [meetupSubmitting, setMeetupSubmitting] = useState(false);
+ const [smartSpots, setSmartSpots] = useState([]);
+ const [loadingSmartSpots, setLoadingSmartSpots] = useState(false);
+ const [locationStatus, setLocationStatus] = useState('idle'); // 'detecting' | 'gps' | 'fallback' | 'manual'
+ const [manualLocationInput, setManualLocationInput] = useState('');
 
  // Leave Feedback / Review Modal State (In-Chat)
  const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -332,8 +339,58 @@ export default function ChatPage() {
  }
  };
 
- // Submit In-Chat Safe Meetup Preset
- const handleSendMeetupProposal = async (preset) => {
+ // Smart Geo-AI Safe Meetup Spot Fetcher
+ const fetchSmartSafeSpots = async (customCity = '') => {
+ setLoadingSmartSpots(true);
+ const listingId = activeConversation?.listing?._id;
+ const fallbackCity = customCity || activeConversation?.listing?.location?.city || user?.location?.city || 'Lagos';
+
+ const callApi = async (coords = null) => {
+ try {
+ const payload = {
+ listingId,
+ city: fallbackCity,
+ lat: coords?.latitude || null,
+ lng: coords?.longitude || null,
+ };
+ const res = await API.post('/chat/suggest-safe-spots', payload);
+ if (res.data?.success && res.data.spots) {
+ setSmartSpots(res.data.spots);
+ }
+ } catch (err) {
+ console.error('Failed to load smart safe spots:', err);
+ } finally {
+ setLoadingSmartSpots(false);
+ }
+ };
+
+ if (customCity) {
+ setLocationStatus('manual');
+ await callApi();
+ return;
+ }
+
+ if (navigator.geolocation) {
+ setLocationStatus('detecting');
+ navigator.geolocation.getCurrentPosition(
+ (pos) => {
+ setLocationStatus('gps');
+ callApi(pos.coords);
+ },
+ () => {
+ setLocationStatus('fallback');
+ callApi();
+ },
+ { timeout: 7000 }
+ );
+ } else {
+ setLocationStatus('fallback');
+ await callApi();
+ }
+ };
+
+ // Submit In-Chat Safe Meetup Proposal
+ const handleSendMeetupProposal = async (spot) => {
  if (!activeConvId) return;
 
  setMeetupSubmitting(true);
@@ -341,9 +398,15 @@ export default function ChatPage() {
  const res = await API.post(`/chat/conversations/${activeConvId}/messages`, {
  messageType: 'meetup_proposal',
  meetup: {
- spotName: preset.name,
- spotType: preset.type,
- address: preset.desc,
+ spotName: spot.name,
+ spotType: spot.locationType,
+ address: spot.address,
+ spaceTag: spot.spaceTag,
+ plainDescription: spot.plainDescription,
+ mapUrl: spot.mapUrl,
+ distance: spot.distance,
+ lat: spot.lat,
+ lng: spot.lng,
  },
  });
 
@@ -360,6 +423,13 @@ export default function ChatPage() {
  setMeetupSubmitting(false);
  }
  };
+
+ // Trigger smart meetup discovery when modal opens
+ useEffect(() => {
+ if (meetupModalOpen) {
+ fetchSmartSafeSpots();
+ }
+ }, [meetupModalOpen]);
 
  // Respond to Offer (Accept / Decline)
  const handleRespondToOffer = async (messageId, action) => {
@@ -539,27 +609,27 @@ export default function ChatPage() {
 
  const listingPrice = Number(activeConversation?.listing?.price) || 0;
 
- // Safe Meetup Presets
+ // Emergency Safe Meetup Fallback Presets
  const safeMeetupPresets = [
  {
- name: 'Busy Shopping Mall / Commercial Plaza',
+ name: 'Shopping Mall Open Parking Plaza',
  type: 'mall',
- desc: 'Main public entrance or well-lit food court area with security present.',
+ desc: 'Main surface parking plaza or well-lit entrance concourse with security guards.',
  },
  {
- name: 'Bank Lobby / ATM Gallery',
+ name: 'Bank Forecourt / ATM Gallery with CCTV',
  type: 'bank',
- desc: 'Active commercial bank branch lobby or ATM area with CCTV surveillance.',
+ desc: 'Active commercial bank branch perimeter or ATM gallery with 24/7 security.',
  },
  {
- name: 'Popular Café or Fast Food Eatery',
- type: 'cafe',
- desc: 'Busy eatery (e.g. Chicken Republic, Mega Chicken, Café) during daylight hours.',
+ name: 'Mega Fuel Station Forecourt (TotalEnergies / NNPC)',
+ type: 'fuel',
+ desc: 'Paved, illuminated customer forecourt with CCTV and vehicle parking.',
  },
  {
- name: 'Police Station / Civic Center Gate',
- type: 'station',
- desc: 'Public visitor parking or front gate area of local police division.',
+ name: 'Supermarket Customer Car Park (Shoprite / Market Square)',
+ type: 'supermarket',
+ desc: 'Wide open customer parking grounds with security attendance.',
  },
  ];
 
@@ -1073,27 +1143,72 @@ export default function ChatPage() {
  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
  >
  <div
- className={`max-w-[85%] sm:max-w-[340px] rounded-2xl p-4 space-y-2.5 border ${
+ className={`max-w-[90%] sm:max-w-[360px] rounded-2xl p-4 space-y-3 border ${
  isMe
  ? 'bg-indigo-600 text-white border-indigo-700'
  : 'bg-white text-slate-800 border-indigo-200'
  }`}
  >
- <div className="flex items-center gap-1.5 text-xs font-bold">
+ <div className="flex items-center justify-between text-xs font-bold border-b border-white/20 pb-2">
+ <div className="flex items-center gap-1.5">
  <MapPin className="w-4 h-4 text-amber-300" />
- <span>Safe Public Meetup Proposal</span>
+ <span>Safe Public Exchange Spot</span>
  </div>
-
- <div className="text-sm font-black text-slate-900 bg-amber-50 p-2.5 rounded-xl border border-amber-200/70">
- {msg.meetup?.spotName || 'Designated Public Location'}
- {msg.meetup?.address && (
- <span className="block text-[11px] font-normal text-slate-600 mt-0.5">
- {msg.meetup.address}
+ {msg.meetup?.spaceTag && (
+ <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+ isMe ? 'bg-indigo-700 text-indigo-100' : 'bg-indigo-50 text-indigo-700'
+ }`}>
+ {msg.meetup.spaceTag}
  </span>
  )}
  </div>
 
- <p className="text-[10px] opacity-80 leading-relaxed">
+ <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-slate-900 space-y-1">
+ <span className="font-black text-sm block">
+ {msg.meetup?.spotName || 'Designated Public Location'}
+ </span>
+ {msg.meetup?.address && (
+ <span className="block text-xs text-slate-600 font-medium">
+ {msg.meetup.address}
+ </span>
+ )}
+ {msg.meetup?.distance && (
+ <span className="text-[10px] text-indigo-700 font-bold block pt-0.5">
+ 📍 {msg.meetup.distance}
+ </span>
+ )}
+ </div>
+
+ {/* Plain English Location Description for Users Who Do Not Understand Maps */}
+ {msg.meetup?.plainDescription && (
+ <div className={`p-2.5 rounded-xl text-xs leading-relaxed ${
+ isMe ? 'bg-indigo-700/60 text-indigo-100 border border-indigo-500/50' : 'bg-slate-50 text-slate-700 border border-slate-200'
+ }`}>
+ <span className="font-bold text-[11px] block uppercase tracking-wider mb-1">
+ 📍 Location Guide & Landmarks:
+ </span>
+ <span>{msg.meetup.plainDescription}</span>
+ </div>
+ )}
+
+ {/* Open in Maps Button */}
+ {msg.meetup?.mapUrl && (
+ <a
+ href={msg.meetup.mapUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+ isMe
+ ? 'bg-white hover:bg-slate-100 text-indigo-700'
+ : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+ }`}
+ >
+ <ExternalLink className="w-3.5 h-3.5" />
+ <span>Open in Google Maps</span>
+ </a>
+ )}
+
+ <p className="text-[10px] opacity-80 leading-relaxed pt-1">
  Inspect item before hand-delivery or instant bank transfer. Never wire funds upfront.
  </p>
  </div>
@@ -1424,16 +1539,23 @@ export default function ChatPage() {
  </div>
  )}
 
- {/* Safe Meetup Spot Preset Modal */}
+ {/* Smart Geo-AI Safe Meetup Spot Modal */}
  {meetupModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
- <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border border-slate-100 relative">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+ <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-200 relative my-8 max-h-[90vh] flex flex-col">
+ {/* Header */}
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2">
- <MapPin className="w-5 h-5 text-indigo-600" />
- <h3 className="text-base font-black text-slate-900">Suggest Safe Public Meetup Spot</h3>
+ <Compass className="w-5 h-5 text-indigo-600 animate-pulse" />
+ <div>
+ <h3 className="text-base font-black text-slate-900">Smart Safe Meetup Finder</h3>
+ <span className="text-[10px] text-slate-400 block font-medium">
+ AI-powered open-space exchange venues near you
+ </span>
+ </div>
  </div>
  <button
+ type="button"
  onClick={() => setMeetupModalOpen(false)}
  className="p-1 rounded-full text-slate-400 hover:text-slate-700"
  >
@@ -1441,35 +1563,159 @@ export default function ChatPage() {
  </button>
  </div>
 
- <p className="text-xs text-slate-500">
- Pick a designated high-visibility location to suggest in the chat. Both parties can inspect goods safely.
- </p>
-
- <div className="space-y-2.5">
- {safeMeetupPresets.map((preset, idx) => (
- <button
- key={idx}
- type="button"
- onClick={() => handleSendMeetupProposal(preset)}
- disabled={meetupSubmitting}
- className="w-full text-left p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 transition cursor-pointer space-y-0.5"
- >
- <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
- <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
- <span>{preset.name}</span>
+ {/* Item & Venue Requirement Notice */}
+ <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-xs space-y-1">
+ <div className="flex items-center justify-between font-bold text-indigo-950">
+ <span className="truncate">Trading: {activeConversation?.listing?.title || 'Marketplace Item'}</span>
+ <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800 shrink-0">
+ Open Space Required
  </span>
- <span className="text-[11px] text-slate-500 block pl-5">{preset.desc}</span>
- </button>
- ))}
+ </div>
+ <p className="text-[11px] text-slate-600">
+ To keep both parties safe, our smart system suggests open plazas, supermarket loading zones, and bank security areas with vehicle parking. No tight restaurants or food joints.
+ </p>
  </div>
 
- <div className="flex justify-end pt-2">
+ {/* Location Status & Fallback Search Bar */}
+ <div className="space-y-2">
+ <div className="flex items-center justify-between text-xs">
+ <span className="text-slate-500 font-semibold flex items-center gap-1.5">
+ <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+ <span>
+ {locationStatus === 'detecting'
+ ? 'Detecting GPS location...'
+ : locationStatus === 'gps'
+ ? 'GPS Active (Vetted spots nearby)'
+ : `Using city: ${activeConversation?.listing?.location?.city || user?.location?.city || 'Nigeria'}`}
+ </span>
+ </span>
+ <button
+ type="button"
+ onClick={() => fetchSmartSafeSpots()}
+ disabled={loadingSmartSpots}
+ className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
+ >
+ Refresh Location
+ </button>
+ </div>
+
+ {/* Manual search input */}
+ <form
+ onSubmit={(e) => {
+ e.preventDefault();
+ if (manualLocationInput.trim()) {
+ fetchSmartSafeSpots(manualLocationInput.trim());
+ }
+ }}
+ className="flex items-center gap-2"
+ >
+ <div className="relative flex-1">
+ <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
+ <input
+ type="text"
+ value={manualLocationInput}
+ onChange={(e) => setManualLocationInput(e.target.value)}
+ placeholder="Search junction, landmark, or city (e.g. Ikeja, Wuse 2, Benin City)..."
+ className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+ />
+ </div>
+ <button
+ type="submit"
+ disabled={loadingSmartSpots || !manualLocationInput.trim()}
+ className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+ >
+ Find
+ </button>
+ </form>
+ </div>
+
+ {/* List of Recommended Spots */}
+ <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[350px]">
+ {loadingSmartSpots ? (
+ <div className="py-12 flex flex-col items-center justify-center space-y-2 text-slate-500 text-xs">
+ <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+ <span>Analyzing nearby open plazas, CCTV zones, and car parking...</span>
+ </div>
+ ) : smartSpots.length > 0 ? (
+ smartSpots.map((spot, idx) => (
+ <div
+ key={idx}
+ className="p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-white space-y-2 transition"
+ >
+ <div className="flex items-start justify-between gap-2">
+ <div className="space-y-0.5">
+ <span className="text-xs font-black text-slate-900 block flex items-center gap-1.5">
+ <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+ <span>{spot.name}</span>
+ </span>
+ <span className="text-[11px] text-slate-500 block pl-5">{spot.address}</span>
+ </div>
+ <div className="flex flex-col items-end gap-1 shrink-0">
+ {spot.spaceTag && (
+ <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+ {spot.spaceTag}
+ </span>
+ )}
+ {spot.distance && (
+ <span className="text-[10px] text-slate-400 font-semibold">{spot.distance}</span>
+ )}
+ </div>
+ </div>
+
+ {/* Plain English Location Description */}
+ {spot.plainDescription && (
+ <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 leading-relaxed">
+ <span className="font-bold text-slate-800 block mb-0.5">📍 Where to meet & landmarks:</span>
+ <span>{spot.plainDescription}</span>
+ </div>
+ )}
+
+ {/* Action buttons */}
+ <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+ {spot.mapUrl && (
+ <a
+ href={spot.mapUrl}
+ target="_blank"
+ rel="noopener noreferrer"
+ className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1 transition"
+ >
+ <ExternalLink className="w-3.5 h-3.5" />
+ <span>Open in Maps</span>
+ </a>
+ )}
+ <button
+ type="button"
+ onClick={() => handleSendMeetupProposal(spot)}
+ disabled={meetupSubmitting}
+ className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+ >
+ <Check className="w-3.5 h-3.5" />
+ <span>Suggest This Spot</span>
+ </button>
+ </div>
+ </div>
+ ))
+ ) : (
+ <div className="py-8 text-center text-xs text-slate-500 space-y-2">
+ <p>No open-space spots detected yet.</p>
+ <button
+ type="button"
+ onClick={() => fetchSmartSafeSpots()}
+ className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold"
+ >
+ Retry Location
+ </button>
+ </div>
+ )}
+ </div>
+
+ <div className="flex justify-end pt-2 border-t border-slate-100">
  <button
  type="button"
  onClick={() => setMeetupModalOpen(false)}
- className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+ className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
  >
- Cancel
+ Close
  </button>
  </div>
  </div>
@@ -1505,7 +1751,13 @@ export default function ChatPage() {
  <div className="grid grid-cols-3 gap-2">
  <button
  type="button"
- onClick={() => setReviewType('positive')}
+ onClick={() => {
+ setReviewType('positive');
+ setReviewStars(5);
+ setReviewAccuracy(5);
+ setReviewCommunication(5);
+ setReviewPunctuality(5);
+ }}
  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
  reviewType === 'positive'
  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
@@ -1517,7 +1769,13 @@ export default function ChatPage() {
  </button>
  <button
  type="button"
- onClick={() => setReviewType('neutral')}
+ onClick={() => {
+ setReviewType('neutral');
+ setReviewStars(3);
+ setReviewAccuracy(3);
+ setReviewCommunication(3);
+ setReviewPunctuality(3);
+ }}
  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
  reviewType === 'neutral'
  ? 'border-amber-500 bg-amber-50 text-amber-700'
@@ -1529,7 +1787,13 @@ export default function ChatPage() {
  </button>
  <button
  type="button"
- onClick={() => setReviewType('negative')}
+ onClick={() => {
+ setReviewType('negative');
+ setReviewStars(1);
+ setReviewAccuracy(1);
+ setReviewCommunication(1);
+ setReviewPunctuality(1);
+ }}
  className={`py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer ${
  reviewType === 'negative'
  ? 'border-rose-500 bg-rose-50 text-rose-700'
