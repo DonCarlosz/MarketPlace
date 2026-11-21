@@ -417,10 +417,6 @@ export default function CreateListingPage() {
  {/* Wizard Top Header */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
  <div>
- <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 mb-2">
- <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
- <span>eBay-Grade 3-Step Guided Wizard</span>
- </div>
  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Create a Listing</h1>
  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
  Publish pre-loved items, factory-sealed goods, or local handwork across Nigeria.
@@ -444,7 +440,7 @@ export default function CreateListingPage() {
  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] bg-black/20">
  {step > 1 ? <Check className="w-3 h-3 stroke-[3]" /> : '1'}
  </span>
- <span>1. Item</span>
+ <span>Item</span>
  </button>
 
  <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
@@ -464,7 +460,7 @@ export default function CreateListingPage() {
  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] bg-black/20">
  {step > 2 ? <Check className="w-3 h-3 stroke-[3]" /> : '2'}
  </span>
- <span>2. Specifics</span>
+ <span>Specifics</span>
  </button>
 
  <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
@@ -480,7 +476,7 @@ export default function CreateListingPage() {
  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] bg-black/20">
  3
  </span>
- <span>3. Pricing</span>
+ <span>Pricing</span>
  </div>
  </div>
  </div>

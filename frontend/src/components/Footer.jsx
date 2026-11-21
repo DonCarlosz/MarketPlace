@@ -61,10 +61,10 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-white border-t border-slate-200 mt-auto text-xs text-slate-500 pb-24 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10">
+    <footer className="bg-white border-t border-slate-200 mt-auto text-xs text-slate-500 pb-16 md:pb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         {/* Mobile Accordion View (< 768px, eBay-style) */}
-        <div className="md:hidden divide-y divide-slate-100 border-b border-slate-100 mb-6">
+        <div className="md:hidden divide-y divide-slate-100 border-b border-slate-100 mb-3">
           {footerSections.map((sec) => {
             const isOpen = !!openSections[sec.id];
             return (
@@ -145,27 +145,18 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Trust Highlight Banner */}
-        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-2 text-emerald-800 text-xs font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Zero-Fee Peer-to-Peer Trading Policy: Meet locally, inspect goods, and pay securely in person.</span>
-          </div>
-          <span className="text-[11px] text-slate-400 font-medium">Safe Meetup Community</span>
-        </div>
-
-        {/* Bottom Legal & Utility Bar */}
-        <div className="pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-400 text-[11px]">
-          <div className="flex items-center gap-2">
-            <Store className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span className="font-bold text-slate-800">LocalMarket</span>
-            <span className="hidden sm:inline">• Peer-to-Peer Marketplace & Services</span>
+        {/* Compact Integrated Trust & Legal Bar */}
+        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-slate-500 text-[11px]">
+          <div className="flex items-center gap-2 text-emerald-800 font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span>Zero-Fee Peer-to-Peer Trading • Meet locally & pay in person</span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3 text-slate-500">
-            <span>© {new Date().getFullYear()} LocalMarket Inc.</span>
+          <div className="flex items-center gap-2 text-slate-400">
+            <Store className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <span className="font-bold text-slate-700">LocalMarket</span>
             <span>•</span>
-            <span>All rights reserved</span>
+            <span>© {new Date().getFullYear()}</span>
             <span>•</span>
             <span className="text-slate-700 font-semibold">Nigeria (NGN ₦)</span>
           </div>
