@@ -19,6 +19,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -94,6 +95,7 @@ app.use('/api/listings', listingRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);

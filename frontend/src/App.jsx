@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
+import AIAssistantDrawer from './components/AIAssistantDrawer';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
 import ListingDetailPage from './pages/ListingDetailPage';
@@ -81,6 +82,7 @@ function AppContent() {
  </div>
  {!isChatRoute && <Footer />}
  <BottomNav />
+ <AIAssistantDrawer />
  </div>
  );
 }

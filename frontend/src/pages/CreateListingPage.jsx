@@ -32,6 +32,9 @@ import {
  GraduationCap,
  Truck,
  Tag,
+ Loader2,
+ Bot,
+ Wand2,
 } from 'lucide-react';
 
 const CATEGORIES_BY_MODE = {
@@ -202,6 +205,68 @@ export default function CreateListingPage() {
  // Form Submission
  const [submitting, setSubmitting] = useState(false);
  const [error, setError] = useState(null);
+
+ // AI Co-Pilot State
+ const [aiModalOpen, setAiModalOpen] = useState(false);
+ const [aiPrompt, setAiPrompt] = useState('');
+ const [aiLoading, setAiLoading] = useState(false);
+ const [aiDraftResult, setAiDraftResult] = useState(null);
+ const [aiError, setAiError] = useState('');
+
+ const handleGenerateAiDraft = async (customPrompt) => {
+ const textToDraft = customPrompt || aiPrompt;
+ if (!textToDraft.trim()) return;
+
+ setAiLoading(true);
+ setAiError('');
+ try {
+ const res = await API.post('/ai/draft-listing', {
+ prompt: textToDraft,
+ mode: mode,
+ category: category,
+ });
+
+ if (res.data?.success && res.data.draft) {
+ setAiDraftResult(res.data.draft);
+ } else {
+ throw new Error('Failed to generate draft.');
+ }
+ } catch (err) {
+ setAiError(err.response?.data?.message || 'Failed to generate AI listing draft. Please try again.');
+ } finally {
+ setAiLoading(false);
+ }
+ };
+
+ const handleApplyAiDraft = () => {
+ if (!aiDraftResult) return;
+ if (aiDraftResult.title) setTitle(aiDraftResult.title);
+ if (aiDraftResult.description) setDescription(aiDraftResult.description);
+ if (aiDraftResult.category && CATEGORIES_BY_MODE[mode]?.includes(aiDraftResult.category)) {
+ setCategory(aiDraftResult.category);
+ }
+ if (aiDraftResult.condition) setCondition(aiDraftResult.condition);
+ if (aiDraftResult.suggestedPrice) setPrice(aiDraftResult.suggestedPrice.toString());
+ if (aiDraftResult.flawDescription) {
+ setHasFlaws(true);
+ setFlawDescription(aiDraftResult.flawDescription);
+ }
+ if (aiDraftResult.preferredMeetupAdvice) {
+ setPreferredMeetup(aiDraftResult.preferredMeetupAdvice);
+ }
+ if (aiDraftResult.itemSpecifics) {
+ setSpecifics((prev) => ({
+ ...prev,
+ brand: aiDraftResult.itemSpecifics.Brand || prev.brand,
+ model: aiDraftResult.itemSpecifics.Model || prev.model,
+ storageRam: aiDraftResult.itemSpecifics.Storage || aiDraftResult.itemSpecifics.RAM || prev.storageRam,
+ color: aiDraftResult.itemSpecifics.Color || prev.color,
+ }));
+ }
+ setAiModalOpen(false);
+ setAiDraftResult(null);
+ setAiPrompt('');
+ };
 
  // Sync category when mode changes
  const handleModeChange = (newMode) => {
@@ -495,6 +560,36 @@ export default function CreateListingPage() {
  {/* ================= STEP 1: ITEM & CLASSIFICATION ================= */}
  {step === 1 && (
  <div className="space-y-6 animate-in fade-in duration-200">
+ {/* AI Listing Wizard Co-Pilot Banner */}
+ <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+ <Sparkles className="w-5 h-5 text-amber-300" />
+ </div>
+ <div>
+ <div className="flex items-center gap-2">
+ <h3 className="text-xs font-bold text-slate-900">
+ Want AI to draft this listing for you?
+ </h3>
+ <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider">
+ Gemini 3.5
+ </span>
+ </div>
+ <p className="text-[11px] text-slate-500 mt-0.5">
+ Describe what you are selling or paste rough notes. AI will write your title, description, and calculate realistic Nigerian market pricing.
+ </p>
+ </div>
+ </div>
+
+ <button
+ type="button"
+ onClick={() => setAiModalOpen(true)}
+ className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shrink-0 cursor-pointer"
+ >
+ <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+ <span>Launch AI Co-Pilot</span>
+ </button>
+ </div>
  {/* 1.1 Trading Mode Selection */}
  <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
  <div className="flex items-center justify-between">
@@ -1253,6 +1348,219 @@ export default function CreateListingPage() {
  </div>
  </div>
  </div>
+
+ {/* AI Listing Wizard Co-Pilot Modal */}
+ {aiModalOpen && (
+ <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+ <div className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-7 space-y-5 shadow-none relative">
+ {/* Header */}
+ <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+ <div className="flex items-center gap-2.5">
+ <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+ <Sparkles className="w-4 h-4 text-amber-300" />
+ </div>
+ <div>
+ <h3 className="text-base font-black text-slate-900">Listing Wizard AI Co-Pilot</h3>
+ <p className="text-xs text-slate-500">Auto-generate title, specs, description, and Nigerian market price</p>
+ </div>
+ </div>
+ <button
+ type="button"
+ onClick={() => setAiModalOpen(false)}
+ className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+ >
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+
+ {/* Error if any */}
+ {aiError && (
+ <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+ <AlertCircle className="w-4 h-4 shrink-0" />
+ <span>{aiError}</span>
+ </div>
+ )}
+
+ {!aiDraftResult ? (
+ <div className="space-y-4">
+ <div>
+ <label className="block text-xs font-bold text-slate-700 mb-1.5">
+ What are you selling? (Enter rough notes or bullet points)
+ </label>
+ <textarea
+ rows={4}
+ value={aiPrompt}
+ onChange={(e) => setAiPrompt(e.target.value)}
+ placeholder="e.g. Clean UK-used HP EliteBook 840 G6 in Uromi. Core i5, 16GB RAM, 512GB SSD, 4 hours battery backup. Minor scratch on bezel, charger included. Looking for 240k."
+ className="w-full text-xs border border-slate-300 rounded-2xl p-3.5 focus:outline-none focus:ring-2 focus:ring-indigo-200 text-slate-900 leading-relaxed"
+ />
+ </div>
+
+ {/* Quick Samples */}
+ <div>
+ <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+ Or try a sample template:
+ </span>
+ <div className="flex flex-wrap gap-1.5">
+ {[
+ 'iPhone 12 Pro 128GB Pacific Blue in Uromi, 85% battery, clean condition',
+ 'Hisense 43-Inch Smart 4K TV with remote, Netflix/YouTube ready, excellent display',
+ 'Lutian 3.5kVA key-start generator, 100% copper coil, powers freezer and AC',
+ 'Solar inverter installation & residential conduit wiring in Uromi',
+ ].map((sample, sIdx) => (
+ <button
+ key={sIdx}
+ type="button"
+ onClick={() => {
+ setAiPrompt(sample);
+ handleGenerateAiDraft(sample);
+ }}
+ disabled={aiLoading}
+ className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-[11px] font-medium border border-slate-200 transition cursor-pointer text-left"
+ >
+ {sample.slice(0, 45)}...
+ </button>
+ ))}
+ </div>
+ </div>
+
+ <div className="pt-2 flex items-center justify-end gap-2">
+ <button
+ type="button"
+ onClick={() => setAiModalOpen(false)}
+ className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+ >
+ Cancel
+ </button>
+ <button
+ type="button"
+ onClick={() => handleGenerateAiDraft()}
+ disabled={!aiPrompt.trim() || aiLoading}
+ className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer"
+ >
+ {aiLoading ? (
+ <>
+ <Loader2 className="w-4 h-4 animate-spin" />
+ <span>Analyzing & Drafting with Gemini...</span>
+ </>
+ ) : (
+ <>
+ <Sparkles className="w-4 h-4 text-amber-300" />
+ <span>Generate Listing Draft</span>
+ </>
+ )}
+ </button>
+ </div>
+ </div>
+ ) : (
+ /* Draft Result Preview */
+ <div className="space-y-4">
+ <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between text-xs text-emerald-800">
+ <span className="font-bold flex items-center gap-1.5">
+ <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+ Listing draft ready for review!
+ </span>
+ <button
+ type="button"
+ onClick={() => setAiDraftResult(null)}
+ className="text-xs text-indigo-700 font-bold hover:underline cursor-pointer"
+ >
+ Edit Prompt
+ </button>
+ </div>
+
+ <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+ <div>
+ <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+ Generated Title
+ </span>
+ <p className="font-black text-slate-900 text-sm">{aiDraftResult.title}</p>
+ </div>
+
+ <div className="flex flex-wrap gap-2 pt-1">
+ <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px] border border-indigo-200">
+ Category: {aiDraftResult.category}
+ </span>
+ <span className="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 font-bold text-[11px]">
+ Condition: {aiDraftResult.condition}
+ </span>
+ </div>
+
+ {/* Price Valuation Corridor */}
+ {aiDraftResult.priceCorridor && (
+ <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1.5">
+ <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+ Nigerian Market Price Valuation (₦)
+ </span>
+ <div className="grid grid-cols-3 gap-2 text-center">
+ <div className="p-2 bg-slate-50 rounded-lg">
+ <span className="text-[10px] text-slate-400 block">Fast Sale</span>
+ <span className="font-bold text-slate-700">
+ {formatPrice(aiDraftResult.priceCorridor.low)}
+ </span>
+ </div>
+ <div className="p-2 bg-indigo-50 border border-indigo-100 rounded-lg">
+ <span className="text-[10px] text-indigo-600 font-bold block">Recommended</span>
+ <span className="font-black text-indigo-900">
+ {formatPrice(aiDraftResult.priceCorridor.recommended)}
+ </span>
+ </div>
+ <div className="p-2 bg-slate-50 rounded-lg">
+ <span className="text-[10px] text-slate-400 block">Top Tier</span>
+ <span className="font-bold text-slate-700">
+ {formatPrice(aiDraftResult.priceCorridor.high)}
+ </span>
+ </div>
+ </div>
+ </div>
+ )}
+
+ <div>
+ <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+ Generated Description
+ </span>
+ <p className="text-slate-700 whitespace-pre-line leading-relaxed">
+ {aiDraftResult.description}
+ </p>
+ </div>
+
+ {aiDraftResult.flawDescription && (
+ <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
+ <span className="font-bold block text-[11px]">Disclosed Wear / Flaws:</span>
+ <span className="text-[11px]">{aiDraftResult.flawDescription}</span>
+ </div>
+ )}
+
+ {aiDraftResult.preferredMeetupAdvice && (
+ <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-900">
+ <span className="font-bold block text-[11px]">Recommended Safe Meetup:</span>
+ <span className="text-[11px]">{aiDraftResult.preferredMeetupAdvice}</span>
+ </div>
+ )}
+ </div>
+
+ <div className="flex items-center justify-end gap-2 pt-2">
+ <button
+ type="button"
+ onClick={() => setAiDraftResult(null)}
+ className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+ >
+ Back to Prompt
+ </button>
+ <button
+ type="button"
+ onClick={handleApplyAiDraft}
+ className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer"
+ >
+ <Check className="w-4 h-4" />
+ <span>Apply to Listing Wizard</span>
+ </button>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ )}
  </div>
  );
 }
