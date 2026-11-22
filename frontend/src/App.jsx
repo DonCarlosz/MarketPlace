@@ -3,11 +3,13 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Link 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { PWAInstallProvider } from './context/PWAInstallContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
 import AuthModal from './components/AuthModal';
 import AIAssistantDrawer from './components/AIAssistantDrawer';
+import IOSInstallModal from './components/IOSInstallModal';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
 import ListingDetailPage from './pages/ListingDetailPage';
@@ -83,6 +85,7 @@ function AppContent() {
  {!isChatRoute && <Footer />}
  <BottomNav />
  <AIAssistantDrawer />
+ <IOSInstallModal />
  </div>
  );
 }
@@ -104,10 +107,12 @@ export default function App() {
  <AuthProvider>
  <ModeProvider>
  <FavoritesProvider>
+ <PWAInstallProvider>
  <Router>
  <ScrollToTop />
  <AppContent />
  </Router>
+ </PWAInstallProvider>
  </FavoritesProvider>
  </ModeProvider>
  </AuthProvider>

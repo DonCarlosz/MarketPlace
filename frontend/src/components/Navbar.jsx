@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { usePWAInstall } from '../context/PWAInstallContext';
 import ConfirmModal from './ConfirmModal';
 import {
  Store,
@@ -18,11 +19,13 @@ import {
  LogIn,
  UserPlus,
  ShieldCheck,
+ Download,
 } from 'lucide-react';
 
 export default function Navbar() {
  const { user, logout, openAuthModal } = useAuth();
  const { count: favoritesCount } = useFavorites();
+ const { isInstalled, installApp } = usePWAInstall();
  const [dropdownOpen, setDropdownOpen] = useState(false);
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -96,6 +99,18 @@ export default function Navbar() {
  <PlusCircle className="w-4 h-4 shrink-0" />
  <span>Post Listing</span>
  </Link>
+
+ {!isInstalled && (
+ <button
+ type="button"
+ onClick={installApp}
+ className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/80 transition cursor-pointer shrink-0"
+ title="Install LocalMarket as a standalone app"
+ >
+ <Download className="w-3.5 h-3.5 text-indigo-600" />
+ <span>Install App</span>
+ </button>
+ )}
 
  <Link
  to="/favorites"
@@ -388,6 +403,25 @@ export default function Navbar() {
  <UserIcon className="w-5 h-5 text-slate-500 shrink-0" />
  <span>My Profile & Listings</span>
  </Link>
+ )}
+
+ {!isInstalled && (
+ <button
+ type="button"
+ onClick={() => {
+ setMobileMenuOpen(false);
+ installApp();
+ }}
+ className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[15px] font-semibold text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-100 transition cursor-pointer text-left mt-1"
+ >
+ <div className="flex items-center gap-3.5">
+ <Download className="w-5 h-5 text-indigo-600 shrink-0" />
+ <span>Install Mobile App</span>
+ </div>
+ <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded-full">
+ App
+ </span>
+ </button>
  )}
  </nav>
  </div>
