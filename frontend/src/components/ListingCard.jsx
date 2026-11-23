@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPrice } from '../utils/format';
 import { useFavorites } from '../context/FavoritesContext';
@@ -13,13 +13,17 @@ import {
   ChevronRight,
   CheckCircle2,
   Clock,
+  MoreVertical,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react';
 
 const FALLBACK_IMAGE =
   'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=600&q=75';
 
-const ListingCard = memo(function ListingCard({ listing, layout = 'grid' }) {
+const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerActions = null }) {
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
 
   if (!listing) return null;
 
@@ -196,18 +200,96 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid' }) {
 
         <div className="absolute top-2 left-2 z-10">{getModeBadge()}</div>
 
-        <button
-          type="button"
-          onClick={handleFavoriteClick}
-          aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
-          className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-slate-50 flex items-center justify-center border border-slate-200 transition-transform active:scale-90 cursor-pointer"
-        >
-          <Heart
-            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-150 ${
-              favorited ? 'text-rose-500 fill-rose-500' : 'text-slate-600 hover:text-rose-500'
-            }`}
-          />
-        </button>
+        {ownerActions ? (
+          <div
+            className="absolute top-2 right-2 z-20"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setOwnerMenuOpen((prev) => !prev);
+              }}
+              aria-label="Listing options"
+              title="Listing options"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-700 transition-transform active:scale-90 cursor-pointer"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {ownerMenuOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setOwnerMenuOpen(false);
+                  }}
+                />
+                <div className="absolute right-0 mt-1.5 w-40 bg-white rounded-xl border border-slate-200 py-1 z-30">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOwnerMenuOpen(false);
+                      ownerActions.onToggleStatus?.();
+                    }}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-left transition-colors cursor-pointer ${
+                      ownerActions.isActive
+                        ? 'text-emerald-700 hover:bg-emerald-50'
+                        : 'text-indigo-700 hover:bg-indigo-50'
+                    }`}
+                  >
+                    {ownerActions.isActive ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Mark as {mode === 'service' ? 'Completed' : 'Sold'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                        <span>Reactivate</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOwnerMenuOpen(false);
+                      ownerActions.onDelete?.();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-rose-600 hover:bg-rose-50 text-left transition-colors cursor-pointer border-t border-slate-100"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleFavoriteClick}
+            aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
+            className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white hover:bg-slate-50 flex items-center justify-center border border-slate-200 transition-transform active:scale-90 cursor-pointer"
+          >
+            <Heart
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-150 ${
+                favorited ? 'text-rose-500 fill-rose-500' : 'text-slate-600 hover:text-rose-500'
+              }`}
+            />
+          </button>
+        )}
 
         {mode !== 'service' && condition && condition !== 'not-applicable' && (
           <span className="absolute bottom-2 left-2 z-10 bg-slate-900/90 text-white text-[8px] sm:text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded">

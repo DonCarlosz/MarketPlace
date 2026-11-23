@@ -9,7 +9,6 @@ import {
  Mail,
  Edit3,
  Package,
- Trash2,
  CheckCircle,
  CheckCircle2,
  ShieldCheck,
@@ -25,6 +24,7 @@ import {
  X,
  Send,
  Camera,
+ Image as ImageIcon,
  Loader2,
  LogOut,
 } from 'lucide-react';
@@ -54,9 +54,13 @@ export default function ProfilePage() {
  const [bio, setBio] = useState('');
  const [city, setCity] = useState('');
  const [avatarUrl, setAvatarUrl] = useState('');
+ const [coverUrl, setCoverUrl] = useState('');
  const [avatarUploading, setAvatarUploading] = useState(false);
+ const [coverUploading, setCoverUploading] = useState(false);
  const [saveLoading, setSaveLoading] = useState(false);
+ const [profileNotice, setProfileNotice] = useState(null);
  const avatarInputRef = useRef(null);
+ const coverInputRef = useRef(null);
 
  // Review Modal State
  const [reviewModalOpen, setReviewModalOpen] = useState(false);
@@ -113,6 +117,7 @@ export default function ProfilePage() {
  setBio(profRes.data.user.bio || '');
  setCity(profRes.data.user.location?.city || '');
  setAvatarUrl(profRes.data.user.avatar || '');
+ setCoverUrl(profRes.data.user.coverImage || '');
  }
 
  if (listRes.data?.success) {
@@ -139,13 +144,19 @@ export default function ProfilePage() {
  };
  }, [targetUserId, isOwnProfile, currentUserId, navigate, openAuthModal]);
 
- // Handle Avatar Image File Selection
+ const showNotice = (text, type = 'success') => {
+ setProfileNotice({ text, type });
+ setTimeout(() => setProfileNotice(null), 4000);
+ };
+
+ // Handle Avatar Image File Selection (uploads to persistent MongoDB storage & saves immediately)
  const handleAvatarChange = async (e) => {
  const file = e.target.files?.[0];
  if (!file) return;
 
- if (file.size > 10 * 1024 * 1024) {
- alert('Profile picture must be under 10MB.');
+ if (file.size > 8 * 1024 * 1024) {
+ showNotice('Profile picture must be under 8MB.', 'error');
+ if (avatarInputRef.current) avatarInputRef.current.value = '';
  return;
  }
 
@@ -153,21 +164,83 @@ export default function ProfilePage() {
  try {
  const formData = new FormData();
  formData.append('images', file);
- const res = await API.post('/upload', formData, {
+ const res = await API.post('/upload?purpose=avatar', formData, {
  headers: { 'Content-Type': 'multipart/form-data' },
  });
 
  if (res.data?.success && res.data.images?.length > 0) {
  const uploadedUrl = res.data.images[0].url;
+ const saveRes = await API.put('/auth/me', { avatar: uploadedUrl });
+ if (saveRes.data?.success) {
  setAvatarUrl(uploadedUrl);
+ updateUser(saveRes.data.user);
+ setProfileData((prev) => (prev ? { ...prev, avatar: uploadedUrl } : prev));
+ showNotice('Profile picture updated across all devices.');
+ }
  } else {
- alert('Failed to upload image.');
+ showNotice('Failed to upload image.', 'error');
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to upload profile picture.');
+ showNotice(err.response?.data?.message || 'Failed to upload profile picture.', 'error');
  } finally {
  setAvatarUploading(false);
  if (avatarInputRef.current) avatarInputRef.current.value = '';
+ }
+ };
+
+ // Handle Cover / Background Image Selection (uploads to persistent MongoDB storage & saves immediately)
+ const handleCoverChange = async (e) => {
+ const file = e.target.files?.[0];
+ if (!file) return;
+
+ if (file.size > 8 * 1024 * 1024) {
+ showNotice('Cover background image must be under 8MB.', 'error');
+ if (coverInputRef.current) coverInputRef.current.value = '';
+ return;
+ }
+
+ setCoverUploading(true);
+ try {
+ const formData = new FormData();
+ formData.append('images', file);
+ const res = await API.post('/upload?purpose=cover', formData, {
+ headers: { 'Content-Type': 'multipart/form-data' },
+ });
+
+ if (res.data?.success && res.data.images?.length > 0) {
+ const uploadedUrl = res.data.images[0].url;
+ const saveRes = await API.put('/auth/me', { coverImage: uploadedUrl });
+ if (saveRes.data?.success) {
+ setCoverUrl(uploadedUrl);
+ updateUser(saveRes.data.user);
+ setProfileData((prev) => (prev ? { ...prev, coverImage: uploadedUrl } : prev));
+ showNotice('Profile cover background updated across all devices.');
+ }
+ } else {
+ showNotice('Failed to upload cover background.', 'error');
+ }
+ } catch (err) {
+ showNotice(err.response?.data?.message || 'Failed to upload cover background.', 'error');
+ } finally {
+ setCoverUploading(false);
+ if (coverInputRef.current) coverInputRef.current.value = '';
+ }
+ };
+
+ const handleRemoveCover = async () => {
+ setCoverUploading(true);
+ try {
+ const saveRes = await API.put('/auth/me', { coverImage: '' });
+ if (saveRes.data?.success) {
+ setCoverUrl('');
+ updateUser(saveRes.data.user);
+ setProfileData((prev) => (prev ? { ...prev, coverImage: '' } : prev));
+ showNotice('Cover background reset to default.');
+ }
+ } catch {
+ showNotice('Failed to reset cover background.', 'error');
+ } finally {
+ setCoverUploading(false);
  }
  };
 
@@ -178,6 +251,7 @@ export default function ProfilePage() {
  setBio(profileData?.bio || '');
  setCity(profileData?.location?.city || '');
  setAvatarUrl(profileData?.avatar || '');
+ setCoverUrl(profileData?.coverImage || '');
  setEditing(false);
  } else {
  setEditing(true);
@@ -194,6 +268,7 @@ export default function ProfilePage() {
  bio: bio.trim(),
  city: city.trim(),
  avatar: avatarUrl,
+ coverImage: coverUrl,
  });
  if (res.data?.success) {
  updateUser(res.data.user);
@@ -202,12 +277,14 @@ export default function ProfilePage() {
  name: res.data.user.name,
  bio: res.data.user.bio,
  avatar: res.data.user.avatar,
+ coverImage: res.data.user.coverImage || '',
  location: res.data.user.location,
  }));
  setEditing(false);
+ showNotice('Profile changes saved.');
  }
  } catch {
- alert('Failed to update profile.');
+ showNotice('Failed to update profile.', 'error');
  } finally {
  setSaveLoading(false);
  }
@@ -366,6 +443,7 @@ export default function ProfilePage() {
  };
 
  const resolvedProfileAvatar = resolveMediaUrl(avatarUrl || profileData?.avatar || '');
+ const resolvedCoverImage = resolveMediaUrl(coverUrl || profileData?.coverImage || '');
 
  const memberSinceFormatted = profileData?.createdAt
  ? new Date(profileData.createdAt).toLocaleDateString([], { month: 'short', year: 'numeric' })
@@ -373,18 +451,89 @@ export default function ProfilePage() {
 
  return (
  <div className="min-h-screen bg-slate-50 py-6 sm:py-8 px-4 sm:px-6">
+ {/* Always-mounted file inputs for direct one-tap Avatar & Cover Background changes */}
+ {isOwnProfile && (
+ <>
+ <input
+ type="file"
+ ref={avatarInputRef}
+ accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+ onChange={handleAvatarChange}
+ className="hidden"
+ />
+ <input
+ type="file"
+ ref={coverInputRef}
+ accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+ onChange={handleCoverChange}
+ className="hidden"
+ />
+ </>
+ )}
+
  <div className="max-w-5xl mx-auto space-y-6">
+ {/* Inline Status Notice */}
+ {profileNotice && (
+ <div
+ role="status"
+ className={`px-4 py-3 rounded-2xl border text-xs font-bold flex items-center justify-between gap-2 ${
+ profileNotice.type === 'error'
+ ? 'bg-rose-50 border-rose-200 text-rose-800'
+ : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+ }`}
+ >
+ <span>{profileNotice.text}</span>
+ <button
+ type="button"
+ onClick={() => setProfileNotice(null)}
+ className="p-0.5 opacity-70 hover:opacity-100 cursor-pointer"
+ aria-label="Dismiss notice"
+ >
+ <X className="w-3.5 h-3.5" />
+ </button>
+ </div>
+ )}
+
  {/* Profile Header Card */}
  <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
- {/* Header Accent Banner */}
- <div className="h-28 sm:h-36 bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 relative">
+ {/* Changeable Header Cover Banner */}
+ <div className="h-32 sm:h-40 bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 relative overflow-hidden">
+ {resolvedCoverImage && (
+ <>
+ <img
+ src={resolvedCoverImage}
+ alt="Profile cover background"
+ className="w-full h-full object-cover"
+ decoding="async"
+ />
+ <div className="absolute inset-0 bg-slate-900/20 pointer-events-none" />
+ </>
+ )}
+
  {profileData?.isVerified && (
- <div className="absolute top-3.5 right-4 flex items-center gap-2">
- <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/60 text-white text-[11px] font-bold border border-white/25">
+ <div className="absolute top-3 right-3 sm:right-4 flex items-center gap-2 z-10">
+ <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/65 text-white text-[11px] font-bold border border-white/25">
  <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
  <span>Verified oBuy Member</span>
  </span>
  </div>
+ )}
+
+ {isOwnProfile && (
+ <button
+ type="button"
+ onClick={() => coverInputRef.current?.click()}
+ disabled={coverUploading}
+ title="Change Cover Background"
+ className="absolute bottom-3 right-3 sm:right-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-950/90 text-white text-[11px] font-bold border border-white/25 transition-colors cursor-pointer disabled:opacity-60"
+ >
+ {coverUploading ? (
+ <Loader2 className="w-3.5 h-3.5 animate-spin" />
+ ) : (
+ <Camera className="w-3.5 h-3.5" />
+ )}
+ <span>{coverUploading ? 'Uploading...' : resolvedCoverImage ? 'Change Cover' : 'Add Cover'}</span>
+ </button>
  )}
  </div>
 
@@ -406,13 +555,14 @@ export default function ProfilePage() {
  profileData?.name?.charAt(0).toUpperCase() || 'U'
  )}
  </div>
- {isOwnProfile && editing && (
+ {isOwnProfile && (
  <button
  type="button"
  onClick={() => avatarInputRef.current?.click()}
  disabled={avatarUploading}
  title="Change Profile Picture"
- className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full border-2 border-white transition-colors cursor-pointer"
+ aria-label="Change Profile Picture"
+ className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full border-2 border-white transition-colors cursor-pointer disabled:opacity-60"
  >
  <Camera className="w-3.5 h-3.5" />
  </button>
@@ -579,50 +729,78 @@ export default function ProfilePage() {
  {/* Edit Profile Form */}
  {editing && isOwnProfile && (
  <form onSubmit={handleSaveProfile} className="pt-4 border-t border-slate-100 space-y-4">
- {/* Hidden File Input for Avatar */}
- <input
- type="file"
- ref={avatarInputRef}
- accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
- onChange={handleAvatarChange}
- className="hidden"
- />
-
- {/* Profile Picture Uploader Card */}
- <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
- <div className="relative w-16 h-16 rounded-2xl bg-indigo-600 text-white font-black text-2xl flex items-center justify-center overflow-hidden border-2 border-white shrink-0">
+ {/* Profile Picture & Cover Background Uploaders */}
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+ <div className="relative w-14 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xl flex items-center justify-center overflow-hidden border-2 border-white shrink-0">
  {avatarUploading ? (
- <Loader2 className="w-6 h-6 animate-spin text-white" />
+ <Loader2 className="w-5 h-5 animate-spin text-white" />
  ) : avatarUrl ? (
  <img src={resolveMediaUrl(avatarUrl)} alt="Preview" className="w-full h-full object-cover" />
  ) : (
  name?.charAt(0).toUpperCase() || 'U'
  )}
  </div>
- <div className="space-y-1 text-center sm:text-left flex-1">
+ <div className="space-y-1 flex-1 min-w-0">
  <div className="text-xs font-bold text-slate-800">Profile Picture</div>
- <p className="text-[11px] text-slate-500">
- Upload a clear square photo. WebP, JPG, or PNG up to 10MB.
- </p>
- <div className="flex items-center justify-center sm:justify-start gap-2 pt-1">
+ <p className="text-[11px] text-slate-500">Square photo, up to 8MB.</p>
+ <div className="flex items-center gap-2 pt-0.5 flex-wrap">
  <button
  type="button"
  onClick={() => avatarInputRef.current?.click()}
  disabled={avatarUploading}
- className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1.5 transition cursor-pointer"
+ className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1 transition cursor-pointer"
  >
- <Camera className="w-3.5 h-3.5 text-indigo-600" />
- <span>{avatarUrl ? 'Change Photo' : 'Upload Photo'}</span>
+ <Camera className="w-3 h-3 text-indigo-600" />
+ <span>{avatarUrl ? 'Change' : 'Upload'}</span>
  </button>
  {avatarUrl && (
  <button
  type="button"
  onClick={() => setAvatarUrl('')}
- className="px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition font-medium cursor-pointer"
+ className="px-2 py-1 text-[11px] text-rose-600 hover:bg-rose-50 rounded-lg transition font-semibold cursor-pointer"
  >
  Remove
  </button>
  )}
+ </div>
+ </div>
+ </div>
+
+ <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+ <div className="relative w-20 h-14 rounded-xl bg-gradient-to-r from-indigo-700 to-purple-800 text-white flex items-center justify-center overflow-hidden border-2 border-white shrink-0">
+ {coverUploading ? (
+ <Loader2 className="w-5 h-5 animate-spin text-white" />
+ ) : coverUrl ? (
+ <img src={resolveMediaUrl(coverUrl)} alt="Cover preview" className="w-full h-full object-cover" />
+ ) : (
+ <ImageIcon className="w-5 h-5 text-white/80" />
+ )}
+ </div>
+ <div className="space-y-1 flex-1 min-w-0">
+ <div className="text-xs font-bold text-slate-800">Cover Background</div>
+ <p className="text-[11px] text-slate-500">Wide header image, up to 8MB.</p>
+ <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+ <button
+ type="button"
+ onClick={() => coverInputRef.current?.click()}
+ disabled={coverUploading}
+ className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1 transition cursor-pointer"
+ >
+ <ImageIcon className="w-3 h-3 text-indigo-600" />
+ <span>{coverUrl ? 'Change' : 'Upload'}</span>
+ </button>
+ {coverUrl && (
+ <button
+ type="button"
+ onClick={handleRemoveCover}
+ disabled={coverUploading}
+ className="px-2 py-1 text-[11px] text-rose-600 hover:bg-rose-50 rounded-lg transition font-semibold cursor-pointer"
+ >
+ Reset
+ </button>
+ )}
+ </div>
  </div>
  </div>
  </div>
@@ -810,15 +988,16 @@ export default function ProfilePage() {
  </div>
  </div>
 
- {/* Multi-Perspective Navigation Tabs */}
+ {/* Multi-Perspective Navigation Tabs (Active -> Saved Watchlist -> Sold -> Reviews) */}
  <div>
- <div className="flex items-center gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
+ <div className="flex items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar">
  <button
+ type="button"
  onClick={() => setTab('active')}
- className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+ className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
  tab === 'active'
- ? 'bg-slate-900 text-white '
- : 'bg-white text-slate-600 hover:bg-slate-100'
+ ? 'bg-slate-900 text-white'
+ : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/70'
  }`}
  >
  <Package className="w-3.5 h-3.5" />
@@ -827,25 +1006,12 @@ export default function ProfilePage() {
 
  {isOwnProfile && (
  <button
- onClick={() => setTab('sold')}
- className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
- tab === 'sold'
- ? 'bg-slate-900 text-white '
- : 'bg-white text-slate-600 hover:bg-slate-100'
- }`}
- >
- <CheckCircle className="w-3.5 h-3.5" />
- <span>Sold / Completed ({pastListings.length})</span>
- </button>
- )}
-
- {isOwnProfile && (
- <button
+ type="button"
  onClick={() => setTab('favorites')}
- className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+ className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
  tab === 'favorites'
- ? 'bg-slate-900 text-white '
- : 'bg-white text-slate-600 hover:bg-slate-100'
+ ? 'bg-slate-900 text-white'
+ : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/70'
  }`}
  >
  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
@@ -853,12 +1019,28 @@ export default function ProfilePage() {
  </button>
  )}
 
+ {isOwnProfile && (
  <button
+ type="button"
+ onClick={() => setTab('sold')}
+ className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+ tab === 'sold'
+ ? 'bg-slate-900 text-white'
+ : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/70'
+ }`}
+ >
+ <CheckCircle className="w-3.5 h-3.5" />
+ <span>Sold / Completed ({pastListings.length})</span>
+ </button>
+ )}
+
+ <button
+ type="button"
  onClick={() => setTab('reviews')}
- className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+ className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
  tab === 'reviews'
- ? 'bg-slate-900 text-white '
- : 'bg-white text-slate-600 hover:bg-slate-100'
+ ? 'bg-slate-900 text-white'
+ : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/70'
  }`}
  >
  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
@@ -899,42 +1081,26 @@ export default function ProfilePage() {
  ) : (
  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
  {(tab === 'active' ? activeListings : pastListings).map((listing) => (
- <div key={listing._id} className="relative group">
- <ListingCard listing={listing} />
- {isOwnProfile && (
- <div className="mt-2 flex items-center justify-between gap-2 px-1">
- {tab === 'active' ? (
- <button
- onClick={() =>
- promptToggleStatus(
+ <ListingCard
+ key={listing._id}
+ listing={listing}
+ ownerActions={
+ isOwnProfile
+ ? {
+ isActive: tab === 'active',
+ onToggleStatus: () =>
+ tab === 'active'
+ ? promptToggleStatus(
  listing._id,
  listing.mode === 'service' ? 'completed' : 'sold',
  listing.mode
  )
+ : promptToggleStatus(listing._id, 'active', listing.mode),
+ onDelete: () => promptDeleteListing(listing._id),
  }
- className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition"
- >
- Mark as {listing.mode === 'service' ? 'Completed' : 'Sold'}
- </button>
- ) : (
- <button
- onClick={() => promptToggleStatus(listing._id, 'active', listing.mode)}
- className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition"
- >
- Reactivate
- </button>
- )}
-
- <button
- onClick={() => promptDeleteListing(listing._id)}
- className="p-1 text-slate-400 hover:text-rose-600 transition"
- title="Delete listing"
- >
- <Trash2 className="w-4 h-4" />
- </button>
- </div>
- )}
- </div>
+ : null
+ }
+ />
  ))}
  </div>
  )

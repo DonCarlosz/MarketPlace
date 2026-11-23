@@ -56,7 +56,7 @@ export const isSafeImageUrl = (url) => {
   if (typeof url !== 'string') return false;
   const trimmed = url.trim();
   if (trimmed.length > 2048) return false;
-  if (trimmed.startsWith('/uploads/')) {
+  if (trimmed.startsWith('/uploads/') || trimmed.startsWith('/api/media/')) {
     return !trimmed.includes('..');
   }
   try {

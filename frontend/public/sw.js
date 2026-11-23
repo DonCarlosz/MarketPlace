@@ -1,6 +1,6 @@
 // oBuy Progressive Web App Service Worker
-const STATIC_CACHE = 'obuy-static-v2';
-const RUNTIME_CACHE = 'obuy-runtime-v2';
+const STATIC_CACHE = 'obuy-static-v3';
+const RUNTIME_CACHE = 'obuy-runtime-v3';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -46,10 +46,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Never intercept API calls, Socket.IO, or browser-extension requests
+  // Never intercept dynamic API calls, Socket.IO, or browser-extension requests (allow /api/media/ images to cache)
   if (
     !url.protocol.startsWith('http') ||
-    url.pathname.startsWith('/api') ||
+    (url.pathname.startsWith('/api') && !url.pathname.startsWith('/api/media/')) ||
     url.pathname.startsWith('/socket.io')
   ) {
     return;
@@ -93,6 +93,7 @@ self.addEventListener('fetch', (event) => {
 
   // Fonts & Uploaded Images: Stale-while-revalidate with bounded runtime cache
   if (
+    url.pathname.startsWith('/api/media/') ||
     url.pathname.startsWith('/uploads/') ||
     url.hostname.includes('fonts.googleapis.com') ||
     url.hostname.includes('fonts.gstatic.com')

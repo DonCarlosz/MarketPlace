@@ -19,6 +19,7 @@ import listingRoutes from './routes/listingRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import mediaRoutes from './routes/mediaRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 
@@ -104,6 +105,9 @@ app.use(noSqlSanitize);
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Persistent MongoDB-backed media route (mounted before apiLimiter so galleries never hit API rate limits)
+app.use('/api/media', mediaRoutes);
 
 // Global API rate limit
 app.use('/api', apiLimiter);

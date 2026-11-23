@@ -209,6 +209,7 @@ export const verifySignupOtp = async (req, res, next) => {
         email: user.email,
         location: user.location,
         avatar: user.avatar,
+        coverImage: user.coverImage || '',
         role: user.role,
         isVerified: user.isVerified,
         favorites: user.favorites || [],
@@ -491,6 +492,7 @@ export const login = async (req, res, next) => {
         email: user.email,
         location: user.location,
         avatar: user.avatar,
+        coverImage: user.coverImage || '',
         role: user.role,
         isVerified: user.isVerified,
         favorites: user.favorites || [],
@@ -590,7 +592,7 @@ export const getMe = async (req, res, next) => {
 // @route   PUT /api/auth/me
 export const updateProfile = async (req, res, next) => {
   try {
-    const { name, bio, phone, avatar, city, neighborhood, coordinates } = req.body;
+    const { name, bio, phone, avatar, coverImage, city, neighborhood, coordinates } = req.body;
 
     const updateFields = {};
     if (typeof name === 'string' && name.trim()) {
@@ -610,6 +612,15 @@ export const updateProfile = async (req, res, next) => {
         });
       }
       updateFields.avatar = typeof avatar === 'string' ? avatar.trim() : '';
+    }
+    if (coverImage !== undefined) {
+      if (!isSafeImageUrl(coverImage)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid cover image URL.',
+        });
+      }
+      updateFields.coverImage = typeof coverImage === 'string' ? coverImage.trim() : '';
     }
 
     if (city !== undefined || neighborhood !== undefined || coordinates !== undefined) {

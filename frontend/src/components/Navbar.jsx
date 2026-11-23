@@ -77,7 +77,10 @@ export default function Navbar() {
   const userAvatarSrc = user?.avatar ? resolveMediaUrl(user.avatar) : '';
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 w-full max-w-full overflow-x-clip select-none">
+    <header
+      className="sticky top-0 z-40 bg-white border-b border-slate-200 w-full max-w-full overflow-x-clip select-none"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           {/* Brand Logo */}
@@ -129,19 +132,6 @@ export default function Navbar() {
                 <span>Install App</span>
               </button>
             )}
-
-            <Link
-              to="/favorites"
-              className="p-2 text-slate-600 hover:text-rose-500 hover:bg-slate-100 rounded-xl transition-colors relative shrink-0"
-              title="Saved Favorites"
-            >
-              <Heart className="w-5 h-5 text-rose-500" />
-              {favoritesCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                  {favoritesCount}
-                </span>
-              )}
-            </Link>
 
             {user ? (
               <div className="flex items-center gap-2 shrink-0">
@@ -240,21 +230,19 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile & Tablet Top Header (< lg): Favorites, Guest Login, and Hamburger Drawer (gives mobile users full Menu, Install App & Log Out access!) */}
-          <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
-            <Link
-              to="/favorites"
-              className="p-2 text-slate-700 hover:text-rose-500 rounded-xl transition-colors relative flex items-center justify-center"
-              title="Saved Favorites"
-              aria-label="Saved Favorites"
-            >
-              <Heart className="w-5 h-5 text-rose-500" />
-              {favoritesCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                  {favoritesCount}
-                </span>
-              )}
-            </Link>
+          {/* Mobile & Tablet Top Header (< lg): Clean top bar (mobile relies on BottomNav; tablet sm..lg keeps menu button) */}
+          <div className="flex lg:hidden items-center gap-2">
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={installApp}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 hover:bg-indigo-100 transition-colors whitespace-nowrap cursor-pointer"
+                title="Install oBuy App"
+              >
+                <Download className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Install</span>
+              </button>
+            )}
 
             {!user && (
               <button
@@ -266,10 +254,11 @@ export default function Navbar() {
               </button>
             )}
 
+            {/* Tablet-only Menu Button (sm..lg where BottomNav is hidden) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors focus:outline-none cursor-pointer"
+              className="hidden sm:flex p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors focus:outline-none cursor-pointer"
               aria-label="Open Navigation Menu"
               title="Menu"
             >

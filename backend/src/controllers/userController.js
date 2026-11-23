@@ -86,6 +86,7 @@ export const getUserProfile = async (req, res, next) => {
         name: user.name,
         ...(isOwnRequest ? { email: user.email } : {}),
         avatar: user.avatar,
+        coverImage: user.coverImage || '',
         bio: user.bio,
         location: user.location,
         isVerified: Boolean(user.isVerified),

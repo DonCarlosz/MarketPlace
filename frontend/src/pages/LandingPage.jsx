@@ -11,7 +11,6 @@ import {
  Sparkles,
  Wrench,
  Search,
- MapPin,
  ArrowRight,
  ChevronLeft,
  ChevronRight,
@@ -88,7 +87,7 @@ const TRACK_SLIDES = [2, 0, 1, 2, 0];
 let landingFeaturedCache = null;
 
 export default function LandingPage() {
- const { setMode, userLocation, setSearchQuery, setSelectedCategory } = useMode();
+ const { setMode, setSearchQuery, setSelectedCategory } = useMode();
  const { openAuthModal, user } = useAuth();
  const navigate = useNavigate();
 
@@ -520,7 +519,7 @@ export default function LandingPage() {
  </button>
  </form>
 
- {/* Quick Category Sub-links & Location Tag */}
+ {/* Quick Category Sub-links */}
  <div className="flex items-center justify-center gap-2 sm:gap-4 text-xs text-slate-600 flex-wrap">
  <span className="font-semibold text-slate-500">Popular:</span>
  {POPULAR_SEARCHES.map((item) => {
@@ -540,11 +539,6 @@ export default function LandingPage() {
  </button>
  );
  })}
- <span className="text-slate-300">•</span>
- <div className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-white px-2.5 py-0.5 rounded-full border border-slate-200 text-[11px]">
- <MapPin className="w-3 h-3 text-indigo-600" />
- <span>{userLocation.city || 'All Locations'}</span>
- </div>
  </div>
  </div>
  </section>
