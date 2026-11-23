@@ -715,9 +715,9 @@ export default function LandingPage() {
  {[1, 2, 3, 4, 5].map((n) => (
  <div
  key={n}
- className="w-[180px] sm:w-[220px] shrink-0 bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
+ className="w-[170px] sm:w-[210px] md:w-[220px] h-[296px] sm:h-[344px] shrink-0 bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
  >
- <div className="w-full aspect-square bg-slate-200 rounded-xl" />
+ <div className="w-full h-[144px] sm:h-[176px] bg-slate-200 rounded-xl" />
  <div className="h-4 bg-slate-200 rounded w-1/2" />
  <div className="h-3 bg-slate-200 rounded w-3/4" />
  </div>

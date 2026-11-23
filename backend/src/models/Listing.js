@@ -129,6 +129,11 @@ const listingSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    viewedBy: {
+      type: [String],
+      default: [],
+      select: false,
+    },
     favoritesCount: {
       type: Number,
       default: 0,

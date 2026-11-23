@@ -394,9 +394,20 @@ export default function ListingDetailPage() {
  {/* Floating Heart / Wishlist Button */}
  <button
  type="button"
- onClick={(e) => {
+ onClick={async (e) => {
  e.stopPropagation();
- toggleFavorite(listing._id);
+ const wasFav = isFavorite(listing._id);
+ const nowFav = await toggleFavorite(listing._id);
+ if (nowFav !== wasFav) {
+ setListing((prev) =>
+ prev
+ ? {
+ ...prev,
+ favoritesCount: Math.max(0, (prev.favoritesCount || 0) + (nowFav ? 1 : -1)),
+ }
+ : prev
+ );
+ }
  }}
  className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
  isFavorite(listing._id)
@@ -443,7 +454,7 @@ export default function ListingDetailPage() {
  <div className="flex items-center gap-2 flex-wrap">
  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
  <Eye className="w-3.5 h-3.5 text-slate-500" />
- <span>{(listing.views || 1).toLocaleString()} {listing.views === 1 ? 'view' : 'views'}</span>
+ <span>{(listing.views ?? 0).toLocaleString()} {listing.views === 1 ? 'view' : 'views'}</span>
  </span>
  {listing.favoritesCount > 0 && (
  <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-0.5 rounded-full text-[11px] font-bold">

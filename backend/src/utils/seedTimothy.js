@@ -99,8 +99,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'First Bank PLC ATM gallery, Market Road, Uromi.',
         status: 'active',
-        views: 42,
-        favoritesCount: 5,
       },
 
       // 2. Second-Hand: Laptops / Computers
@@ -139,8 +137,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Uromi Shopping Plaza concourse or Mission Road Junction.',
         status: 'active',
-        views: 29,
-        favoritesCount: 3,
       },
 
       // 3. Second-Hand: Appliances / TV
@@ -178,8 +174,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'TotalEnergies Station Forecourt (vehicle parking available for loading), Uromi.',
         status: 'active',
-        views: 58,
-        favoritesCount: 7,
       },
 
       // 4. Second-Hand: Power & Energy
@@ -218,8 +212,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'NNPC Mega Station parking plaza, Uromi bypass.',
         status: 'active',
-        views: 64,
-        favoritesCount: 8,
       },
 
       // 5. Brand New: Sound & Audio
@@ -256,8 +248,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Uromi Main Market Commercial Bank Plaza.',
         status: 'active',
-        views: 31,
-        favoritesCount: 4,
       },
 
       // 6. Brand New: Solar Equipment
@@ -295,8 +285,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Zenith Bank Branch Forecourt, Mission Road, Uromi.',
         status: 'active',
-        views: 76,
-        favoritesCount: 11,
       },
 
       // 7. Brand New: Smartphone Accessories / Power Bank
@@ -332,8 +320,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Uromi Main Market Front Gates.',
         status: 'active',
-        views: 52,
-        favoritesCount: 9,
       },
 
       // 8. Service: Solar Installation & Electrical Wiring
@@ -371,8 +357,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Initial consultation at Uromi civic center café or direct site inspection.',
         status: 'active',
-        views: 88,
-        favoritesCount: 14,
       },
 
       // 9. Service: Generator Servicing & Mechanical Repair
@@ -410,8 +394,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Timothy Mechanical Workshop, Opp. Market Square, Uromi.',
         status: 'active',
-        views: 45,
-        favoritesCount: 6,
       },
 
       // 10. Service: Smartphone & Laptop Hardware Repair
@@ -448,8 +430,6 @@ const seedTimothy = async () => {
         },
         preferredMeetup: 'Timothy Tech Hub, Mission Road Commercial Centre, Uromi.',
         status: 'active',
-        views: 67,
-        favoritesCount: 12,
       },
     ];
 

@@ -82,9 +82,9 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
     return (
       <Link
         to={`/listing/${_id}`}
-        className="listing-card-item group flex flex-col sm:flex-row bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-indigo-400 transition-colors duration-150 relative select-none"
+        className="listing-card-item group flex flex-col sm:flex-row sm:h-44 bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-indigo-400 transition-colors duration-150 relative select-none"
       >
-        <div className="relative w-full sm:w-48 sm:h-44 aspect-video sm:aspect-auto bg-slate-100 overflow-hidden shrink-0">
+        <div className="relative w-full sm:w-48 h-44 bg-slate-100 overflow-hidden shrink-0">
           <img
             src={imageUrl}
             alt={title}
@@ -93,7 +93,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
                 e.currentTarget.src = FALLBACK_IMAGE;
               }
             }}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             decoding="async"
           />
@@ -188,16 +188,16 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
     );
   }
 
-  // Standard Compact Grid Card Layout
+  // Standard Compact Grid Card Layout (strict fixed height per breakpoint so portrait/landscape images and varying titles never alter card size)
   return (
     <Link
       to={`/listing/${_id}`}
-      className={`${ownerActions ? '' : 'listing-card-item '}group flex flex-col bg-white rounded-xl sm:rounded-2xl ${
+      className={`${ownerActions ? '' : 'listing-card-item '}group flex flex-col w-full h-[296px] sm:h-[344px] bg-white rounded-xl sm:rounded-2xl ${
         ownerActions ? 'overflow-visible' : 'overflow-hidden'
       } ${ownerMenuOpen ? 'z-30' : ''} border border-slate-200/90 hover:border-indigo-400 transition-colors duration-150 relative select-none`}
     >
-      <div className="relative aspect-square sm:aspect-[4/3] bg-slate-100 rounded-t-xl sm:rounded-t-2xl">
-        <div className="w-full h-full rounded-t-xl sm:rounded-t-2xl overflow-hidden">
+      <div className="relative w-full h-[156px] sm:h-[188px] shrink-0 bg-slate-100 rounded-t-xl sm:rounded-t-2xl">
+        <div className="absolute inset-0 rounded-t-xl sm:rounded-t-2xl overflow-hidden">
           <img
             src={imageUrl}
             alt={title}
@@ -206,7 +206,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
                 e.currentTarget.src = FALLBACK_IMAGE;
               }
             }}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
             decoding="async"
           />
@@ -312,26 +312,26 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
         )}
       </div>
 
-      <div className="p-2.5 sm:p-3 flex flex-col flex-grow justify-between gap-1.5">
-        <div>
-          <div className="font-black text-slate-900 text-sm sm:text-base leading-tight">
+      <div className="p-2.5 sm:p-3 flex flex-col flex-1 min-h-0 justify-between overflow-hidden">
+        <div className="min-w-0">
+          <div className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate">
             {formatPrice(price, priceType)}
           </div>
 
           <h3 className="font-semibold text-slate-800 text-xs sm:text-sm line-clamp-2 mt-1 group-hover:text-indigo-600 transition-colors leading-snug">
             {title}
           </h3>
+
+          <div className="text-[11px] text-slate-400 truncate mt-1">
+            {mode === 'service' && serviceType ? (
+              <span className="text-purple-600 font-medium">{serviceType}</span>
+            ) : (
+              category || 'Community Listing'
+            )}
+          </div>
         </div>
 
-        <div className="text-[11px] text-slate-400 truncate">
-          {mode === 'service' && serviceType ? (
-            <span className="text-purple-600 font-medium">{serviceType}</span>
-          ) : (
-            category || 'Community Listing'
-          )}
-        </div>
-
-        <div className="pt-2 mt-auto flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 gap-1.5">
+        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 gap-1.5 shrink-0">
           <div className="flex items-center gap-1 min-w-0 truncate">
             <MapPin className="w-3 h-3 text-indigo-500 shrink-0" />
             <span className="truncate font-medium">{location?.city || 'Local'}</span>

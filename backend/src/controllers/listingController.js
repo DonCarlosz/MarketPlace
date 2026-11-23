@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 import Review from '../models/Review.js';
@@ -174,25 +175,50 @@ export const getListingById = async (req, res, next) => {
       });
     }
 
-    // Increment views only if viewer is not the seller
+    // Increment unique views only if viewer is not the seller (deduplicated per user or hashed IP)
     const viewerId = req.user?._id?.toString();
     const sellerId = (listing.seller?._id || listing.seller)?.toString();
     if (!viewerId || viewerId !== sellerId) {
-      listing.views = (listing.views || 0) + 1;
-      await Listing.updateOne({ _id: listing._id }, { $inc: { views: 1 } });
+      const viewerKey = viewerId
+        ? `user:${viewerId}`
+        : `ip:${crypto
+            .createHash('sha256')
+            .update(String(req.ip || req.headers['x-forwarded-for'] || 'guest'))
+            .digest('hex')
+            .slice(0, 16)}`;
+
+      const viewUpdate = await Listing.updateOne(
+        { _id: listing._id, viewedBy: { $ne: viewerKey } },
+        { $addToSet: { viewedBy: viewerKey }, $inc: { views: 1 } }
+      );
+      if (viewUpdate.modifiedCount > 0) {
+        listing.views = (listing.views || 0) + 1;
+      }
     }
 
-    // Calculate real live metrics for seller from MongoDB (zero dummy metrics)
-    const [itemsSoldCount, allReviews, activeListingsCount, totalReceivedChats, acceptedChats] =
-      await Promise.all([
-        Listing.countDocuments({ seller: sellerId, status: { $in: ['sold', 'completed'] } }),
-        Review.find({ seller: sellerId })
-          .select('stars ratingType itemAccuracy communication punctuality')
-          .lean(),
-        Listing.countDocuments({ seller: sellerId, status: 'active' }),
-        Conversation.countDocuments({ receiver: sellerId }),
-        Conversation.countDocuments({ receiver: sellerId, status: 'accepted' }),
-      ]);
+    // Calculate real live metrics for seller & exact real watching count from MongoDB (zero dummy metrics)
+    const [
+      realWatchingCount,
+      itemsSoldCount,
+      allReviews,
+      activeListingsCount,
+      totalReceivedChats,
+      acceptedChats,
+    ] = await Promise.all([
+      User.countDocuments({ favorites: listing._id }),
+      Listing.countDocuments({ seller: sellerId, status: { $in: ['sold', 'completed'] } }),
+      Review.find({ seller: sellerId })
+        .select('stars ratingType itemAccuracy communication punctuality')
+        .lean(),
+      Listing.countDocuments({ seller: sellerId, status: 'active' }),
+      Conversation.countDocuments({ receiver: sellerId }),
+      Conversation.countDocuments({ receiver: sellerId, status: 'accepted' }),
+    ]);
+
+    if (listing.favoritesCount !== realWatchingCount) {
+      listing.favoritesCount = realWatchingCount;
+      Listing.updateOne({ _id: listing._id }, { $set: { favoritesCount: realWatchingCount } }).catch(() => {});
+    }
 
     const totalReviews = allReviews.length;
     let positiveCount = 0;
@@ -588,31 +614,18 @@ export const toggleFavorite = async (req, res, next) => {
     }
 
     const isFav = user.favorites.some((fav) => fav.toString() === listingId);
-    let updatedFavoritesCount = 0;
 
     if (isFav) {
       user.favorites = user.favorites.filter((fav) => fav.toString() !== listingId);
-      const updatedListing = await Listing.findByIdAndUpdate(
-        listingId,
-        { $inc: { favoritesCount: -1 } },
-        { new: true }
-      );
-      if (updatedListing && updatedListing.favoritesCount < 0) {
-        updatedListing.favoritesCount = 0;
-        await updatedListing.save();
-      }
-      updatedFavoritesCount = updatedListing?.favoritesCount || 0;
     } else {
       user.favorites.push(listingId);
-      const updatedListing = await Listing.findByIdAndUpdate(
-        listingId,
-        { $inc: { favoritesCount: 1 } },
-        { new: true }
-      );
-      updatedFavoritesCount = updatedListing?.favoritesCount || 1;
     }
 
     await user.save();
+
+    // Always compute the exact real number of users currently watching this listing
+    const updatedFavoritesCount = await User.countDocuments({ favorites: listingId });
+    await Listing.updateOne({ _id: listingId }, { $set: { favoritesCount: updatedFavoritesCount } });
 
     res.json({
       success: true,
