@@ -326,7 +326,7 @@ export default function ListingDetailPage() {
  <div className="min-h-screen bg-slate-50 pb-20">
  <SafetyBanner />
 
- <div className="max-w-7xl mx-auto lg:px-8 lg:py-6">
+ <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 lg:py-6">
  {/* Breadcrumb Navigation */}
  <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200 lg:bg-transparent lg:border-0 lg:px-0 lg:py-0 lg:mb-4 flex-wrap gap-2 text-xs text-slate-500">
  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
@@ -361,6 +361,13 @@ export default function ListingDetailPage() {
  <img
  src={images[selectedImageIndex]}
  alt={listing.title}
+ onError={(e) => {
+ const fallback =
+ 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=1000&q=80';
+ if (e.currentTarget.src !== fallback) {
+ e.currentTarget.src = fallback;
+ }
+ }}
  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
  decoding="async"
  />

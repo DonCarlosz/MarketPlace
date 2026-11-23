@@ -273,7 +273,7 @@ const seedTimothy = async () => {
         condition: 'brand-new',
         images: [
           {
-            url: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=800&q=80',
+            url: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80',
             caption: 'Felicity solar hybrid inverter with MPPT display',
           },
         ],
@@ -312,7 +312,7 @@ const seedTimothy = async () => {
         condition: 'brand-new',
         images: [
           {
-            url: 'https://images.unsplash.com/photo-1609592426815-5cb9f018e6ec?auto=format&fit=crop&w=800&q=80',
+            url: 'https://images.unsplash.com/photo-1609081219090-a6d81d3085bf?auto=format&fit=crop&w=800&q=80',
             caption: 'Sealed Oraimo packaging with scratch verification code',
           },
         ],
@@ -390,7 +390,7 @@ const seedTimothy = async () => {
         availabilityNotes: 'Daily 7:30 AM - 6:30 PM. Workshop located near Market Road; doorstep diagnostic visits available.',
         images: [
           {
-            url: 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80',
+            url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
             caption: 'Diagnostic inspection and mechanical tools',
           },
         ],

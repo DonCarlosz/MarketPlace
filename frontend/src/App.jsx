@@ -100,10 +100,10 @@ function AppContent() {
 
   return (
     <div
-      className={`flex flex-col bg-slate-50 text-slate-900 font-sans w-full max-w-full overflow-x-clip ${
+      className={`flex flex-col text-slate-900 font-sans w-full max-w-full overflow-x-clip ${
         isChatRoute
-          ? 'h-[100dvh] max-h-[100dvh] overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pb-0'
-          : 'min-h-[100dvh] pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0'
+          ? 'fixed inset-0 bg-white overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pb-0'
+          : 'min-h-[100dvh] bg-slate-50 pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0'
       }`}
     >
       <Navbar />

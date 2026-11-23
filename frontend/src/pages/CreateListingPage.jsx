@@ -453,7 +453,7 @@ export default function CreateListingPage() {
 
  return (
  <div className="min-h-screen bg-slate-50 sm:py-8 sm:px-6 lg:px-8">
- <div className="max-w-6xl mx-auto sm:space-y-6">
+ <div className="max-w-7xl mx-auto sm:space-y-6">
  {/* Wizard Top Header (flat edge-to-edge on mobile) */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white sm:bg-transparent px-4 py-4 sm:px-0 sm:pt-0 sm:pb-3 border-b border-slate-200">
  <div>
@@ -1326,27 +1326,34 @@ export default function CreateListingPage() {
 
  {/* AI Listing Wizard Co-Pilot Modal */}
  {aiModalOpen && (
- <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
- <div className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-7 space-y-5 relative">
- {/* Header */}
- <div className="flex items-center justify-between pb-3 border-b border-slate-100">
- <div className="flex items-center gap-2.5">
+ <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3 sm:p-4">
+ <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[85dvh] flex flex-col overflow-hidden relative">
+ {/* Sticky Header */}
+ <div className="flex items-start justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100 shrink-0">
+ <div className="flex items-center gap-2.5 min-w-0">
  <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
  <Sparkles className="w-4 h-4 text-amber-300" />
  </div>
- <div>
- <h3 className="text-base font-black text-slate-900">Listing Wizard AI Co-Pilot</h3>
- <p className="text-xs text-slate-500">Auto-generate title, specs, description, and Nigerian market price</p>
+ <div className="min-w-0">
+ <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+ Listing Wizard AI Co-Pilot
+ </h3>
+ <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 leading-snug">
+ Auto-generate title, specs, description, and Nigerian market price
+ </p>
  </div>
  </div>
  <button
  type="button"
  onClick={() => setAiModalOpen(false)}
- className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+ className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer shrink-0"
  >
  <X className="w-5 h-5" />
  </button>
  </div>
+
+ {/* Scrollable Modal Body */}
+ <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-4 flex-1 min-h-0">
 
  {/* Error if any */}
  {aiError && (
@@ -1461,28 +1468,30 @@ export default function CreateListingPage() {
  </span>
  </div>
 
- {/* Price Valuation Corridor */}
+ {/* Price Valuation Corridor (flat, spacious rows - zero cramped inner cards, handles ₦1,000,000+ cleanly) */}
  {aiDraftResult.priceCorridor && (
- <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-1.5">
+ <div className="pt-3 border-t border-slate-200 space-y-2">
  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
  Nigerian Market Price Valuation (₦)
  </span>
- <div className="grid grid-cols-3 gap-2 text-center">
- <div className="p-2 bg-slate-50 rounded-lg">
- <span className="text-[10px] text-slate-400 block">Fast Sale</span>
- <span className="font-bold text-slate-700">
+ <div className="divide-y divide-slate-200/80 sm:divide-y-0 sm:grid sm:grid-cols-3 sm:gap-4">
+ <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2 py-2 sm:py-1">
+ <span className="text-xs text-slate-500 font-medium">Fast Sale</span>
+ <span className="text-sm sm:text-base font-bold text-slate-800 tabular-nums whitespace-nowrap">
  {formatPrice(aiDraftResult.priceCorridor.low)}
  </span>
  </div>
- <div className="p-2 bg-indigo-50 border border-indigo-100 rounded-lg">
- <span className="text-[10px] text-indigo-600 font-bold block">Recommended</span>
- <span className="font-black text-indigo-900">
+ <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2 py-2 sm:py-1 sm:border-l sm:border-slate-200 sm:pl-4">
+ <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700">
+ <span>Recommended</span>
+ </span>
+ <span className="text-sm sm:text-base font-black text-indigo-900 tabular-nums whitespace-nowrap">
  {formatPrice(aiDraftResult.priceCorridor.recommended)}
  </span>
  </div>
- <div className="p-2 bg-slate-50 rounded-lg">
- <span className="text-[10px] text-slate-400 block">Top Tier</span>
- <span className="font-bold text-slate-700">
+ <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2 py-2 sm:py-1 sm:border-l sm:border-slate-200 sm:pl-4">
+ <span className="text-xs text-slate-500 font-medium">Top Tier</span>
+ <span className="text-sm sm:text-base font-bold text-slate-800 tabular-nums whitespace-nowrap">
  {formatPrice(aiDraftResult.priceCorridor.high)}
  </span>
  </div>
@@ -1533,6 +1542,7 @@ export default function CreateListingPage() {
  </div>
  </div>
  )}
+ </div>
  </div>
  </div>
  )}

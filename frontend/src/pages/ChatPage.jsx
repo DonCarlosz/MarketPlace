@@ -106,6 +106,7 @@ export default function ChatPage() {
  onConfirm: () => {},
  });
 
+ const messagesContainerRef = useRef(null);
  const messagesEndRef = useRef(null);
  const textareaRef = useRef(null);
  const socketRef = useRef(null);
@@ -326,10 +327,18 @@ export default function ChatPage() {
  };
  }, [activeConvId, refreshUnreadCount]);
 
- // Scroll to bottom whenever messages update
+ // Scroll ONLY the internal messages pane (never scroll the outer window, which pushes Navbar off-screen)
  useEffect(() => {
- messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
- }, [messages]);
+ const el = messagesContainerRef.current;
+ if (!el) return;
+ requestAnimationFrame(() => {
+ el.scrollTop = el.scrollHeight;
+ });
+ }, [messages, activeConvId]);
+
+ useEffect(() => {
+ window.scrollTo(0, 0);
+ }, [activeConvId]);
 
  const activeConversation = conversations.find((c) => c._id === activeConvId);
 
@@ -921,7 +930,7 @@ export default function ChatPage() {
  activeConversation?.listing?.status !== 'completed';
 
  return (
- <div className="flex-1 h-full w-full md:max-w-7xl md:mx-auto p-0 overflow-hidden flex flex-col relative">
+ <div className="flex-1 h-full w-full md:max-w-7xl md:mx-auto md:px-6 lg:px-8 p-0 overflow-hidden flex flex-col relative">
  <div className="flex-1 bg-white rounded-none border-0 md:border-x md:border-slate-200 overflow-hidden flex min-h-0">
  {/* Left Sidebar: Conversations List & TikTok-style Tabs */}
  <aside
@@ -1093,11 +1102,6 @@ export default function ChatPage() {
  >
  {otherUser?.name || 'Member'}
  </Link>
- {isOtherUserBlocked && (
- <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
- Blocked
- </span>
- )}
  </div>
  <p className="text-xs text-slate-500 truncate">
  {activeConversation.listing?.title} •{' '}
@@ -1124,14 +1128,7 @@ export default function ChatPage() {
  </button>
  )}
 
- {isOtherUserBlocked ? (
- <button
- onClick={handleUnblockUser}
- className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition"
- >
- Unblock User
- </button>
- ) : (
+ {!isOtherUserBlocked && (
  <Link
  to={`/listing/${activeConversation.listing?._id}`}
  className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50"
@@ -1246,7 +1243,10 @@ export default function ChatPage() {
  )}
 
  {/* Messages Flow */}
- <div className="flex-1 p-4 overflow-y-auto space-y-3 min-h-0">
+ <div
+ ref={messagesContainerRef}
+ className="flex-1 p-4 overflow-y-auto overscroll-contain space-y-3 min-h-0"
+ >
  {loadingMessages ? (
  <div className="text-center py-10 text-xs text-slate-400">Loading conversation...</div>
  ) : messages.length === 0 ? (
@@ -1607,15 +1607,16 @@ export default function ChatPage() {
  </div>
  </div>
  ) : isOtherUserBlocked ? (
- <div className="p-4 bg-white border-t border-slate-200 text-center space-y-2 shrink-0">
- <p className="text-xs font-bold text-slate-700">
- You have blocked {otherUser?.name || 'this user'}.
+ <div className="px-4 py-3 bg-white border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+ <p className="text-xs font-semibold text-slate-600 truncate">
+ You blocked <span className="font-bold text-slate-900">{otherUser?.name || 'this user'}</span>.
  </p>
  <button
+ type="button"
  onClick={handleUnblockUser}
- className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition"
+ className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition shrink-0 cursor-pointer"
  >
- Unblock to Resume Messaging
+ Unblock
  </button>
  </div>
  ) : isSenderLimitReached ? (

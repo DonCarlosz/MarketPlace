@@ -80,7 +80,7 @@ export default function Navbar() {
 
   return (
     <header
-      className="sticky top-0 z-40 bg-white border-b border-slate-200 w-full max-w-full overflow-x-clip select-none"
+      className="sticky top-0 z-40 shrink-0 bg-white border-b border-slate-200 w-full max-w-full overflow-x-clip select-none"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

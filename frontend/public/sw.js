@@ -1,6 +1,6 @@
 // oBuy Progressive Web App Service Worker
-const STATIC_CACHE = 'obuy-static-v3';
-const RUNTIME_CACHE = 'obuy-runtime-v3';
+const STATIC_CACHE = 'obuy-static-v4';
+const RUNTIME_CACHE = 'obuy-runtime-v4';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

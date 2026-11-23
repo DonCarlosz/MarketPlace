@@ -526,7 +526,7 @@ export default function ProfilePage() {
  </>
  )}
 
- <div className="max-w-5xl mx-auto">
+ <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
  {/* Full-Bleed Profile Header across all breakpoints */}
  <section className="bg-white border-b border-slate-200 sm:border-x overflow-hidden">
  {/* Changeable Header Cover Banner */}
