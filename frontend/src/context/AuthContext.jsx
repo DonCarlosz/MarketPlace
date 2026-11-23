@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import API from '../services/api';
 import { syncSocketAuth } from '../services/socket';
+import { clearUserRouteCaches } from '../utils/routeCache';
 
 const AuthContext = createContext();
 
@@ -67,6 +68,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('refreshToken', res.data.refreshToken);
       localStorage.setItem('user', JSON.stringify(normalized));
       syncSocketAuth(res.data.accessToken);
+      clearUserRouteCaches();
       setUser(normalized);
       setIsAuthModalOpen(false);
       return res.data;
@@ -86,6 +88,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('refreshToken', res.data.refreshToken);
       localStorage.setItem('user', JSON.stringify(normalized));
       syncSocketAuth(res.data.accessToken);
+      clearUserRouteCaches();
       setUser(normalized);
       setIsAuthModalOpen(false);
       return res.data;
@@ -118,6 +121,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       syncSocketAuth(null);
+      clearUserRouteCaches();
       setUser(null);
     }
   }, []);

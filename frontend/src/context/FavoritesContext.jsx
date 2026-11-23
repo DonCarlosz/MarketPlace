@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import API from '../services/api';
 import { useAuth } from './AuthContext';
 
@@ -9,6 +9,7 @@ export const FavoritesProvider = ({ children }) => {
   const [favoriteIds, setFavoriteIds] = useState(new Set());
   const [favoriteListings, setFavoriteListings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const fetchedForUserRef = useRef(null);
 
   const userId = user?._id || user?.id || null;
 
@@ -18,18 +19,23 @@ export const FavoritesProvider = ({ children }) => {
     } else if (!user) {
       setFavoriteIds(new Set());
       setFavoriteListings([]);
+      fetchedForUserRef.current = null;
     }
   }, [user]);
 
   const fetchFavorites = useCallback(async () => {
     if (!userId) return;
-    setLoading((prev) => (favoriteListings.length === 0 ? true : prev));
+    // Only show skeleton on first load for this user; revisit updates silently in background
+    if (fetchedForUserRef.current !== userId && favoriteListings.length === 0) {
+      setLoading(true);
+    }
     try {
       const res = await API.get('/listings/user/favorites');
       if (res.data?.success) {
         const items = res.data.listings || [];
         setFavoriteListings(items);
         setFavoriteIds(new Set(items.map((item) => item._id)));
+        fetchedForUserRef.current = userId;
       }
     } catch (err) {
       console.error('Failed to fetch favorite listings:', err);

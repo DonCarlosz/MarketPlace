@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
+import { listingDetailCache } from '../utils/routeCache';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { formatPrice } from '../utils/format';
@@ -30,9 +31,6 @@ import {
  AlertTriangle,
  CheckCircle,
 } from 'lucide-react';
-
-// Global in-memory cache for instant zero-wait listing recall
-const listingDetailCache = new Map();
 
 export default function ListingDetailPage() {
  const { id } = useParams();

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { profileRouteCache } from '../utils/routeCache';
 import ListingCard from '../components/ListingCard';
 import ConfirmModal from '../components/ConfirmModal';
 import {
@@ -37,24 +38,28 @@ export default function ProfilePage() {
  const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
  const targetUserId = userId || currentUserId;
  const isOwnProfile = !userId || (currentUserId && userId === currentUserId);
+ const profileCacheKey = targetUserId ? `${targetUserId}:${isOwnProfile ? 'own' : 'pub'}` : null;
+ const initialCached = profileRouteCache.get(profileCacheKey);
 
- const [profileData, setProfileData] = useState(null);
- const [reputation, setReputation] = useState(null);
- const [listings, setListings] = useState([]);
- const [favorites, setFavorites] = useState([]);
- const [reviews, setReviews] = useState([]);
- const [loading, setLoading] = useState(true);
+ const [profileData, setProfileData] = useState(
+ () => initialCached?.profileData || (isOwnProfile ? currentUser : null)
+ );
+ const [reputation, setReputation] = useState(() => initialCached?.reputation || null);
+ const [listings, setListings] = useState(() => initialCached?.listings || []);
+ const [favorites, setFavorites] = useState(() => initialCached?.favorites || []);
+ const [reviews, setReviews] = useState(() => initialCached?.reviews || []);
+ const [loading, setLoading] = useState(() => !initialCached);
 
  // Tab State
- const [tab, setTab] = useState('active'); // 'active' | 'sold' | 'favorites' | 'reviews'
+ const [tab, setTab] = useState('active'); // 'active' | 'favorites' | 'sold' | 'reviews'
 
  // Edit Profile State
  const [editing, setEditing] = useState(false);
- const [name, setName] = useState('');
- const [bio, setBio] = useState('');
- const [city, setCity] = useState('');
- const [avatarUrl, setAvatarUrl] = useState('');
- const [coverUrl, setCoverUrl] = useState('');
+ const [name, setName] = useState(() => initialCached?.profileData?.name || (isOwnProfile ? currentUser?.name || '' : ''));
+ const [bio, setBio] = useState(() => initialCached?.profileData?.bio || (isOwnProfile ? currentUser?.bio || '' : ''));
+ const [city, setCity] = useState(() => initialCached?.profileData?.location?.city || (isOwnProfile ? currentUser?.location?.city || '' : ''));
+ const [avatarUrl, setAvatarUrl] = useState(() => initialCached?.profileData?.avatar || (isOwnProfile ? currentUser?.avatar || '' : ''));
+ const [coverUrl, setCoverUrl] = useState(() => initialCached?.profileData?.coverImage || (isOwnProfile ? currentUser?.coverImage || '' : ''));
  const [avatarUploading, setAvatarUploading] = useState(false);
  const [coverUploading, setCoverUploading] = useState(false);
  const [saveLoading, setSaveLoading] = useState(false);
@@ -82,7 +87,7 @@ export default function ProfilePage() {
  onConfirm: () => {},
  });
 
- // Fetch Profile & Reputation Data in parallel
+ // Fetch Profile & Reputation Data in parallel with Stale-While-Revalidate cache
  useEffect(() => {
  if (!targetUserId) {
  if (!currentUserId) {
@@ -92,9 +97,26 @@ export default function ProfilePage() {
  return;
  }
 
+ const cacheKey = `${targetUserId}:${isOwnProfile ? 'own' : 'pub'}`;
+ const cached = profileRouteCache.get(cacheKey);
+ if (cached) {
+ setProfileData(cached.profileData);
+ setReputation(cached.reputation);
+ setListings(cached.listings || []);
+ setFavorites(cached.favorites || []);
+ setReviews(cached.reviews || []);
+ setName(cached.profileData?.name || '');
+ setBio(cached.profileData?.bio || '');
+ setCity(cached.profileData?.location?.city || '');
+ setAvatarUrl(cached.profileData?.avatar || '');
+ setCoverUrl(cached.profileData?.coverImage || '');
+ setLoading(false);
+ } else {
+ setLoading(true);
+ }
+
  let cancelled = false;
  const loadProfile = async () => {
- setLoading(true);
  try {
  const requests = [
  API.get(`/users/${targetUserId}/profile`),
@@ -110,27 +132,43 @@ export default function ProfilePage() {
  const [profRes, listRes, revRes, favRes] = await Promise.all(requests);
  if (cancelled) return;
 
+ const nextProfile = profRes.data?.success ? profRes.data.user : cached?.profileData || null;
+ const nextReputation = profRes.data?.success ? profRes.data.reputation : cached?.reputation || null;
+ const nextListings = listRes.data?.success ? listRes.data.listings || [] : cached?.listings || [];
+ const nextReviews = revRes.data?.success ? revRes.data.reviews || [] : cached?.reviews || [];
+ const nextFavorites = favRes?.data?.success
+ ? favRes.data.listings || favRes.data.favorites || []
+ : cached?.favorites || [];
+
  if (profRes.data?.success) {
- setProfileData(profRes.data.user);
- setReputation(profRes.data.reputation);
- setName(profRes.data.user.name || '');
- setBio(profRes.data.user.bio || '');
- setCity(profRes.data.user.location?.city || '');
- setAvatarUrl(profRes.data.user.avatar || '');
- setCoverUrl(profRes.data.user.coverImage || '');
+ setProfileData(nextProfile);
+ setReputation(nextReputation);
+ setName(nextProfile.name || '');
+ setBio(nextProfile.bio || '');
+ setCity(nextProfile.location?.city || '');
+ setAvatarUrl(nextProfile.avatar || '');
+ setCoverUrl(nextProfile.coverImage || '');
  }
 
  if (listRes.data?.success) {
- setListings(listRes.data.listings || []);
+ setListings(nextListings);
  }
 
  if (revRes.data?.success) {
- setReviews(revRes.data.reviews || []);
+ setReviews(nextReviews);
  }
 
  if (favRes?.data?.success) {
- setFavorites(favRes.data.listings || favRes.data.favorites || []);
+ setFavorites(nextFavorites);
  }
+
+ profileRouteCache.set(cacheKey, {
+ profileData: nextProfile,
+ reputation: nextReputation,
+ listings: nextListings,
+ favorites: nextFavorites,
+ reviews: nextReviews,
+ });
  } catch (err) {
  console.error('Failed to load profile:', err);
  } finally {
@@ -143,6 +181,18 @@ export default function ProfilePage() {
  cancelled = true;
  };
  }, [targetUserId, isOwnProfile, currentUserId, navigate, openAuthModal]);
+
+ // Keep cached profile record synced after local mutations (avatar/cover/edit/listing updates)
+ useEffect(() => {
+ if (!profileCacheKey || !profileData) return;
+ profileRouteCache.set(profileCacheKey, {
+ profileData,
+ reputation,
+ listings,
+ favorites,
+ reviews,
+ });
+ }, [profileCacheKey, profileData, reputation, listings, favorites, reviews]);
 
  const showNotice = (text, type = 'success') => {
  setProfileNotice({ text, type });

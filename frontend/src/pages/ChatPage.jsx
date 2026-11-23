@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
+import { chatInboxCache, chatMessagesCache } from '../utils/routeCache';
 import { formatPrice } from '../utils/format';
 import ConfirmModal from '../components/ConfirmModal';
 import {
@@ -39,16 +40,20 @@ export default function ChatPage() {
  const { user } = useAuth();
  const [searchParams] = useSearchParams();
  const initialConversationId = searchParams.get('conversationId');
+ const currentUserId = (user?._id || user?.id)?.toString();
+ const cachedInbox = chatInboxCache.get(currentUserId);
+ const startingConvId = initialConversationId || cachedInbox?.lastActiveConvId || null;
+ const cachedInitialMsgs = chatMessagesCache.get(startingConvId);
 
- const [conversations, setConversations] = useState([]);
+ const [conversations, setConversations] = useState(() => cachedInbox?.conversations || []);
  const [inboxTab, setInboxTab] = useState('primary'); // 'primary' | 'requests'
- const [activeConvId, setActiveConvId] = useState(initialConversationId || null);
- const [messages, setMessages] = useState([]);
+ const [activeConvId, setActiveConvId] = useState(startingConvId);
+ const [messages, setMessages] = useState(() => cachedInitialMsgs || []);
  const [messageText, setMessageText] = useState('');
- const [loadingConvs, setLoadingConvs] = useState(true);
- const [loadingMessages, setLoadingMessages] = useState(false);
+ const [loadingConvs, setLoadingConvs] = useState(() => !cachedInbox);
+ const [loadingMessages, setLoadingMessages] = useState(() => Boolean(startingConvId && !cachedInitialMsgs));
  const [partnerTyping, setPartnerTyping] = useState(false);
- const [blockedUsers, setBlockedUsers] = useState([]);
+ const [blockedUsers, setBlockedUsers] = useState(() => cachedInbox?.blockedUsers || []);
  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
  const [actionLoading, setActionLoading] = useState(false);
 
@@ -102,7 +107,6 @@ export default function ChatPage() {
  const typingTimeoutRef = useRef(null);
  const toastTimeoutRef = useRef(null);
  const [toast, setToast] = useState(null);
- const currentUserId = (user?._id || user?.id)?.toString();
 
  const showToast = useCallback((text, type = 'info') => {
  setToast({ text, type });
@@ -209,7 +213,22 @@ export default function ChatPage() {
  };
  }, []);
 
- // Fetch all user conversations
+ // Keep inbox & active thread synced in SWR cache for instant route returns
+ useEffect(() => {
+ if (!currentUserId || loadingConvs) return;
+ chatInboxCache.set(currentUserId, {
+ conversations,
+ blockedUsers,
+ lastActiveConvId: activeConvId,
+ });
+ }, [currentUserId, conversations, blockedUsers, activeConvId, loadingConvs]);
+
+ useEffect(() => {
+ if (!activeConvId || loadingMessages) return;
+ chatMessagesCache.set(activeConvId, messages);
+ }, [activeConvId, messages, loadingMessages]);
+
+ // Fetch all user conversations (Stale-While-Revalidate)
  useEffect(() => {
  const fetchConversations = async () => {
  try {
@@ -217,7 +236,7 @@ export default function ChatPage() {
  if (res.data?.success) {
  const list = res.data.conversations || [];
  setConversations(list);
- if (!activeConvIdRef.current && list.length > 0) {
+ if (!activeConvIdRef.current && list.length > 0 && window.innerWidth >= 768) {
  setActiveConvId(list[0]._id);
  }
  }
@@ -233,23 +252,32 @@ export default function ChatPage() {
  }
  }, [user]);
 
- // Join socket room and load messages when active conversation changes
+ // Join socket room and load messages when active conversation changes (Stale-While-Revalidate)
  useEffect(() => {
  if (!activeConvId) return;
 
  let cancelled = false;
  setPartnerTyping(false);
 
+ const cachedMsgs = chatMessagesCache.get(activeConvId);
+ if (cachedMsgs) {
+ setMessages(cachedMsgs);
+ setLoadingMessages(false);
+ } else {
+ setLoadingMessages(true);
+ }
+
  const socket = socketRef.current || getSocket();
  socketRef.current = socket;
  socket.emit('join_conversation', { conversationId: activeConvId });
 
  const fetchMessages = async () => {
- setLoadingMessages(true);
  try {
  const res = await API.get(`/chat/conversations/${activeConvId}/messages`);
  if (!cancelled && res.data?.success) {
- setMessages(res.data.messages || []);
+ const freshMsgs = res.data.messages || [];
+ setMessages(freshMsgs);
+ chatMessagesCache.set(activeConvId, freshMsgs);
  if (res.data.conversation) {
  setConversations((prev) =>
  prev.map((c) => (c._id === activeConvId ? { ...c, ...res.data.conversation } : c))

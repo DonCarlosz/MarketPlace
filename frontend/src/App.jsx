@@ -11,14 +11,22 @@ import AuthModal from './components/AuthModal';
 import AIAssistantDrawer from './components/AIAssistantDrawer';
 import IOSInstallModal from './components/IOSInstallModal';
 
-// Code-split route pages for fast initial PWA load and smooth transitions
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const HomePage = lazy(() => import('./pages/HomePage'));
-const ListingDetailPage = lazy(() => import('./pages/ListingDetailPage'));
-const CreateListingPage = lazy(() => import('./pages/CreateListingPage'));
-const ChatPage = lazy(() => import('./pages/ChatPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+// Code-split route pages with background idle preloading for instant zero-flash tab switching
+const loadLandingPage = () => import('./pages/LandingPage');
+const loadHomePage = () => import('./pages/HomePage');
+const loadListingDetailPage = () => import('./pages/ListingDetailPage');
+const loadCreateListingPage = () => import('./pages/CreateListingPage');
+const loadChatPage = () => import('./pages/ChatPage');
+const loadProfilePage = () => import('./pages/ProfilePage');
+const loadFavoritesPage = () => import('./pages/FavoritesPage');
+
+const LandingPage = lazy(loadLandingPage);
+const HomePage = lazy(loadHomePage);
+const ListingDetailPage = lazy(loadListingDetailPage);
+const CreateListingPage = lazy(loadCreateListingPage);
+const ChatPage = lazy(loadChatPage);
+const ProfilePage = lazy(loadProfilePage);
+const FavoritesPage = lazy(loadFavoritesPage);
 
 function PageLoader() {
   return (
@@ -68,6 +76,25 @@ function NotFoundPage() {
 function AppContent() {
   const location = useLocation();
   const isChatRoute = location.pathname.startsWith('/messages');
+
+  // Preload core tab chunks during idle time so switching routes never flashes a loader
+  useEffect(() => {
+    const preloadCoreRoutes = () => {
+      loadLandingPage();
+      loadHomePage();
+      loadChatPage();
+      loadProfilePage();
+      loadListingDetailPage();
+      loadCreateListingPage();
+      loadFavoritesPage();
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(preloadCoreRoutes, { timeout: 1500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+    const timer = setTimeout(preloadCoreRoutes, 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div
