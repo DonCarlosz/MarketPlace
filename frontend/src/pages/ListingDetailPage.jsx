@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import API from '../services/api';
+import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { formatPrice } from '../utils/format';
@@ -9,12 +9,10 @@ import ListingCard from '../components/ListingCard';
 import {
  MapPin,
  Clock,
- ShieldCheck,
  MessageCircle,
  Flag,
  Share2,
  ChevronLeft,
- ChevronRight,
  Eye,
  CheckCircle2,
  Sparkles,
@@ -27,9 +25,10 @@ import {
  Star,
  ThumbsUp,
  Shield,
- ArrowRight,
  Send,
  ExternalLink,
+ AlertTriangle,
+ CheckCircle,
 } from 'lucide-react';
 
 // Global in-memory cache for instant zero-wait listing recall
@@ -70,6 +69,55 @@ export default function ListingDetailPage() {
  const [reportDetails, setReportDetails] = useState('');
  const [reportSuccess, setReportSuccess] = useState(false);
  const [actionLoading, setActionLoading] = useState(false);
+ const [shareFeedback, setShareFeedback] = useState(false);
+ const [statusUpdating, setStatusUpdating] = useState(false);
+
+ const handleToggleOwnStatus = async () => {
+ if (!listing?._id) return;
+ const nextStatus =
+ listing.status === 'active'
+ ? listing.mode === 'service'
+ ? 'completed'
+ : 'sold'
+ : 'active';
+ setStatusUpdating(true);
+ try {
+ const res = await API.patch(`/listings/${listing._id}/status`, { status: nextStatus });
+ if (res.data?.success) {
+ setListing((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+ listingDetailCache.delete(listing._id);
+ }
+ } catch (err) {
+ alert(err.response?.data?.message || 'Could not update listing status.');
+ } finally {
+ setStatusUpdating(false);
+ }
+ };
+
+ const handleShareListing = async () => {
+ const url = window.location.href;
+ if (navigator.share) {
+ try {
+ await navigator.share({
+ title: listing?.title || 'oBuy Listing',
+ text: `Check out "${listing?.title}" on oBuy`,
+ url,
+ });
+ return;
+ } catch {
+ // User cancelled native share sheet
+ }
+ }
+ if (navigator.clipboard) {
+ try {
+ await navigator.clipboard.writeText(url);
+ setShareFeedback(true);
+ setTimeout(() => setShareFeedback(false), 2000);
+ } catch {
+ // Ignore clipboard error
+ }
+ }
+ };
 
  useEffect(() => {
  const cached = id ? listingDetailCache.get(id) : null;
@@ -253,17 +301,20 @@ export default function ListingDetailPage() {
  );
  }
 
- const serverBaseUrl =
- import.meta.env.VITE_API_URL?.replace('/api', '') ||
- (import.meta.env.PROD ? 'https://marketplace-5wy3.onrender.com' : 'http://localhost:5000');
-
- const images = listing.images?.length > 0
+ const images =
+ listing.images?.length > 0
  ? listing.images.map((img) =>
- img.url.startsWith('http')
- ? img.url
- : `${serverBaseUrl}${img.url}`
+ resolveMediaUrl(
+ img.url,
+ 'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=1000&q=80'
+ )
  )
  : ['https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?auto=format&fit=crop&w=1000&q=80'];
+
+ const specificEntries =
+ listing.itemSpecifics && typeof listing.itemSpecifics === 'object'
+ ? Object.entries(listing.itemSpecifics).filter(([, v]) => v && String(v).trim() !== '')
+ : [];
 
  const discountChips = [
  { label: '-5%', val: Math.round(Number(listing.price || 0) * 0.95) },
@@ -301,9 +352,9 @@ export default function ListingDetailPage() {
  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
  {/* Left Column: Multi-Image Zoom Gallery & Structured Details (7 cols) */}
  <div className="lg:col-span-7 space-y-6">
- {/* eBay-Style Image Gallery Card */}
+ {/* Image Gallery Card */}
  <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden p-3.5">
- {/* Main Image Viewport with Hover Zoom Lens */}
+ {/* Main Image Viewport */}
  <div
  onClick={() => setLightboxOpen(true)}
  className="aspect-[16/11] bg-slate-50 rounded-2xl overflow-hidden relative flex items-center justify-center border border-slate-100 group cursor-zoom-in"
@@ -311,7 +362,8 @@ export default function ListingDetailPage() {
  <img
  src={images[selectedImageIndex]}
  alt={listing.title}
- className="w-full h-full object-contain p-3 group-hover:scale-105 transition duration-300"
+ className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+ decoding="async"
  />
 
  {/* Mode Tag */}
@@ -351,7 +403,7 @@ export default function ListingDetailPage() {
  </button>
 
  {/* Hover Click to Expand Overlay */}
- <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition flex items-center gap-1">
+ <div className="absolute bottom-3 right-3 bg-slate-900/80 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
  <ZoomIn className="w-3.5 h-3.5" />
  <span>Click to expand</span>
  </div>
@@ -363,21 +415,22 @@ export default function ListingDetailPage() {
  {images.map((img, idx) => (
  <button
  key={idx}
+ type="button"
  onClick={() => setSelectedImageIndex(idx)}
- className={`relative w-20 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition cursor-pointer ${
+ className={`relative w-20 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-transform cursor-pointer ${
  selectedImageIndex === idx
  ? 'border-indigo-600 ring-2 ring-indigo-200 scale-95'
  : 'border-slate-200 opacity-75 hover:opacity-100'
  }`}
  >
- <img src={img} alt="" className="w-full h-full object-cover" />
+ <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
  </button>
  ))}
  </div>
  )}
  </div>
 
- {/* eBay-Style Structured Item Specifics Grid */}
+ {/* Structured Item Specifics Grid */}
  <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
  Item Specifics & Details
@@ -387,7 +440,9 @@ export default function ListingDetailPage() {
  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
  <span className="text-slate-400 block font-medium">Condition</span>
  <span className="font-bold text-slate-800 capitalize mt-0.5 block">
- {listing.condition?.replace('-', ' ') || 'Good (Pre-owned)'}
+ {listing.mode === 'service'
+ ? 'Professional Service'
+ : listing.condition?.replace('-', ' ') || 'Good (Pre-owned)'}
  </span>
  </div>
 
@@ -398,7 +453,9 @@ export default function ListingDetailPage() {
 
  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
  <span className="text-slate-400 block font-medium">Fulfillment</span>
- <span className="font-bold text-emerald-700 mt-0.5 block">Direct Meetup</span>
+ <span className="font-bold text-emerald-700 mt-0.5 block">
+ {listing.allowsDelivery ? 'Meetup & Local Delivery' : 'Direct Meetup'}
+ </span>
  </div>
 
  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
@@ -409,15 +466,40 @@ export default function ListingDetailPage() {
  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
  <span className="text-slate-400 block font-medium">Location</span>
  <span className="font-bold text-slate-800 mt-0.5 block truncate">
- {listing.location?.city || 'Nigeria'}
+ {listing.location?.neighborhood
+ ? `${listing.location.neighborhood}, ${listing.location.city}`
+ : listing.location?.city || 'Nigeria'}
  </span>
  </div>
 
  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
  <span className="text-slate-400 block font-medium">Negotiation</span>
- <span className="font-bold text-indigo-700 mt-0.5 block">Offers Welcome</span>
+ <span className="font-bold text-indigo-700 mt-0.5 block">
+ {listing.acceptsOffers !== false ? 'Offers Welcome' : 'Fixed Price'}
+ </span>
  </div>
+
+ {/* Dynamic Seller-Provided Item Specifics */}
+ {specificEntries.map(([specKey, specVal]) => (
+ <div key={specKey} className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+ <span className="text-slate-400 block font-medium capitalize">
+ {specKey.replace(/([A-Z])/g, ' $1').trim()}
+ </span>
+ <span className="font-bold text-slate-800 mt-0.5 block truncate">{specVal}</span>
  </div>
+ ))}
+ </div>
+
+ {/* Honest Flaw Disclosure if provided by seller */}
+ {listing.flawDescription && (
+ <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-2xl text-xs text-amber-950 space-y-1">
+ <p className="font-bold flex items-center gap-1.5 text-amber-900">
+ <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+ <span>Seller Flaw & Cosmetic Disclosure</span>
+ </p>
+ <p className="leading-relaxed">{listing.flawDescription}</p>
+ </div>
+ )}
 
  {/* Service Availability note if present */}
  {listing.availabilityNotes && (
@@ -489,14 +571,48 @@ export default function ListingDetailPage() {
  </div>
  </div>
 
- {/* Dual Primary Action Buttons: Contact + Make Offer */}
+ {/* Action Buttons: Owner Controls OR Buyer Contact + Make Offer */}
  <div className="space-y-2.5 pt-1">
- {/* 1. Primary Contact Seller Button */}
+ {isOwnListing ? (
+ <>
+ <button
+ type="button"
+ onClick={handleToggleOwnStatus}
+ disabled={statusUpdating}
+ className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 font-bold text-xs sm:text-sm rounded-2xl transition-colors cursor-pointer disabled:opacity-50 ${
+ listing.status === 'active'
+ ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+ : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+ }`}
+ >
+ <CheckCircle className="w-4 h-4" />
+ <span>
+ {statusUpdating
+ ? 'Updating...'
+ : listing.status === 'active'
+ ? `Mark as ${listing.mode === 'service' ? 'Completed' : 'Sold'}`
+ : 'Reactivate Listing'}
+ </span>
+ </button>
+ <Link
+ to="/profile"
+ className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl transition-colors border border-slate-200"
+ >
+ <span>Manage All My Listings</span>
+ <ExternalLink className="w-4 h-4 text-indigo-600" />
+ </Link>
+ </>
+ ) : listing.status !== 'active' ? (
+ <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl text-center text-xs font-bold text-slate-600 capitalize">
+ This listing is currently marked as {listing.status}.
+ </div>
+ ) : (
+ <>
  <button
  type="button"
  onClick={handleStartChat}
  disabled={actionLoading}
- className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition cursor-pointer"
+ className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors cursor-pointer"
  >
  <MessageCircle className="w-4 h-4" />
  <span>
@@ -508,44 +624,46 @@ export default function ListingDetailPage() {
  </span>
  </button>
 
- {/* 2. Secondary Make Offer Button (eBay Signature Feature) */}
+ {listing.acceptsOffers !== false && (
  <button
  type="button"
  onClick={handleOpenOfferModal}
- className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl transition border border-slate-200 cursor-pointer"
+ className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl transition-colors border border-slate-200 cursor-pointer"
  >
  <Tag className="w-4 h-4 text-indigo-600" />
  <span>Make an Offer</span>
  </button>
+ )}
+ </>
+ )}
  </div>
 
  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+ {!isOwnListing ? (
  <button
  type="button"
  onClick={() => setReportModalOpen(true)}
- className="inline-flex items-center gap-1 hover:text-rose-600 transition"
+ className="inline-flex items-center gap-1 hover:text-rose-600 transition-colors cursor-pointer"
  >
  <Flag className="w-3.5 h-3.5" />
  <span>Report</span>
  </button>
+ ) : (
+ <span className="text-[11px] font-semibold text-indigo-600">Your Listing</span>
+ )}
 
  <button
  type="button"
- onClick={() => {
- if (navigator.clipboard) {
- navigator.clipboard.writeText(window.location.href);
- alert('Listing link copied to clipboard!');
- }
- }}
- className="inline-flex items-center gap-1 hover:text-indigo-600 transition"
+ onClick={handleShareListing}
+ className="inline-flex items-center gap-1 hover:text-indigo-600 transition-colors cursor-pointer"
  >
  <Share2 className="w-3.5 h-3.5" />
- <span>Share</span>
+ <span>{shareFeedback ? 'Link Copied!' : 'Share'}</span>
  </button>
  </div>
  </div>
 
- {/* eBay-Style Seller Trust & Reputation Card */}
+ {/* Seller Trust & Reputation Card */}
  <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -556,7 +674,9 @@ export default function ListingDetailPage() {
  <span>
  {sellerStats?.hasReviews
  ? `${sellerStats.positivePercentage}% Positive`
- : 'Verified Member'}
+ : listing.seller?.isVerified
+ ? 'Verified Member'
+ : 'New Seller'}
  </span>
  </div>
  </div>
@@ -564,13 +684,14 @@ export default function ListingDetailPage() {
  <div className="flex items-center gap-3">
  <Link
  to={sellerId ? `/profile/${sellerId}` : '#'}
- className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-base flex items-center justify-center border border-indigo-200 shrink-0 overflow-hidden hover:opacity-90 transition"
+ className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-base flex items-center justify-center border border-indigo-200 shrink-0 overflow-hidden hover:opacity-90 transition-opacity"
  >
  {listing.seller?.avatar ? (
  <img
- src={listing.seller.avatar}
+ src={resolveMediaUrl(listing.seller.avatar)}
  alt={listing.seller.name}
  className="w-full h-full object-cover"
+ decoding="async"
  />
  ) : (
  listing.seller?.name?.charAt(0).toUpperCase() || 'U'
@@ -581,26 +702,29 @@ export default function ListingDetailPage() {
  <div className="flex items-center gap-1.5">
  <Link
  to={sellerId ? `/profile/${sellerId}` : '#'}
- className="font-bold text-slate-900 text-sm truncate hover:text-indigo-600 transition"
+ className="font-bold text-slate-900 text-sm truncate hover:text-indigo-600 transition-colors"
  >
- {listing.seller?.name || 'Local User'}
+ {listing.seller?.name || 'oBuy Seller'}
  </Link>
+ {listing.seller?.isVerified && (
  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" title="Verified Member" />
+ )}
  </div>
  <p className="text-xs text-slate-500 truncate">
- Verified Community Member • {listing.location?.city || 'Nigeria'}
+ {listing.seller?.isVerified ? 'Verified oBuy Member' : 'oBuy Member'} •{' '}
+ {listing.location?.city || 'Nigeria'}
  </p>
  </div>
  </div>
 
- {/* 3-Point Seller Metrics (Fully Backend-Driven) */}
+ {/* 3-Point Seller Metrics (100% Backend-Driven) */}
  <div className="grid grid-cols-3 gap-2 pt-1 text-center border-t border-slate-100">
  <div className="p-2 bg-slate-50 rounded-xl">
  <span className="text-[10px] text-slate-400 block font-medium">Rating</span>
  <div className="inline-flex items-center gap-0.5 text-xs font-bold text-amber-600">
  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
  <span>
- {sellerStats?.hasReviews
+ {sellerStats?.hasReviews && sellerStats.averageRating != null
  ? `${sellerStats.averageRating.toFixed(1)}`
  : 'New'}
  </span>
@@ -613,9 +737,9 @@ export default function ListingDetailPage() {
  </span>
  </div>
  <div className="p-2 bg-slate-50 rounded-xl">
- <span className="text-[10px] text-slate-400 block font-medium">Response</span>
- <span className="text-xs font-bold text-indigo-700">
- {sellerStats?.responseBadge || 'Replies fast'}
+ <span className="text-[10px] text-slate-400 block font-medium">Activity</span>
+ <span className="text-xs font-bold text-indigo-700 truncate block">
+ {sellerStats?.responseBadge || 'New Seller'}
  </span>
  </div>
  </div>
@@ -629,7 +753,7 @@ export default function ListingDetailPage() {
  {sellerId && (
  <Link
  to={`/profile/${sellerId}`}
- className="flex items-center justify-center gap-1.5 w-full text-center text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/80 py-2.5 rounded-xl border border-indigo-200/60 transition"
+ className="flex items-center justify-center gap-1.5 w-full text-center text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/80 py-2.5 rounded-xl border border-indigo-200/60 transition-colors"
  >
  <span>View Seller Profile & Scorecard</span>
  <ExternalLink className="w-3.5 h-3.5" />
@@ -637,11 +761,11 @@ export default function ListingDetailPage() {
  )}
  </div>
 
- {/* eBay Money Back / Inspection Guarantee Card */}
+ {/* oBuy Inspection Guarantee Card */}
  <div className="bg-gradient-to-br from-indigo-50/70 to-blue-50/70 border border-indigo-200/80 rounded-3xl p-5 space-y-3">
  <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs uppercase tracking-wider">
  <Shield className="w-4 h-4 text-indigo-600 fill-indigo-100" />
- <span>LocalMarket Inspection Guarantee</span>
+ <span>oBuy Inspection Guarantee</span>
  </div>
 
  <p className="text-xs text-slate-700 leading-relaxed">
@@ -692,13 +816,13 @@ export default function ListingDetailPage() {
  {/* Lightbox Fullscreen Modal */}
  {lightboxOpen && (
  <div
- className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
+ className="fixed inset-0 z-50 bg-black/92 flex items-center justify-center p-4"
  onClick={() => setLightboxOpen(false)}
  >
  <button
  type="button"
  onClick={() => setLightboxOpen(false)}
- className="absolute top-4 right-4 z-50 text-white/80 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition"
+ className="absolute top-4 right-4 z-50 text-white/80 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors cursor-pointer"
  >
  <X className="w-6 h-6" />
  </button>
@@ -710,21 +834,21 @@ export default function ListingDetailPage() {
  <img
  src={images[selectedImageIndex]}
  alt={listing.title}
- className="max-w-full max-h-[75vh] object-contain rounded-2xl "
+ className="max-w-full max-h-[75vh] object-contain rounded-2xl"
  />
 
  {images.length > 1 && (
- <div className="flex items-center gap-2 mt-4 overflow-x-auto p-1 bg-black/40 backdrop-blur-md rounded-2xl">
+ <div className="flex items-center gap-2 mt-4 overflow-x-auto p-1.5 bg-black/60 rounded-2xl">
  {images.map((img, idx) => (
  <button
  key={idx}
  type="button"
  onClick={() => setSelectedImageIndex(idx)}
- className={`w-14 h-12 rounded-xl overflow-hidden border-2 transition ${
+ className={`w-14 h-12 rounded-xl overflow-hidden border-2 transition-transform cursor-pointer ${
  selectedImageIndex === idx ? 'border-white scale-105' : 'border-transparent opacity-60'
  }`}
  >
- <img src={img} alt="" className="w-full h-full object-cover" />
+ <img src={img} alt="" className="w-full h-full object-cover" decoding="async" />
  </button>
  ))}
  </div>
@@ -733,10 +857,10 @@ export default function ListingDetailPage() {
  </div>
  )}
 
- {/* Make an Offer Modal (eBay Signature Feature) */}
+ {/* Make an Offer Modal */}
  {offerModalOpen && (
  <div
- className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+ className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-4"
  onClick={() => setOfferModalOpen(false)}
  >
  <div
@@ -836,7 +960,7 @@ export default function ListingDetailPage() {
 
  {/* Report Modal */}
  {reportModalOpen && (
- <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+ <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4">
  <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 border border-slate-200">
  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
  <Flag className="w-5 h-5 text-rose-500" />

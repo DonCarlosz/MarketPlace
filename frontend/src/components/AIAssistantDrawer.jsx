@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import API from '../services/api';
+import { Link } from 'react-router-dom';
+import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../utils/format';
 import {
@@ -10,16 +10,12 @@ import {
   Loader2,
   Bot,
   User as UserIcon,
-  Search,
-  ShieldCheck,
   CheckCircle2,
   MapPin,
-  ExternalLink,
   HelpCircle,
   Tag,
   ArrowRight,
   RotateCcw,
-  GripVertical,
 } from 'lucide-react';
 
 const SUGGESTED_PROMPTS = [
@@ -31,13 +27,12 @@ const SUGGESTED_PROMPTS = [
 
 export default function AIAssistantDrawer() {
   const { user } = useAuth();
-  const location = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `Hello! I am your **LocalMarket AI Assistant**. Ask me anything about our zero-fee trading policies, safe public meetups, or ask me to search active listings and verified sellers across Nigeria!`,
+      content: `Hello! I am your **oBuy AI Assistant**. Ask me anything about our zero-fee trading policies, safe public meetups, or ask me to search active listings and verified sellers across Nigeria!`,
       listings: [],
     },
   ]);
@@ -47,19 +42,36 @@ export default function AIAssistantDrawer() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Draggable Floating Launcher Position State
+  // Draggable Floating Launcher Position State (clamped to current viewport on load/resize)
   const [btnPos, setBtnPos] = useState(() => {
     try {
-      const saved = localStorage.getItem('localmarket_ai_btn_pos');
+      const saved = localStorage.getItem('obuy_ai_btn_pos') || localStorage.getItem('localmarket_ai_btn_pos');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.left === 'number' && typeof parsed.top === 'number') {
-          return parsed;
+          const clampedLeft = Math.max(8, Math.min(parsed.left, window.innerWidth - 56));
+          const clampedTop = Math.max(8, Math.min(parsed.top, window.innerHeight - 56));
+          return { left: clampedLeft, top: clampedTop };
         }
       }
     } catch {}
     return null;
   });
+
+  // Keep button inside viewport when screen resizes or phone rotates
+  useEffect(() => {
+    const onResize = () => {
+      setBtnPos((prev) => {
+        if (!prev) return null;
+        return {
+          left: Math.max(8, Math.min(prev.left, window.innerWidth - 56)),
+          top: Math.max(8, Math.min(prev.top, window.innerHeight - 56)),
+        };
+      });
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ startX: 0, startY: 0, initialLeft: 0, initialTop: 0 });
@@ -119,7 +131,7 @@ export default function AIAssistantDrawer() {
         setBtnPos((current) => {
           if (current) {
             try {
-              localStorage.setItem('localmarket_ai_btn_pos', JSON.stringify(current));
+              localStorage.setItem('obuy_ai_btn_pos', JSON.stringify(current));
             } catch {}
           }
           return current;
@@ -203,7 +215,7 @@ export default function AIAssistantDrawer() {
         ...prev,
         {
           role: 'assistant',
-          content: `LocalMarket allows you to buy and sell with zero commission. Always meet locally in well-lit public spots such as bank ATM galleries or supermarket plazas to inspect goods before paying in person.`,
+          content: `oBuy allows you to buy and sell with zero commission. Always meet locally in well-lit public spots such as bank ATM galleries or supermarket plazas to inspect goods before paying in person.`,
           listings: [],
         },
       ]);
@@ -216,7 +228,7 @@ export default function AIAssistantDrawer() {
     setMessages([
       {
         role: 'assistant',
-        content: `Conversation refreshed! How can I assist you with LocalMarket today?`,
+        content: `Conversation refreshed! How can I assist you with oBuy today?`,
         listings: [],
       },
     ]);
@@ -286,9 +298,9 @@ export default function AIAssistantDrawer() {
           <button
             type="button"
             onClick={handleLauncherClick}
-            aria-label="Ask LocalMarket AI"
-            className="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 transition-all cursor-pointer flex items-center justify-center relative group active:scale-95 shadow-none"
-            title="Ask LocalMarket AI (drag anywhere to move)"
+            aria-label="Ask oBuy AI"
+            className="w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-500 transition-colors cursor-pointer flex items-center justify-center relative group active:scale-95"
+            title="Ask oBuy AI (drag anywhere to move)"
           >
             <Sparkles className="w-5 h-5 text-amber-300 transition-transform group-hover:scale-110" />
             <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-indigo-600" />
@@ -300,7 +312,7 @@ export default function AIAssistantDrawer() {
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 transition-opacity"
+          className="fixed inset-0 bg-slate-900/45 z-50 transition-opacity"
         />
       )}
 
@@ -319,10 +331,10 @@ export default function AIAssistantDrawer() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-slate-900 text-sm tracking-tight">
-                  LocalMarket AI
+                  oBuy AI
                 </h3>
                 <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px] border border-indigo-200">
-                  Gemini 3.5
+                  Assistant
                 </span>
               </div>
               <p className="text-[11px] text-slate-500">
@@ -393,9 +405,11 @@ export default function AIAssistantDrawer() {
                             <div className="w-14 h-14 rounded-lg bg-slate-100 border border-slate-200 shrink-0 overflow-hidden">
                               {l.image ? (
                                 <img
-                                  src={l.image}
+                                  src={resolveMediaUrl(l.image)}
                                   alt={l.title}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                  loading="lazy"
+                                  decoding="async"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
@@ -520,7 +534,7 @@ export default function AIAssistantDrawer() {
             </button>
           </form>
           <div className="text-[10px] text-slate-400 text-center mt-2">
-            LocalMarket AI provides verified guidance and live database search.
+            oBuy AI provides verified guidance and live database search.
           </div>
         </div>
       </div>

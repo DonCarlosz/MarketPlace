@@ -12,7 +12,7 @@ export const getConversations = async (req, res, next) => {
       participants: req.user._id,
     })
       .populate('participants', 'name avatar location isVerified')
-      .populate('listing', 'title price mode images status location preferredMeetup seller')
+      .populate('listing', 'title price priceType mode images status location preferredMeetup seller acceptsOffers minimumOfferPrice')
       .populate('lastMessage')
       .populate('initiator', 'name avatar')
       .populate('receiver', 'name avatar')
@@ -42,7 +42,6 @@ export const createOrGetConversation = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Listing not found' });
     }
 
-    // Don't allow messaging yourself
     if (listing.seller.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -50,7 +49,6 @@ export const createOrGetConversation = async (req, res, next) => {
       });
     }
 
-    // Check if blocked by either party
     const [currentUser, sellerUser] = await Promise.all([
       User.findById(req.user._id),
       User.findById(listing.seller),
@@ -73,7 +71,7 @@ export const createOrGetConversation = async (req, res, next) => {
       participants: { $all: [req.user._id, listing.seller] },
     })
       .populate('participants', 'name avatar location isVerified')
-      .populate('listing', 'title price mode images status location preferredMeetup seller')
+      .populate('listing', 'title price priceType mode images status location preferredMeetup seller acceptsOffers minimumOfferPrice')
       .populate('lastMessage')
       .populate('initiator', 'name avatar')
       .populate('receiver', 'name avatar');
@@ -90,7 +88,8 @@ export const createOrGetConversation = async (req, res, next) => {
 
       conversation = await Conversation.findById(conversation._id)
         .populate('participants', 'name avatar location isVerified')
-        .populate('listing', 'title price mode images status location preferredMeetup seller')
+        .populate('listing', 'title price priceType mode images status location preferredMeetup seller acceptsOffers minimumOfferPrice')
+        .populate('lastMessage')
         .populate('initiator', 'name avatar')
         .populate('receiver', 'name avatar');
     }
@@ -110,7 +109,7 @@ export const getMessages = async (req, res, next) => {
   try {
     const conversation = await Conversation.findById(req.params.id)
       .populate('participants', 'name avatar location isVerified')
-      .populate('listing', 'title price mode images status location preferredMeetup seller')
+      .populate('listing', 'title price priceType mode images status location preferredMeetup seller acceptsOffers minimumOfferPrice')
       .populate('lastMessage')
       .populate('initiator', 'name avatar')
       .populate('receiver', 'name avatar');
@@ -141,27 +140,20 @@ export const getMessages = async (req, res, next) => {
   }
 };
 
-// @desc    Send a message via HTTP endpoint (with TikTok-style 5-message limit and blocking check)
+// @desc    Send a message via HTTP endpoint (with 5-message anti-spam limit, offer enforcement, and blocking check)
 // @route   POST /api/chat/conversations/:id/messages
 export const sendMessage = async (req, res, next) => {
   try {
     let { content, text, messageType = 'text', offer, meetup } = req.body;
-    content = content || text;
+    content = typeof content === 'string' ? content : typeof text === 'string' ? text : '';
     const conversationId = req.params.id;
 
-    if (messageType === 'offer' && offer?.amount && (!content || !content.trim())) {
-      content = `🤝 Price Offer: ₦${Number(offer.amount).toLocaleString()}${
-        offer.note ? ` ("${offer.note.trim()}")` : ''
-      }`;
-    } else if (messageType === 'meetup_proposal' && meetup?.spotName && (!content || !content.trim())) {
-      content = `📍 Suggested Public Meetup: ${meetup.spotName}${meetup.address ? ` (${meetup.address})` : ''}`;
+    const validMessageTypes = ['text', 'offer', 'meetup_proposal'];
+    if (!validMessageTypes.includes(messageType)) {
+      messageType = 'text';
     }
 
-    if (!content || !content.trim()) {
-      return res.status(400).json({ success: false, message: 'Message content cannot be empty' });
-    }
-
-    const conversation = await Conversation.findById(conversationId);
+    const conversation = await Conversation.findById(conversationId).populate('listing');
     if (!conversation) {
       return res.status(404).json({ success: false, message: 'Conversation not found' });
     }
@@ -174,7 +166,57 @@ export const sendMessage = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
-    // Check blocking status
+    // Enforce real offer rules (acceptsOffers & minimumOfferPrice)
+    let cleanOffer = undefined;
+    if (messageType === 'offer') {
+      const amount = Number(offer?.amount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return res.status(400).json({ success: false, message: 'Offer amount must be a valid positive number' });
+      }
+      const listing = conversation.listing;
+      if (listing) {
+        if (listing.seller?.toString() === req.user._id.toString()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Sellers cannot submit buyer offers on their own listing. Use Counter on an incoming offer.',
+          });
+        }
+        if (listing.acceptsOffers === false) {
+          return res.status(400).json({
+            success: false,
+            message: 'This listing has a fixed price and does not accept price offers.',
+          });
+        }
+        if (listing.minimumOfferPrice > 0 && amount < listing.minimumOfferPrice) {
+          return res.status(400).json({
+            success: false,
+            message: `Auto-declined: your offer is below the seller's minimum acceptable price of ₦${Number(
+              listing.minimumOfferPrice
+            ).toLocaleString()}.`,
+          });
+        }
+      }
+      cleanOffer = {
+        amount,
+        note: typeof offer?.note === 'string' ? offer.note.trim().slice(0, 300) : '',
+        status: 'pending',
+      };
+      if (!content.trim()) {
+        content = `Price Offer: ₦${amount.toLocaleString()}${cleanOffer.note ? ` ("${cleanOffer.note}")` : ''}`;
+      }
+    } else if (messageType === 'meetup_proposal') {
+      if (!meetup?.spotName || typeof meetup.spotName !== 'string') {
+        return res.status(400).json({ success: false, message: 'Meetup spot name is required' });
+      }
+      if (!content.trim()) {
+        content = `Suggested Public Meetup: ${meetup.spotName}${meetup.address ? ` (${meetup.address})` : ''}`;
+      }
+    }
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ success: false, message: 'Message content cannot be empty' });
+    }
+
     const otherParticipantId = conversation.participants.find(
       (p) => p.toString() !== req.user._id.toString()
     );
@@ -196,7 +238,7 @@ export const sendMessage = async (req, res, next) => {
       });
     }
 
-    // TikTok-style message request acceptance & 5-message limit
+    // Message request acceptance & 5-message anti-spam limit
     const currentUserIdStr = req.user._id.toString();
     const isInitiator = conversation.initiator
       ? conversation.initiator.toString() === currentUserIdStr
@@ -214,7 +256,6 @@ export const sendMessage = async (req, res, next) => {
         }
         conversation.senderMessageCount = (conversation.senderMessageCount || 0) + 1;
       } else {
-        // If receiver is replying, automatically mark conversation as accepted!
         conversation.status = 'accepted';
       }
     } else if (conversation.status === 'declined') {
@@ -228,9 +269,9 @@ export const sendMessage = async (req, res, next) => {
     const message = await Message.create({
       conversation: conversationId,
       sender: req.user._id,
-      content: content.trim(),
+      content: content.trim().slice(0, 2000),
       messageType,
-      offer: messageType === 'offer' ? offer : undefined,
+      offer: cleanOffer,
       meetup: messageType === 'meetup_proposal' ? meetup : undefined,
       readBy: [req.user._id],
     });
@@ -241,7 +282,6 @@ export const sendMessage = async (req, res, next) => {
 
     const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatar');
 
-    // Broadcast message via Socket.io to all users in room
     const io = req.app.get('io');
     if (io) {
       io.to(`conv_${conversationId}`).emit('receive_message', populatedMessage);
@@ -261,7 +301,7 @@ export const sendMessage = async (req, res, next) => {
   }
 };
 
-// @desc    Accept a message request (TikTok-style)
+// @desc    Accept a message request (Recipient ONLY - prevents initiator bypass)
 // @route   PATCH /api/chat/conversations/:id/accept
 export const acceptConversation = async (req, res, next) => {
   try {
@@ -271,12 +311,19 @@ export const acceptConversation = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Conversation not found' });
     }
 
-    const isParticipant = conversation.participants.some(
-      (p) => p.toString() === req.user._id.toString()
-    );
+    const userIdStr = req.user._id.toString();
+    const isParticipant = conversation.participants.some((p) => p.toString() === userIdStr);
 
     if (!isParticipant) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Only the recipient (non-initiator) can accept a pending message request
+    if (conversation.initiator && conversation.initiator.toString() === userIdStr) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the recipient can accept a pending message request.',
+      });
     }
 
     conversation.status = 'accepted';
@@ -299,7 +346,7 @@ export const acceptConversation = async (req, res, next) => {
   }
 };
 
-// @desc    Decline a message request
+// @desc    Decline a message request (Recipient ONLY)
 // @route   PATCH /api/chat/conversations/:id/decline
 export const declineConversation = async (req, res, next) => {
   try {
@@ -309,12 +356,18 @@ export const declineConversation = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Conversation not found' });
     }
 
-    const isParticipant = conversation.participants.some(
-      (p) => p.toString() === req.user._id.toString()
-    );
+    const userIdStr = req.user._id.toString();
+    const isParticipant = conversation.participants.some((p) => p.toString() === userIdStr);
 
     if (!isParticipant) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (conversation.initiator && conversation.initiator.toString() === userIdStr) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the recipient can decline a pending message request.',
+      });
     }
 
     conversation.status = 'declined';
@@ -345,6 +398,11 @@ export const blockUser = async (req, res, next) => {
 
     if (targetUserId === req.user._id.toString()) {
       return res.status(400).json({ success: false, message: 'You cannot block yourself' });
+    }
+
+    const targetExists = await User.exists({ _id: targetUserId });
+    if (!targetExists) {
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     await User.findByIdAndUpdate(req.user._id, {
@@ -383,7 +441,7 @@ export const unblockUser = async (req, res, next) => {
 // @route   GET /api/chat/blocked-users
 export const getBlockedUsers = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).populate('blockedUsers', 'name avatar email');
+    const user = await User.findById(req.user._id).populate('blockedUsers', 'name avatar');
     res.json({
       success: true,
       blockedUsers: user.blockedUsers || [],
@@ -393,11 +451,11 @@ export const getBlockedUsers = async (req, res, next) => {
   }
 };
 
-// @desc    Accept, decline or counter an in-chat price offer
+// @desc    Accept, decline or counter an in-chat price offer (Counterparty ONLY, pending ONLY)
 // @route   PATCH /api/chat/messages/:id/offer
 export const respondToOffer = async (req, res, next) => {
   try {
-    const { action, counterAmount } = req.body; // 'accept' | 'decline' | 'counter'
+    const { action, counterAmount } = req.body;
     const messageId = req.params.id;
 
     if (!['accept', 'decline', 'counter'].includes(action)) {
@@ -410,32 +468,51 @@ export const respondToOffer = async (req, res, next) => {
     }
 
     const conversation = await Conversation.findById(message.conversation);
-    const isParticipant = conversation?.participants.some(
-      (p) => p.toString() === req.user._id.toString()
-    );
+    const userIdStr = req.user._id.toString();
+    const isParticipant = conversation?.participants.some((p) => p.toString() === userIdStr);
     if (!isParticipant) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
+    // Security check: offer sender cannot accept/decline/counter their own offer!
+    if (message.sender.toString() === userIdStr) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot respond to your own price offer.',
+      });
+    }
+
+    // Only pending offers can be acted upon
+    if (message.offer?.status && message.offer.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `This offer has already been ${message.offer.status}.`,
+      });
+    }
+
+    let parsedCounter = 0;
     if (action === 'accept') {
       message.offer.status = 'accepted';
     } else if (action === 'decline') {
       message.offer.status = 'declined';
     } else if (action === 'counter') {
+      parsedCounter = Number(counterAmount);
+      if (!Number.isFinite(parsedCounter) || parsedCounter <= 0) {
+        return res.status(400).json({ success: false, message: 'Valid counter-offer amount is required' });
+      }
       message.offer.status = 'countered';
-      message.offer.counterAmount = Number(counterAmount) || 0;
+      message.offer.counterAmount = parsedCounter;
     }
     await message.save();
 
     const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatar');
 
-    // Create a system message in chat
     const actionText =
       action === 'accept'
-        ? `🎉 Offer of ₦${Number(message.offer.amount).toLocaleString()} was accepted!`
+        ? `Offer of ₦${Number(message.offer.amount).toLocaleString()} was accepted!`
         : action === 'counter'
-        ? `🔄 Counter-offer of ₦${Number(counterAmount).toLocaleString()} proposed.`
-        : `❌ Offer of ₦${Number(message.offer.amount).toLocaleString()} was declined.`;
+        ? `Counter-offer of ₦${parsedCounter.toLocaleString()} proposed.`
+        : `Offer of ₦${Number(message.offer.amount).toLocaleString()} was declined.`;
 
     const systemMsg = await Message.create({
       conversation: conversation._id,
@@ -448,6 +525,9 @@ export const respondToOffer = async (req, res, next) => {
 
     conversation.lastMessage = systemMsg._id;
     conversation.lastMessageAt = new Date();
+    if (conversation.status === 'pending') {
+      conversation.status = 'accepted';
+    }
     await conversation.save();
 
     const io = req.app.get('io');
@@ -471,12 +551,19 @@ export const respondToOffer = async (req, res, next) => {
 export const suggestSafeMeetupSpots = async (req, res, next) => {
   try {
     const { lat, lng, city, neighborhood, listingId } = req.body;
-    const userCity = city || req.user?.location?.city || 'Lagos';
+    const userCity =
+      typeof city === 'string' && city.trim()
+        ? city.trim().slice(0, 80)
+        : req.user?.location?.city || 'Lagos';
+
     const spots = await getSmartSafeMeetupSpots({
-      lat: lat ? Number(lat) : null,
-      lng: lng ? Number(lng) : null,
+      lat: lat && Number.isFinite(Number(lat)) ? Number(lat) : null,
+      lng: lng && Number.isFinite(Number(lng)) ? Number(lng) : null,
       city: userCity,
-      neighborhood: neighborhood || req.user?.location?.neighborhood || '',
+      neighborhood:
+        typeof neighborhood === 'string'
+          ? neighborhood.trim().slice(0, 80)
+          : req.user?.location?.neighborhood || '',
       listingId,
     });
 

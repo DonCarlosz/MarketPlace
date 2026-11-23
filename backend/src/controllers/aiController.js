@@ -3,7 +3,7 @@ import { chatWithAssistant, draftListingCoPilot } from '../services/aiService.js
 /**
  * @route   POST /api/ai/chat
  * @desc    Chat with the Universal Platform AI Assistant (Platform Q&A & Conversational Search)
- * @access  Public / Optional Auth
+ * @access  Public / Optional Auth (Rate-Limited)
  */
 export const chatWithAssistantController = async (req, res, next) => {
   try {
@@ -16,12 +16,32 @@ export const chatWithAssistantController = async (req, res, next) => {
       });
     }
 
+    // Cap message history & per-message length to prevent token/quota DoS
+    const sanitizedMessages = messages
+      .slice(-10)
+      .filter((m) => m && typeof m.content === 'string' && m.content.trim().length > 0)
+      .map((m) => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: m.content.trim().slice(0, 1000),
+      }));
+
+    if (sanitizedMessages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid message.',
+      });
+    }
+
     const userContext = {
-      name: req.user?.name || context?.userName || 'Guest User',
-      city: req.user?.location?.city || context?.userCity || 'Nigeria',
+      name:
+        req.user?.name ||
+        (typeof context?.userName === 'string' ? context.userName.trim().slice(0, 60) : 'Guest User'),
+      city:
+        req.user?.location?.city ||
+        (typeof context?.userCity === 'string' ? context.userCity.trim().slice(0, 60) : 'Nigeria'),
     };
 
-    const result = await chatWithAssistant({ messages, userContext });
+    const result = await chatWithAssistant({ messages: sanitizedMessages, userContext });
 
     res.json({
       success: true,
@@ -36,7 +56,7 @@ export const chatWithAssistantController = async (req, res, next) => {
 /**
  * @route   POST /api/ai/draft-listing
  * @desc    Listing Wizard Co-Pilot: Auto-draft titles, descriptions, categories, and price corridors
- * @access  Private
+ * @access  Private (Rate-Limited)
  */
 export const draftListingController = async (req, res, next) => {
   try {
@@ -49,12 +69,19 @@ export const draftListingController = async (req, res, next) => {
       });
     }
 
+    if (typeof imageBase64 === 'string' && imageBase64.length > 4 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image payload is too large for AI analysis. Please use a smaller image.',
+      });
+    }
+
     const draft = await draftListingCoPilot({
-      prompt: prompt || '',
-      category: category || '',
-      mode: mode || 'second-hand',
-      imageBase64: imageBase64 || null,
-      mimeType: mimeType || null,
+      prompt: typeof prompt === 'string' ? prompt.trim().slice(0, 1500) : '',
+      category: typeof category === 'string' ? category.trim().slice(0, 80) : '',
+      mode: ['second-hand', 'new', 'service'].includes(mode) ? mode : 'second-hand',
+      imageBase64: typeof imageBase64 === 'string' ? imageBase64 : null,
+      mimeType: typeof mimeType === 'string' && mimeType.startsWith('image/') ? mimeType : null,
     });
 
     res.json({

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMode } from '../context/ModeContext';
 import { useAuth } from '../context/AuthContext';
-import API from '../services/api';
+import API, { resolveMediaUrl } from '../services/api';
+import { formatPrice } from '../utils/format';
 import ListingCard from '../components/ListingCard';
 import {
  Store,
@@ -11,16 +12,12 @@ import {
  Wrench,
  Search,
  MapPin,
- ShieldCheck,
  ArrowRight,
- PlusCircle,
  ChevronLeft,
  ChevronRight,
  Flame,
- Compass,
  Play,
  Pause,
- Zap,
  X,
 } from 'lucide-react';
 
@@ -140,14 +137,17 @@ export default function LandingPage() {
  }
  }, [enableTransition]);
 
- // Continuous forward auto-switch every 5.5 seconds
+ // Continuous forward auto-switch every 5.5 seconds (pauses when tab is hidden)
  useEffect(() => {
  if (!isPlaying) return;
  const interval = setInterval(() => {
- nextSlide();
+ if (!document.hidden) {
+ setEnableTransition(true);
+ setTrackIndex((prev) => prev + 1);
+ }
  }, 5500);
  return () => clearInterval(interval);
- }, [isPlaying, trackIndex]);
+ }, [isPlaying]);
 
  const fetchListingsData = async (cat, term, silent = false) => {
  try {
@@ -347,7 +347,7 @@ export default function LandingPage() {
  <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center">
  <div className="max-w-xl space-y-2.5 text-white">
  <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
- Get more with a LocalMarket account.
+ Get more with an oBuy account.
  </h2>
  <p className="text-xs sm:text-sm font-bold text-slate-100 leading-relaxed max-w-lg">
  Enjoy direct member messaging, instant deal notifications, and zero listing fees across your neighborhood.
@@ -356,13 +356,13 @@ export default function LandingPage() {
  <button
  type="button"
  onClick={handlePostClick}
- className="px-5 py-2 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm transition active:scale-95"
+ className="px-5 py-2 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm transition active:scale-95 cursor-pointer"
  >
  {user ? 'Post a Listing' : 'Sign in to Start'}
  </button>
  <Link
  to="/market"
- className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 backdrop-blur-sm transition"
+ className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition"
  >
  Explore market
  </Link>
@@ -397,14 +397,25 @@ export default function LandingPage() {
  </div>
  </div>
 
- {/* Right Content: Balanced Service Cards */}
+ {/* Right Content: Clickable Service Category Cards */}
  <div className="hidden sm:flex items-center gap-4 shrink-0 py-1 pr-2 sm:pr-4">
  {/* Barber Card */}
- <div className="w-36 sm:w-42 md:w-46 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl p-2.5 transform -rotate-1 hover:rotate-0 transition flex flex-col justify-between">
+ <button
+ type="button"
+ onClick={() =>
+ handleCategoryClick({
+ name: 'Barbers & Braids',
+ category: 'Barbers & Hair',
+ mode: 'service',
+ })
+ }
+ className="w-36 sm:w-42 md:w-46 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl p-2.5 transform -rotate-1 hover:rotate-0 transition flex flex-col justify-between text-left cursor-pointer"
+ >
  <div className="w-full h-20 sm:h-24 rounded-xl overflow-hidden mb-1">
  <img
  src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80"
  alt="Barber"
+ decoding="async"
  className="w-full h-full object-cover"
  />
  </div>
@@ -413,14 +424,25 @@ export default function LandingPage() {
  <div className="text-[11px] text-purple-600 font-bold">Fixed Sessions</div>
  <div className="text-[10px] text-slate-500 truncate mt-0.5">Fades, Beard & Styling</div>
  </div>
- </div>
+ </button>
 
  {/* Mechanic Card */}
- <div className="w-36 sm:w-42 md:w-46 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl p-2.5 transform rotate-1 hover:rotate-0 transition flex flex-col justify-between">
+ <button
+ type="button"
+ onClick={() =>
+ handleCategoryClick({
+ name: 'Auto Detailing & Mechanics',
+ category: 'Auto Detailing & Mechanics',
+ mode: 'service',
+ })
+ }
+ className="w-36 sm:w-42 md:w-46 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl p-2.5 transform rotate-1 hover:rotate-0 transition flex flex-col justify-between text-left cursor-pointer"
+ >
  <div className="w-full h-20 sm:h-24 rounded-xl overflow-hidden mb-1">
  <img
  src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80"
  alt="Mechanic"
+ decoding="async"
  className="w-full h-full object-cover"
  />
  </div>
@@ -429,7 +451,7 @@ export default function LandingPage() {
  <div className="text-[11px] text-emerald-600 font-bold">Starting-At</div>
  <div className="text-[10px] text-slate-500 truncate mt-0.5">Engine, Brakes & Tune-up</div>
  </div>
- </div>
+ </button>
  </div>
  </div>
  </div>
@@ -441,9 +463,9 @@ export default function LandingPage() {
 
 
  return (
- <div className="min-h-screen bg-white flex flex-col w-full max-w-full overflow-x-hidden">
- {/* 1. eBay-Style Top Search Section (Clean & Tight, Increased Breathing Room) */}
- <section className="bg-slate-50 border-b border-slate-200/90 pt-3.5 pb-6 sm:pb-7 px-4 sm:px-6 lg:px-8 w-full max-w-full overflow-hidden">
+ <div className="min-h-screen bg-white flex flex-col w-full max-w-full overflow-x-clip">
+ {/* 1. Top Search Section */}
+ <section className="bg-slate-50 border-b border-slate-200/90 pt-3.5 pb-6 sm:pb-7 px-4 sm:px-6 lg:px-8 w-full max-w-full">
  <div className="max-w-7xl mx-auto space-y-2.5">
  <form
  onSubmit={handleSearchSubmit}
@@ -548,8 +570,8 @@ export default function LandingPage() {
  ))}
  </div>
 
- {/* eBay-Style Controls Cluster (Bottom Right Chevrons & Play/Pause) */}
- <div className="absolute bottom-3 right-6 z-20 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full text-white ">
+ {/* Hero Controls Cluster (Bottom Right Chevrons & Play/Pause) */}
+ <div className="absolute bottom-3 right-6 z-20 flex items-center gap-2 bg-slate-950/75 px-3 py-1.5 rounded-full text-white">
  {/* Slide indicator dots */}
  <div className="flex items-center gap-1.5 px-1">
  {[0, 1, 2].map((idx) => {
@@ -645,6 +667,7 @@ export default function LandingPage() {
  alt={tile.name}
  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
  loading="lazy"
+ decoding="async"
  />
  </div>
  <span className={`font-bold text-xs transition line-clamp-1 ${
@@ -773,43 +796,65 @@ export default function LandingPage() {
  </div>
  </div>
 
- {/* Right Showcase Products: Clean preview cards on light background */}
+ {/* Right Showcase Products: Live clickable listings from oBuy */}
  <div className="flex items-center gap-3 sm:gap-4 overflow-hidden py-2">
- <div className="w-32 sm:w-36 bg-white rounded-2xl p-2.5 border border-slate-200 transform -rotate-3 hover:rotate-0 transition">
- <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
- <img
- src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&q=80"
- alt="Headphones"
- className="w-full h-full object-cover"
- />
- </div>
- <div className="text-[10px] font-bold text-slate-900 truncate">Studio Headphones</div>
- <div className="text-[10px] font-extrabold text-indigo-600">₦45,000</div>
- </div>
+ {(featuredListings.length >= 3 ? featuredListings.slice(0, 3) : CATEGORY_TILES.slice(0, 3)).map((entry, idx) => {
+ const isLiveListing = Boolean(entry._id);
+ const tiltClass =
+ idx === 0
+ ? 'w-32 sm:w-36 p-2.5 transform -rotate-3 hover:rotate-0'
+ : idx === 1
+ ? 'w-36 sm:w-40 p-3 transform rotate-2 hover:rotate-0 z-10'
+ : 'w-32 sm:w-36 p-2.5 transform rotate-6 hover:rotate-0';
+ const imgUrl = isLiveListing
+ ? resolveMediaUrl(entry.images?.[0]?.url)
+ : entry.image;
 
- <div className="w-36 sm:w-40 bg-white rounded-2xl p-3 border border-slate-200 transform rotate-2 hover:rotate-0 transition z-10">
+ if (isLiveListing) {
+ return (
+ <Link
+ key={entry._id}
+ to={`/listing/${entry._id}`}
+ className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 transition block shrink-0`}
+ >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
  <img
- src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80"
- alt="Smart Chrono"
+ src={imgUrl}
+ alt={entry.title}
+ loading="lazy"
+ decoding="async"
  className="w-full h-full object-cover"
  />
  </div>
- <div className="text-[11px] font-bold text-slate-900 truncate">Smart Chrono Series</div>
- <div className="text-[11px] font-extrabold text-emerald-600">₦62,000</div>
+ <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.title}</div>
+ <div className="text-[10px] sm:text-[11px] font-extrabold text-indigo-600">
+ {formatPrice(entry.price, entry.priceType)}
  </div>
+ </Link>
+ );
+ }
 
- <div className="w-32 sm:w-36 bg-white rounded-2xl p-2.5 border border-slate-200 transform rotate-6 hover:rotate-0 transition">
+ return (
+ <button
+ key={entry.name}
+ type="button"
+ onClick={() => handleCategoryClick(entry)}
+ className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 transition text-left cursor-pointer shrink-0`}
+ >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
  <img
- src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=400&q=80"
- alt="Vintage Camera"
+ src={imgUrl}
+ alt={entry.name}
+ loading="lazy"
+ decoding="async"
  className="w-full h-full object-cover"
  />
  </div>
- <div className="text-[10px] font-bold text-slate-900 truncate">Vintage Optical</div>
- <div className="text-[10px] font-extrabold text-indigo-600">₦85,000</div>
- </div>
+ <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.name}</div>
+ <div className="text-[10px] font-extrabold text-indigo-600 truncate">{entry.tag}</div>
+ </button>
+ );
+ })}
  </div>
  </div>
  </section>
@@ -969,7 +1014,7 @@ export default function LandingPage() {
  </button>
  <Link
  to="/market"
- className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm border border-white/20 backdrop-blur-sm transition"
+ className="px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition"
  >
  Explore market
  </Link>

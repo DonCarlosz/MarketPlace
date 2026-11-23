@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
-import { Heart, Compass, ArrowRight, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
+import { Heart, Compass, ArrowRight, ShieldCheck, ShoppingBag } from 'lucide-react';
 
 export default function FavoritesPage() {
  const { user, openAuthModal } = useAuth();
@@ -136,7 +136,7 @@ export default function FavoritesPage() {
  {favoriteListings.length === 0 ? 'Your wishlist is currently empty' : 'No items match this filter'}
  </h2>
  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mx-auto">
- Explore the marketplace and tap the heart on any item or local service to save it here for quick comparison and future visits.
+ Explore oBuy and tap the heart on any item or local service to save it here for quick comparison and future visits.
  </p>
  <div className="pt-2">
  <Link
@@ -144,7 +144,7 @@ export default function FavoritesPage() {
  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition"
  >
  <Compass className="w-4 h-4" />
- <span>Browse Marketplace</span>
+ <span>Browse oBuy</span>
  <ArrowRight className="w-4 h-4" />
  </Link>
  </div>

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import { escapeRegex } from '../utils/sanitize.js';
 
 function getAiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -10,9 +11,9 @@ function getAiClient() {
 
 // Master Platform System Prompt
 const PLATFORM_SYSTEM_PROMPT = `
-You are LocalMarket AI, the omniscient and friendly platform assistant for LocalMarket (Nigeria's leading peer-to-peer marketplace and local services platform).
+You are oBuy AI, the omniscient and friendly platform assistant for oBuy (Nigeria's leading peer-to-peer marketplace and local services platform).
 
-ABOUT LOCALMARKET:
+ABOUT OBUY:
 1. Core Operating Modes:
    - Second-Hand Goods: Pre-loved electronics, vehicles, fashion, furniture. Transparent flaw disclosures, physical inspection before payment, in-chat price offers.
    - Brand-New Items: Factory-sealed products, retail items, verified stock with distributor warranties.
@@ -21,7 +22,7 @@ ABOUT LOCALMARKET:
 2. Zero-Fee Trading Policy:
    - 100% free for buyers and sellers. Zero listing fees, zero sales commissions.
    - Deals happen off-platform in person. Buyers inspect the item physically, confirm functionality, and pay the seller directly (via cash or instant bank transfer).
-   - LocalMarket NEVER asks for commission or escrow processing charges.
+   - oBuy NEVER asks for commission or escrow processing charges.
 
 3. Trust, Safety & Safe Meetups:
    - Never wire money, advance deposit, or transport fare to anyone before seeing the item.
@@ -35,7 +36,7 @@ ABOUT LOCALMARKET:
 
 5. Currency & Locale:
    - All monetary figures are in Nigerian Naira (₦).
-   - You understand Nigerian cities and neighborhoods (Lagos: Ikeja, Yaba, Lekki; Abuja: Wuse 2, Jabi, Garki; Edo: Benin City, Uromi, Ekpoma; Port Harcourt; Ibadan; Kano; etc.).
+   - You understand Nigerian cities and neighborhoods (Lagos: Ikeja, Yaba, Lekki; Abuja: Wuse 2, Jabi, Garki; Edo: Benin City, Uromi, Ekpoma; Port Harcourt; Ibadan; Bauchi; Kano; Kaduna; etc.).
 
 TONE AND STYLE GUIDELINES:
 - Helpful, professional, and warmly Nigerian.
@@ -50,7 +51,7 @@ TONE AND STYLE GUIDELINES:
 async function extractSearchIntent(ai, userQuery) {
   try {
     const prompt = `
-Analyze this user query for an e-commerce marketplace in Nigeria:
+Analyze this user query for oBuy, a peer-to-peer marketplace in Nigeria:
 "${userQuery}"
 
 Determine if the user is looking to find, browse, or inquire about items, services, products, or specific sellers.
@@ -61,7 +62,7 @@ If YES, output valid JSON:
   "query": "string (main keywords for item/service, or empty if general)",
   "category": "string or null (e.g. 'Phones & Tablets', 'Electronics', 'Computers & Tech', 'Home Appliances', 'Repairs & Tech', 'Home Services & Trades')",
   "mode": "string or null ('second-hand' | 'new' | 'service')",
-  "city": "string or null (e.g. 'Uromi', 'Lagos', 'Abuja', 'Benin City')",
+  "city": "string or null (e.g. 'Uromi', 'Lagos', 'Abuja', 'Benin City', 'Bauchi')",
   "maxPrice": number or null,
   "minPrice": number or null,
   "sellerName": "string or null (e.g. 'Timothy', 'Martins', 'Isaiah')"
@@ -88,65 +89,74 @@ Output strictly valid JSON with no markdown fences:
     return JSON.parse(raw.trim());
   } catch (err) {
     console.warn('AI search intent extraction fallback:', err.message);
-    // Basic regex fallback
-    const isSearch = /buy|find|search|sell|looking for|laptop|phone|tv|generator|price|cost|uromi|lagos|timothy/i.test(userQuery);
+    const isSearch = /buy|find|search|sell|looking for|laptop|phone|tv|generator|price|cost|uromi|lagos|timothy|bauchi/i.test(userQuery);
     return {
       hasSearchIntent: isSearch,
       query: userQuery,
       sellerName: /timothy/i.test(userQuery) ? 'Timothy' : null,
-      city: /uromi/i.test(userQuery) ? 'Uromi' : null,
+      city: /uromi/i.test(userQuery) ? 'Uromi' : /bauchi/i.test(userQuery) ? 'Bauchi' : null,
     };
   }
 }
 
 /**
- * Execute MongoDB search based on structured intent
+ * Execute MongoDB search based on structured intent (ReDoS-hardened)
  */
 async function queryDatabaseListings(intent) {
   try {
     const filter = { status: 'active' };
 
-    // Seller name filter
-    if (intent.sellerName) {
+    if (typeof intent.sellerName === 'string' && intent.sellerName.trim()) {
+      const safeSeller = escapeRegex(intent.sellerName.trim().slice(0, 60));
       const sellerUsers = await User.find({
-        name: { $regex: new RegExp(intent.sellerName.trim(), 'i') },
-      }).select('_id');
+        name: { $regex: new RegExp(safeSeller, 'i') },
+      })
+        .select('_id')
+        .lean();
       if (sellerUsers.length > 0) {
         filter.seller = { $in: sellerUsers.map((u) => u._id) };
       }
     }
 
-    // City filter
-    if (intent.city) {
-      filter['location.city'] = { $regex: new RegExp(intent.city.trim(), 'i') };
+    if (typeof intent.city === 'string' && intent.city.trim()) {
+      const safeCity = escapeRegex(intent.city.trim().slice(0, 60));
+      filter['location.city'] = { $regex: new RegExp(safeCity, 'i') };
     }
 
-    // Mode filter
-    if (intent.mode) {
+    if (intent.mode && ['second-hand', 'new', 'service'].includes(intent.mode)) {
       filter.mode = intent.mode;
     }
 
-    // Category filter
-    if (intent.category) {
-      filter.category = { $regex: new RegExp(intent.category.trim(), 'i') };
+    if (typeof intent.category === 'string' && intent.category.trim()) {
+      const safeCat = escapeRegex(intent.category.trim().slice(0, 60));
+      filter.category = { $regex: new RegExp(safeCat, 'i') };
     }
 
-    // Price filter
     if (intent.minPrice != null || intent.maxPrice != null) {
       filter.price = {};
-      if (intent.minPrice != null) filter.price.$gte = intent.minPrice;
-      if (intent.maxPrice != null) filter.price.$lte = intent.maxPrice;
+      if (intent.minPrice != null && Number.isFinite(Number(intent.minPrice))) {
+        filter.price.$gte = Number(intent.minPrice);
+      }
+      if (intent.maxPrice != null && Number.isFinite(Number(intent.maxPrice))) {
+        filter.price.$lte = Number(intent.maxPrice);
+      }
     }
 
-    // Keyword search
-    if (intent.query && intent.query.trim().length > 1) {
+    if (typeof intent.query === 'string' && intent.query.trim().length > 1) {
       const cleanedWords = intent.query
         .replace(/[^\w\s]/gi, '')
         .split(/\s+/)
-        .filter((w) => w.length > 2 && !['find', 'show', 'selling', 'what', 'have', 'need', 'with', 'under', 'near'].includes(w.toLowerCase()));
+        .filter(
+          (w) =>
+            w.length > 2 &&
+            !['find', 'show', 'selling', 'what', 'have', 'need', 'with', 'under', 'near'].includes(
+              w.toLowerCase()
+            )
+        )
+        .slice(0, 6);
 
       if (cleanedWords.length > 0) {
-        const regexPatterns = cleanedWords.map((w) => new RegExp(w, 'i'));
+        const regexPatterns = cleanedWords.map((w) => new RegExp(escapeRegex(w), 'i'));
         filter.$or = [
           { title: { $in: regexPatterns } },
           { description: { $in: regexPatterns } },
@@ -156,27 +166,32 @@ async function queryDatabaseListings(intent) {
     }
 
     const listings = await Listing.find(filter)
-      .populate('seller', 'name location isVerified feedbackScore positivePercentage avatar')
+      .populate('seller', 'name location isVerified feedbackScore avatar')
       .sort({ createdAt: -1 })
       .limit(6)
       .lean();
 
-    return listings.map((l) => ({
-      _id: l._id.toString(),
-      title: l.title,
-      price: l.price,
-      priceType: l.priceType,
-      mode: l.mode,
-      category: l.category,
-      condition: l.condition,
-      city: l.location?.city || 'Nigeria',
-      neighborhood: l.location?.neighborhood || '',
-      image: l.images?.[0]?.url || '',
-      sellerName: l.seller?.name || 'Local Seller',
-      sellerPositive: l.seller?.positivePercentage ?? 100,
-      sellerVerified: l.seller?.isVerified ?? false,
-      preferredMeetup: l.preferredMeetup || '',
-    }));
+    return listings.map((l) => {
+      const totalRevs = l.seller?.feedbackScore?.totalReviews || 0;
+      const sellerPositive = totalRevs > 0 ? l.seller?.feedbackScore?.positivePercentage ?? null : null;
+      return {
+        _id: l._id.toString(),
+        title: l.title,
+        price: l.price,
+        priceType: l.priceType,
+        mode: l.mode,
+        category: l.category,
+        condition: l.condition,
+        city: l.location?.city || 'Nigeria',
+        neighborhood: l.location?.neighborhood || '',
+        image: l.images?.[0]?.url || '',
+        sellerName: l.seller?.name || 'Local Seller',
+        sellerPositive,
+        sellerTotalReviews: totalRevs,
+        sellerVerified: Boolean(l.seller?.isVerified),
+        preferredMeetup: l.preferredMeetup || '',
+      };
+    });
   } catch (err) {
     console.error('Error querying listings for AI assistant:', err);
     return [];
@@ -194,20 +209,18 @@ export async function chatWithAssistant({ messages, userContext = {} }) {
 
   if (ai) {
     try {
-      // 1. Detect search intent & query live database
       const intent = await extractSearchIntent(ai, lastMessage);
       if (intent.hasSearchIntent) {
         matchedListings = await queryDatabaseListings(intent);
       }
 
-      // 2. Build synthesis prompt with database context
       let contextualAddendum = '';
       if (matchedListings.length > 0) {
         contextualAddendum = `
-LIVE MATCHING LISTINGS IN LOCALMARKET DATABASE:
+LIVE MATCHING LISTINGS IN OBUY DATABASE:
 ${JSON.stringify(matchedListings, null, 2)}
 
-Provide a natural, enthusiastic summary presenting these findings to the user. Mention the seller names, verified status, key features, prices formatted in Nigerian Naira (₦), and where they are located. Let the user know they can click the cards below to see full details, start a chat, or submit an offer.
+Provide a natural, helpful summary presenting these findings to the user. Mention the seller names, verified status, key features, prices formatted in Nigerian Naira (₦), and where they are located. Let the user know they can click the cards below to see full details, start a chat, or submit an offer.
 `;
       } else if (intent.hasSearchIntent) {
         contextualAddendum = `
@@ -225,12 +238,12 @@ USER SESSION CONTEXT:
 CONVERSATION HISTORY:
 ${messages
   .slice(-6)
-  .map((m) => `${m.role === 'user' ? 'User' : 'LocalMarket AI'}: ${m.content}`)
+  .map((m) => `${m.role === 'user' ? 'User' : 'oBuy AI'}: ${m.content}`)
   .join('\n')}
 
 ${contextualAddendum}
 
-Write your response as LocalMarket AI directly to the user:
+Write your response as oBuy AI directly to the user:
 `;
 
       const aiRes = await ai.models.generateContent({
@@ -247,13 +260,12 @@ Write your response as LocalMarket AI directly to the user:
     }
   }
 
-  // Fallback if AI service is offline
   matchedListings = await queryDatabaseListings({ query: lastMessage });
   return {
     reply:
       matchedListings.length > 0
-        ? `Here are the active marketplace listings matching your search on LocalMarket. You can click on any card below to inspect full specifications, chat with the seller, or propose an offer.`
-        : `LocalMarket is Nigeria's zero-fee peer-to-peer marketplace. You can buy and sell second-hand goods, brand-new items, or hire local artisans with zero commission. Always meet in open public spots such as bank ATM galleries or supermarket plazas to inspect items and pay safely in person.`,
+        ? `Here are the active listings matching your search on oBuy. Click any card below to inspect full specifications, chat with the seller, or propose an offer.`
+        : `oBuy is Nigeria's zero-fee peer-to-peer marketplace. You can buy and sell second-hand goods, brand-new items, or hire local artisans with zero commission. Always meet in open public spots such as bank ATM galleries or supermarket plazas to inspect items and pay safely in person.`,
     listings: matchedListings,
   };
 }
@@ -268,7 +280,7 @@ export async function draftListingCoPilot({ prompt: userPrompt, category, mode, 
   }
 
   const promptText = `
-You are the LocalMarket Listing Wizard Co-Pilot for Nigerian peer-to-peer commerce.
+You are the oBuy Listing Wizard Co-Pilot for Nigerian peer-to-peer commerce.
 Your mission is to generate a high-converting, honest, and complete listing draft based on the seller's input.
 
 Seller Mode: "${mode || 'second-hand'}" (options: 'second-hand', 'new', 'service')

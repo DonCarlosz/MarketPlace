@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, ShieldCheck, ChevronDown, ExternalLink } from 'lucide-react';
+import { Store, ShieldCheck, ChevronDown } from 'lucide-react';
 
 export default function Footer() {
   const [openSections, setOpenSections] = useState({});
@@ -17,10 +17,10 @@ export default function Footer() {
       id: 'buy',
       title: 'Buy & Discover',
       links: [
-        { label: 'Explore Marketplace', to: '/market' },
+        { label: 'Explore oBuy Market', to: '/market' },
         { label: 'Second-Hand Goods', to: '/market?mode=second-hand' },
-        { label: 'Brand-New Items', to: '/market?mode=brand-new' },
-        { label: 'Local Handwork & Services', to: '/market?mode=services' },
+        { label: 'Brand-New Items', to: '/market?mode=new' },
+        { label: 'Local Handwork & Services', to: '/market?mode=service' },
         { label: 'Saved Wishlist', to: '/favorites' },
       ],
     },
@@ -48,7 +48,7 @@ export default function Footer() {
     },
     {
       id: 'about',
-      title: 'About LocalMarket',
+      title: 'About oBuy',
       links: [
         { label: 'Community Guidelines', static: true },
         { label: 'Safe Trading Guarantee', static: true },
@@ -61,9 +61,9 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="bg-white border-t border-slate-200 mt-auto text-xs text-slate-500 pb-16 md:pb-6">
+    <footer className="bg-white border-t border-slate-200 mt-auto text-xs text-slate-500 pb-6 md:pb-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-        {/* Mobile Accordion View (< 768px, eBay-style) */}
+        {/* Mobile Accordion View (< 768px) */}
         <div className="md:hidden divide-y divide-slate-100 border-b border-slate-100 mb-3">
           {footerSections.map((sec) => {
             const isOpen = !!openSections[sec.id];
@@ -72,7 +72,7 @@ export default function Footer() {
                 <button
                   type="button"
                   onClick={() => toggleSection(sec.id)}
-                  className="w-full py-3 flex items-center justify-between text-left font-bold text-slate-800 hover:text-indigo-600 transition cursor-pointer select-none"
+                  className="w-full py-3 flex items-center justify-between text-left font-bold text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer select-none"
                   aria-expanded={isOpen}
                 >
                   <span className="text-xs uppercase tracking-wider">{sec.title}</span>
@@ -84,7 +84,7 @@ export default function Footer() {
                 </button>
 
                 {isOpen && (
-                  <div className="pb-3 pt-1 space-y-2 text-slate-600 animate-in fade-in duration-150 pl-1">
+                  <div className="pb-3 pt-1 space-y-2 text-slate-600 pl-1">
                     {sec.description && (
                       <p className="text-[11px] text-slate-500 leading-relaxed pb-1">
                         {sec.description}
@@ -96,7 +96,7 @@ export default function Footer() {
                           {link.to ? (
                             <Link
                               to={link.to}
-                              className="text-slate-600 hover:text-indigo-600 transition block py-0.5"
+                              className="text-slate-600 hover:text-indigo-600 transition-colors block py-0.5"
                             >
                               {link.label}
                             </Link>
@@ -114,7 +114,7 @@ export default function Footer() {
         </div>
 
         {/* Desktop Multi-Column Grid (>= 768px) */}
-        <div className="hidden md:grid md:grid-cols-4 gap-8 pb-10">
+        <div className="hidden md:grid md:grid-cols-4 gap-8 pb-8">
           {footerSections.map((sec) => (
             <div key={sec.id} className="space-y-3">
               <h4 className="font-bold text-slate-900 text-xs tracking-wider uppercase">
@@ -131,7 +131,7 @@ export default function Footer() {
                     {link.to ? (
                       <Link
                         to={link.to}
-                        className="hover:text-indigo-600 transition block"
+                        className="hover:text-indigo-600 transition-colors block"
                       >
                         {link.label}
                       </Link>
@@ -145,7 +145,7 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Compact Integrated Trust & Legal Bar */}
+        {/* Compact Integrated Trust & Brand Bar */}
         <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-slate-500 text-[11px]">
           <div className="flex items-center gap-2 text-emerald-800 font-medium">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -154,7 +154,7 @@ export default function Footer() {
 
           <div className="flex items-center gap-2 text-slate-400">
             <Store className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span className="font-bold text-slate-700">LocalMarket</span>
+            <span className="font-bold text-slate-700">oBuy</span>
             <span>•</span>
             <span>© {new Date().getFullYear()}</span>
             <span>•</span>

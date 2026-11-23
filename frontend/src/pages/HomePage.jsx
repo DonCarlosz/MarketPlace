@@ -1,23 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMode } from '../context/ModeContext';
 import { useAuth } from '../context/AuthContext';
 import API from '../services/api';
 import { getSocket } from '../services/socket';
-import { resolveCityCoordinates, calculateDistanceKm, NIGERIAN_CITIES } from '../utils/geo';
+import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo';
 import ListingCard from '../components/ListingCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SafetyBanner from '../components/SafetyBanner';
 import {
  Search,
  SlidersHorizontal,
- MapPin,
  RefreshCw,
  Sparkles,
  Wrench,
  AlertCircle,
  LayoutGrid,
  List,
- RotateCcw,
  X,
 } from 'lucide-react';
 
@@ -59,12 +58,22 @@ const CATEGORIES_BY_MODE = {
  ],
 };
 
-// Global in-memory cache for instant zero-wait retention
+// Bounded in-memory cache for instant return navigation
+const MAX_CACHE_ENTRIES = 30;
 const listingsCache = new Map();
+const setBoundedCache = (key, value) => {
+ if (listingsCache.has(key)) listingsCache.delete(key);
+ listingsCache.set(key, value);
+ if (listingsCache.size > MAX_CACHE_ENTRIES) {
+ const oldestKey = listingsCache.keys().next().value;
+ listingsCache.delete(oldestKey);
+ }
+};
 let lastMarketScrollY = 0;
 
 export default function HomePage() {
  const { user } = useAuth();
+ const [searchParams, setSearchParams] = useSearchParams();
  const {
  mode,
  setMode,
@@ -82,10 +91,35 @@ export default function HomePage() {
  const [priceFilter, setPriceFilter] = useState({ min: '', max: '' });
  const [conditionFilter, setConditionFilter] = useState('all');
 
- // eBay-Style View Mode: 'grid' vs 'list'
+ // Marketplace View Mode: 'grid' vs 'list'
  const [viewMode, setViewMode] = useState('grid');
  // Mobile Filter Drawer State
  const [mobileFilterDrawerOpen, setMobileFilterDrawerOpen] = useState(false);
+
+ // Sync URL query params (?mode=, ?category=, ?search=) when navigated via deep link or Footer
+ useEffect(() => {
+ const urlMode = searchParams.get('mode');
+ const urlCategory = searchParams.get('category');
+ const urlSearch = searchParams.get('search');
+ let consumed = false;
+
+ if (urlMode && ['second-hand', 'new', 'service'].includes(urlMode)) {
+ setMode(urlMode);
+ if (!urlCategory) setSelectedCategory('All');
+ consumed = true;
+ }
+ if (urlCategory) {
+ setSelectedCategory(urlCategory);
+ consumed = true;
+ }
+ if (urlSearch !== null) {
+ setSearchQuery(urlSearch);
+ consumed = true;
+ }
+ if (consumed) {
+ setSearchParams({}, { replace: true });
+ }
+ }, [searchParams, setMode, setSelectedCategory, setSearchQuery, setSearchParams]);
 
  const socketRef = useRef(null);
  const categories = CATEGORIES_BY_MODE[mode] || CATEGORIES_BY_MODE['second-hand'];
@@ -117,17 +151,23 @@ export default function HomePage() {
  const [loading, setLoading] = useState(() => !cachedInitial);
  const [error, setError] = useState(null);
 
- // Scroll restoration on return to /market
+ // Scroll restoration on return to /market (rAF throttled for 60fps mobile scrolling)
  useEffect(() => {
  if (lastMarketScrollY > 0) {
  window.scrollTo(0, lastMarketScrollY);
  }
+ let rafId = null;
  const handleScroll = () => {
+ if (rafId !== null) return;
+ rafId = requestAnimationFrame(() => {
  lastMarketScrollY = window.scrollY;
+ rafId = null;
+ });
  };
  window.addEventListener('scroll', handleScroll, { passive: true });
  return () => {
  window.removeEventListener('scroll', handleScroll);
+ if (rafId !== null) cancelAnimationFrame(rafId);
  };
  }, []);
 
@@ -181,11 +221,12 @@ export default function HomePage() {
  if (currentCoords && currentCoords.length === 2 && currentCoords[0] !== 0) {
  freshListings = freshListings.map((item) => {
  if (item.location?.coordinates?.length === 2 && item.location.coordinates[0] !== 0) {
+ // GeoJSON coordinates are [longitude, latitude]
  const d = calculateDistanceKm(
- currentCoords[1],
  currentCoords[0],
- item.location.coordinates[1],
- item.location.coordinates[0]
+ currentCoords[1],
+ item.location.coordinates[0],
+ item.location.coordinates[1]
  );
  return { ...item, distanceKm: d };
  }
@@ -199,7 +240,7 @@ export default function HomePage() {
  }
  }
 
- listingsCache.set(cacheKey, freshListings);
+ setBoundedCache(cacheKey, freshListings);
  setListings(freshListings);
  }
  } catch (err) {
@@ -228,7 +269,7 @@ export default function HomePage() {
  setListings((prev) => {
  if (prev.some((item) => item._id === newListing._id)) return prev;
  const updated = [newListing, ...prev];
- listingsCache.set(getCacheKey(), updated);
+ setBoundedCache(getCacheKey(), updated);
  return updated;
  });
  };
@@ -241,7 +282,7 @@ export default function HomePage() {
  } else {
  updated = prev.map((item) => (item._id === id ? { ...item, status } : item));
  }
- listingsCache.set(getCacheKey(), updated);
+ setBoundedCache(getCacheKey(), updated);
  return updated;
  });
  };
@@ -249,7 +290,7 @@ export default function HomePage() {
  const handleListingDeleted = ({ id }) => {
  setListings((prev) => {
  const updated = prev.filter((item) => item._id !== id);
- listingsCache.set(getCacheKey(), updated);
+ setBoundedCache(getCacheKey(), updated);
  return updated;
  });
  };
@@ -267,7 +308,7 @@ export default function HomePage() {
  };
  }, [mode, user]);
 
- // Fetch listings on filter change
+ // Fetch listings on filter or search change
  useEffect(() => {
  const cacheKey = getCacheKey();
  const cachedData = listingsCache.get(cacheKey);
@@ -279,10 +320,10 @@ export default function HomePage() {
 
  const timer = setTimeout(() => {
  fetchListings(!!cachedData);
- }, 120);
+ }, 180);
 
  return () => clearTimeout(timer);
- }, [mode, selectedCategory, sortBy, radiusKm, conditionFilter, priceFilter, activeCity, user]);
+ }, [mode, selectedCategory, searchQuery, sortBy, radiusKm, conditionFilter, priceFilter, activeCity, user]);
 
  const handleSearchSubmit = (e) => {
  e.preventDefault();
@@ -325,7 +366,7 @@ export default function HomePage() {
  activeCity !== 'All Locations';
 
  return (
- <div className="min-h-screen bg-slate-50 flex flex-col w-full max-w-full overflow-x-hidden">
+ <div className="min-h-screen bg-slate-50 flex flex-col w-full max-w-full overflow-x-clip">
  <SafetyBanner />
 
  {/* Hero & Search Header */}
@@ -384,7 +425,7 @@ export default function HomePage() {
  Discover {mode === 'service' ? 'trusted local services' : 'great items'} in your community.
  </h1>
 
- {/* eBay-Style Integrated Search Bar with Category Dropdown */}
+ {/* Integrated Search Bar with Category Dropdown */}
  <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-1">
  <div className="flex items-center bg-white rounded-full border border-slate-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition p-1 sm:p-1.5">
  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 ml-3 mr-2 shrink-0" />
@@ -501,7 +542,7 @@ export default function HomePage() {
  <option value="popular">Most Viewed</option>
  </select>
 
- {/* eBay-Style View Mode Toggles: Grid vs List */}
+ {/* View Mode Toggles: Grid vs List */}
  <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
  <button
  type="button"
@@ -684,7 +725,7 @@ export default function HomePage() {
  {/* Mobile Slide-Over Filter Drawer */}
  {mobileFilterDrawerOpen && (
  <div
- className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden flex justify-end animate-in fade-in duration-200"
+ className="fixed inset-0 z-50 bg-black/60 lg:hidden flex justify-end animate-in fade-in duration-200"
  onClick={() => setMobileFilterDrawerOpen(false)}
  >
  <div

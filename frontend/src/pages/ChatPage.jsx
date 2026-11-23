@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import API from '../services/api';
+import API, { resolveMediaUrl } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../utils/format';
@@ -12,7 +12,6 @@ import {
  ExternalLink,
  MoreVertical,
  Ban,
- Flag,
  CheckCircle2,
  XCircle,
  AlertTriangle,
@@ -25,9 +24,6 @@ import {
  X,
  RotateCcw,
  Sparkles,
- Store,
- Shield,
- HelpCircle,
  CheckCircle,
  Star,
  ThumbsUp,
@@ -102,7 +98,28 @@ export default function ChatPage() {
 
  const messagesEndRef = useRef(null);
  const socketRef = useRef(null);
+ const activeConvIdRef = useRef(activeConvId);
+ const typingTimeoutRef = useRef(null);
+ const toastTimeoutRef = useRef(null);
+ const [toast, setToast] = useState(null);
  const currentUserId = (user?._id || user?.id)?.toString();
+
+ const showToast = useCallback((text, type = 'info') => {
+ setToast({ text, type });
+ if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+ toastTimeoutRef.current = setTimeout(() => setToast(null), 4000);
+ }, []);
+
+ useEffect(() => {
+ activeConvIdRef.current = activeConvId;
+ }, [activeConvId]);
+
+ useEffect(() => {
+ return () => {
+ if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+ if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+ };
+ }, []);
 
  // Fetch blocked users
  const fetchBlockedUsers = async () => {
@@ -116,53 +133,81 @@ export default function ChatPage() {
  }
  };
 
- // Initialize socket
+ // Register Socket.IO listeners once with full cleanup (prevents listener duplication & room leaks)
  useEffect(() => {
- socketRef.current = getSocket();
+ const socket = getSocket();
+ socketRef.current = socket;
 
- socketRef.current.on('receive_message', (newMsg) => {
+ const handleReceiveMessage = (newMsg) => {
+ if (!newMsg) return;
+ const msgConvId = String(newMsg.conversation?._id || newMsg.conversation || '');
+
+ if (msgConvId && msgConvId === String(activeConvIdRef.current || '')) {
  setMessages((prev) => {
  if (prev.some((m) => m._id === newMsg._id)) return prev;
  return [...prev, newMsg];
  });
+ }
 
- // Update last message in conversation list
  setConversations((prev) =>
  prev.map((c) =>
- c._id === newMsg.conversation
- ? { ...c, lastMessage: newMsg, lastMessageAt: new Date() }
+ String(c._id) === msgConvId
+ ? { ...c, lastMessage: newMsg, lastMessageAt: newMsg.createdAt || new Date().toISOString() }
  : c
  )
  );
- });
+ };
 
- socketRef.current.on('offer_updated', (updatedMsg) => {
+ const handleOfferUpdated = (updatedMsg) => {
+ if (!updatedMsg) return;
+ const msgConvId = String(updatedMsg.conversation?._id || updatedMsg.conversation || '');
+ if (msgConvId && msgConvId !== String(activeConvIdRef.current || '')) return;
+
  setMessages((prev) =>
  prev.map((m) => (m._id === updatedMsg._id ? updatedMsg : m))
  );
- });
+ };
 
- socketRef.current.on('conversation_accepted', ({ conversationId }) => {
+ const handleConversationAccepted = ({ conversationId }) => {
  setConversations((prev) =>
- prev.map((c) => (c._id === conversationId ? { ...c, status: 'accepted' } : c))
+ prev.map((c) => (String(c._id) === String(conversationId) ? { ...c, status: 'accepted' } : c))
  );
- });
+ };
 
- socketRef.current.on('conversation_declined', ({ conversationId }) => {
+ const handleConversationDeclined = ({ conversationId }) => {
  setConversations((prev) =>
- prev.map((c) => (c._id === conversationId ? { ...c, status: 'declined' } : c))
+ prev.map((c) => (String(c._id) === String(conversationId) ? { ...c, status: 'declined' } : c))
  );
- });
+ };
 
- socketRef.current.on('user_typing', () => setPartnerTyping(true));
- socketRef.current.on('user_stop_typing', () => setPartnerTyping(false));
-
- return () => {
- if (socketRef.current && activeConvId) {
- socketRef.current.emit('leave_conversation', { conversationId: activeConvId });
+ const handleUserTyping = (payload) => {
+ if (!payload?.conversationId || String(payload.conversationId) === String(activeConvIdRef.current || '')) {
+ setPartnerTyping(true);
  }
  };
- }, [activeConvId]);
+
+ const handleUserStopTyping = (payload) => {
+ if (!payload?.conversationId || String(payload.conversationId) === String(activeConvIdRef.current || '')) {
+ setPartnerTyping(false);
+ }
+ };
+
+ socket.on('receive_message', handleReceiveMessage);
+ socket.on('offer_updated', handleOfferUpdated);
+ socket.on('conversation_accepted', handleConversationAccepted);
+ socket.on('conversation_declined', handleConversationDeclined);
+ socket.on('user_typing', handleUserTyping);
+ socket.on('user_stop_typing', handleUserStopTyping);
+
+ return () => {
+ socket.off('receive_message', handleReceiveMessage);
+ socket.off('offer_updated', handleOfferUpdated);
+ socket.off('conversation_accepted', handleConversationAccepted);
+ socket.off('conversation_declined', handleConversationDeclined);
+ socket.off('user_typing', handleUserTyping);
+ socket.off('user_stop_typing', handleUserStopTyping);
+ };
+ }, []);
 
  // Fetch all user conversations
  useEffect(() => {
@@ -172,7 +217,7 @@ export default function ChatPage() {
  if (res.data?.success) {
  const list = res.data.conversations || [];
  setConversations(list);
- if (!activeConvId && list.length > 0) {
+ if (!activeConvIdRef.current && list.length > 0) {
  setActiveConvId(list[0]._id);
  }
  }
@@ -192,15 +237,18 @@ export default function ChatPage() {
  useEffect(() => {
  if (!activeConvId) return;
 
- if (socketRef.current) {
- socketRef.current.emit('join_conversation', { conversationId: activeConvId });
- }
+ let cancelled = false;
+ setPartnerTyping(false);
+
+ const socket = socketRef.current || getSocket();
+ socketRef.current = socket;
+ socket.emit('join_conversation', { conversationId: activeConvId });
 
  const fetchMessages = async () => {
  setLoadingMessages(true);
  try {
  const res = await API.get(`/chat/conversations/${activeConvId}/messages`);
- if (res.data?.success) {
+ if (!cancelled && res.data?.success) {
  setMessages(res.data.messages || []);
  if (res.data.conversation) {
  setConversations((prev) =>
@@ -211,11 +259,17 @@ export default function ChatPage() {
  } catch (err) {
  console.error('Error fetching messages:', err);
  } finally {
- setLoadingMessages(false);
+ if (!cancelled) setLoadingMessages(false);
  }
  };
 
  fetchMessages();
+
+ return () => {
+ cancelled = true;
+ socket.emit('stop_typing', { conversationId: activeConvId });
+ socket.emit('leave_conversation', { conversationId: activeConvId });
+ };
  }, [activeConvId]);
 
  // Scroll to bottom whenever messages update
@@ -284,6 +338,9 @@ export default function ChatPage() {
 
  const text = messageText.trim();
  setMessageText('');
+ if (socketRef.current && activeConvId) {
+ socketRef.current.emit('stop_typing', { conversationId: activeConvId });
+ }
 
  try {
  const res = await API.post(`/chat/conversations/${activeConvId}/messages`, { content: text });
@@ -301,14 +358,29 @@ export default function ChatPage() {
  status: res.data.conversationStatus || c.status,
  senderMessageCount: res.data.senderMessageCount ?? (c.senderMessageCount || 0) + 1,
  lastMessage: res.data.message,
- lastMessageAt: new Date(),
+ lastMessageAt: new Date().toISOString(),
  }
  : c
  )
  );
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to send message');
+ showToast(err.response?.data?.message || 'Failed to send message', 'error');
+ }
+ };
+
+ const handleMessageInputChange = (e) => {
+ const val = e.target.value;
+ setMessageText(val);
+ if (!socketRef.current || !activeConvId) return;
+ if (val.trim()) {
+ socketRef.current.emit('typing', { conversationId: activeConvId });
+ if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+ typingTimeoutRef.current = setTimeout(() => {
+ socketRef.current?.emit('stop_typing', { conversationId: activeConvId });
+ }, 1800);
+ } else {
+ socketRef.current.emit('stop_typing', { conversationId: activeConvId });
  }
  };
 
@@ -335,9 +407,12 @@ export default function ChatPage() {
  setMakeOfferModalOpen(false);
  setOfferAmount('');
  setOfferNote('');
+ if (res.data.message.offer?.status === 'declined') {
+ showToast('Offer was automatically declined (below seller minimum).', 'error');
+ }
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to send offer.');
+ showToast(err.response?.data?.message || 'Failed to send offer.', 'error');
  } finally {
  setOfferSubmitting(false);
  }
@@ -422,7 +497,7 @@ export default function ChatPage() {
  setMeetupModalOpen(false);
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to send meetup proposal.');
+ showToast(err.response?.data?.message || 'Failed to send meetup proposal.', 'error');
  } finally {
  setMeetupSubmitting(false);
  }
@@ -444,11 +519,15 @@ export default function ChatPage() {
  prev.map((m) => (m._id === messageId ? res.data.message : m))
  );
  if (res.data.systemMessage) {
- setMessages((prev) => [...prev, res.data.systemMessage]);
+ setMessages((prev) =>
+ prev.some((m) => m._id === res.data.systemMessage._id)
+ ? prev
+ : [...prev, res.data.systemMessage]
+ );
  }
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to process offer response.');
+ showToast(err.response?.data?.message || 'Failed to process offer response.', 'error');
  }
  };
 
@@ -469,14 +548,18 @@ export default function ChatPage() {
  prev.map((m) => (m._id === counterMessageId ? res.data.message : m))
  );
  if (res.data.systemMessage) {
- setMessages((prev) => [...prev, res.data.systemMessage]);
+ setMessages((prev) =>
+ prev.some((m) => m._id === res.data.systemMessage._id)
+ ? prev
+ : [...prev, res.data.systemMessage]
+ );
  }
  setCounterModalOpen(false);
  setCounterAmount('');
  setCounterMessageId(null);
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to send counter offer.');
+ showToast(err.response?.data?.message || 'Failed to send counter offer.', 'error');
  } finally {
  setCounterSubmitting(false);
  }
@@ -495,10 +578,10 @@ export default function ChatPage() {
  : c
  )
  );
- alert('Listing has been marked as sold! Your completed deals counter has been updated.');
+ showToast('Listing marked as sold. Completed deals counter updated.', 'success');
  }
  } catch {
- alert('Failed to update listing status');
+ showToast('Failed to update listing status.', 'error');
  }
  };
 
@@ -506,7 +589,7 @@ export default function ChatPage() {
  const handleSubmitReview = async (e) => {
  e.preventDefault();
  if (!reviewComment.trim() || !otherUserId) {
- alert('Please provide feedback comments.');
+ showToast('Please provide feedback comments.', 'error');
  return;
  }
 
@@ -523,12 +606,12 @@ export default function ChatPage() {
  });
 
  if (res.data?.success) {
- alert('Feedback submitted successfully! The seller score and 12-month scorecard have been updated.');
+ showToast('Feedback submitted. Seller rating and scorecard updated.', 'success');
  setReviewModalOpen(false);
  setReviewComment('');
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to submit feedback.');
+ showToast(err.response?.data?.message || 'Failed to submit feedback.', 'error');
  } finally {
  setReviewSubmitting(false);
  }
@@ -545,7 +628,7 @@ export default function ChatPage() {
  );
  }
  } catch {
- alert('Failed to accept message request');
+ showToast('Failed to accept message request.', 'error');
  } finally {
  setActionLoading(false);
  }
@@ -569,7 +652,7 @@ export default function ChatPage() {
  );
  }
  } catch {
- alert('Failed to decline request');
+ showToast('Failed to decline request.', 'error');
  } finally {
  setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
  }
@@ -592,8 +675,9 @@ export default function ChatPage() {
  try {
  await API.post(`/chat/block/${otherUserId}`);
  await fetchBlockedUsers();
+ showToast('User blocked.', 'info');
  } catch {
- alert('Failed to block user');
+ showToast('Failed to block user.', 'error');
  } finally {
  setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
  }
@@ -606,39 +690,44 @@ export default function ChatPage() {
  try {
  await API.post(`/chat/unblock/${otherUserId}`);
  await fetchBlockedUsers();
+ showToast('User unblocked.', 'success');
  } catch {
- alert('Failed to unblock user');
+ showToast('Failed to unblock user.', 'error');
  }
  };
 
  const listingPrice = Number(activeConversation?.listing?.price) || 0;
-
- // Emergency Safe Meetup Fallback Presets
- const safeMeetupPresets = [
- {
- name: 'Shopping Mall Open Parking Plaza',
- type: 'mall',
- desc: 'Main surface parking plaza or well-lit entrance concourse with security guards.',
- },
- {
- name: 'Bank Forecourt / ATM Gallery with CCTV',
- type: 'bank',
- desc: 'Active commercial bank branch perimeter or ATM gallery with 24/7 security.',
- },
- {
- name: 'Mega Fuel Station Forecourt (TotalEnergies / NNPC)',
- type: 'fuel',
- desc: 'Paved, illuminated customer forecourt with CCTV and vehicle parking.',
- },
- {
- name: 'Supermarket Customer Car Park (Shoprite / Market Square)',
- type: 'supermarket',
- desc: 'Wide open customer parking grounds with security attendance.',
- },
- ];
+ const canMakeOffer =
+ !isListingSeller &&
+ !isOtherUserBlocked &&
+ activeConversation?.listing?.acceptsOffers !== false &&
+ activeConversation?.listing?.status !== 'sold' &&
+ activeConversation?.listing?.status !== 'completed';
 
  return (
- <div className="flex-1 h-full w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 overflow-hidden flex flex-col">
+ <div className="flex-1 h-full w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 overflow-hidden flex flex-col relative">
+ {toast && (
+ <div
+ role="status"
+ className={`fixed top-16 right-4 z-[60] max-w-sm px-4 py-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 ${
+ toast.type === 'error'
+ ? 'bg-rose-50 border-rose-200 text-rose-800'
+ : toast.type === 'success'
+ ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+ : 'bg-slate-900 border-slate-800 text-white'
+ }`}
+ >
+ <span className="flex-1">{toast.text}</span>
+ <button
+ type="button"
+ onClick={() => setToast(null)}
+ className="p-0.5 opacity-70 hover:opacity-100 cursor-pointer"
+ aria-label="Dismiss notification"
+ >
+ <X className="w-3.5 h-3.5" />
+ </button>
+ </div>
+ )}
  <div className="flex-1 bg-white rounded-3xl border border-slate-200 overflow-hidden flex min-h-0">
  {/* Left Sidebar: Conversations List & TikTok-style Tabs */}
  <aside
@@ -715,7 +804,11 @@ export default function ChatPage() {
  >
  <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200 overflow-hidden">
  {partner?.avatar ? (
- <img src={partner.avatar} alt={partner?.name} className="w-full h-full object-cover" />
+ <img
+ src={resolveMediaUrl(partner.avatar)}
+ alt={partner?.name}
+ className="w-full h-full object-cover"
+ />
  ) : (
  partner?.name?.charAt(0).toUpperCase() || 'U'
  )}
@@ -780,11 +873,7 @@ export default function ChatPage() {
  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
  {activeConversation.listing?.images?.[0]?.url ? (
  <img
- src={
- activeConversation.listing.images[0].url.startsWith('http')
- ? activeConversation.listing.images[0].url
- : `${import.meta.env.VITE_API_URL?.replace('/api', '') || (import.meta.env.PROD ? 'https://marketplace-5wy3.onrender.com' : 'http://localhost:5000')}${activeConversation.listing.images[0].url}`
- }
+ src={resolveMediaUrl(activeConversation.listing.images[0].url)}
  alt=""
  className="w-full h-full object-cover"
  />
@@ -823,7 +912,7 @@ export default function ChatPage() {
 
  <div className="flex items-center gap-2 shrink-0">
  {/* Make Offer Button for Buyer */}
- {!isListingSeller && !isOtherUserBlocked && (
+ {canMakeOffer && (
  <button
  onClick={() => setMakeOfferModalOpen(true)}
  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition cursor-pointer"
@@ -1287,7 +1376,7 @@ export default function ChatPage() {
  <div className="space-y-0.5 leading-snug">
  <span className="font-bold block">Safety Alert: Potential High-Risk Request</span>
  <span>
- Counterparty may have requested advance payment, transport money, or off-platform contact. LocalMarket strongly advises meeting in a public spot and physically inspecting items before sending any money.
+ Counterparty may have requested advance payment, transport money, or off-platform contact. oBuy strongly advises meeting in an open public spot and physically inspecting items before sending any money.
  </span>
  </div>
  </div>
@@ -1371,11 +1460,11 @@ export default function ChatPage() {
  <div className="p-3 bg-white border-t border-slate-200 space-y-2 shrink-0">
  {/* Quick Action Chips Bar */}
  <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
- {!isListingSeller && (
+ {canMakeOffer && (
  <button
  type="button"
  onClick={() => setMakeOfferModalOpen(true)}
- className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 text-[11px] shrink-0 transition"
+ className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 text-[11px] shrink-0 transition cursor-pointer"
  >
  <Tag className="w-3 h-3" />
  <span>Make Offer</span>
@@ -1385,7 +1474,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setMeetupModalOpen(true)}
- className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 text-[11px] shrink-0 transition"
+ className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 text-[11px] shrink-0 transition cursor-pointer"
  >
  <MapPin className="w-3 h-3 text-amber-600" />
  <span>Suggest Meetup Spot</span>
@@ -1397,7 +1486,7 @@ export default function ChatPage() {
  <input
  type="text"
  value={messageText}
- onChange={(e) => setMessageText(e.target.value)}
+ onChange={handleMessageInputChange}
  placeholder={`Message ${otherUser?.name || 'user'} (agree on price, test item, coordinate meetup)...`}
  className="flex-1 bg-transparent border-none text-xs text-slate-800 px-3 py-1.5 focus:outline-none"
  />
@@ -1424,7 +1513,7 @@ export default function ChatPage() {
 
  {/* Make In-Chat Offer Modal */}
  {makeOfferModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in">
  <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 border border-slate-100 relative">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2">
@@ -1536,7 +1625,7 @@ export default function ChatPage() {
 
  {/* Counter Offer Modal */}
  {counterModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in">
  <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-slate-100 relative">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2">
@@ -1594,7 +1683,7 @@ export default function ChatPage() {
 
  {/* Smart Geo-AI Safe Meetup Spot Modal */}
  {meetupModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in overflow-y-auto">
  <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-200 relative my-8 max-h-[90vh] flex flex-col">
  {/* Header */}
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1777,7 +1866,7 @@ export default function ChatPage() {
 
  {/* Leave Seller Feedback Modal */}
  {reviewModalOpen && (
- <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+ <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
  <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 my-8">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2">
@@ -1867,7 +1956,10 @@ export default function ChatPage() {
  <button
  key={starVal}
  type="button"
- onClick={() => setReviewStars(starVal)}
+ onClick={() => {
+ setReviewStars(starVal);
+ setReviewType(starVal >= 4 ? 'positive' : starVal === 3 ? 'neutral' : 'negative');
+ }}
  className="p-1 cursor-pointer transition hover:scale-110"
  >
  <Star
@@ -1977,8 +2069,8 @@ export default function ChatPage() {
 
  {/* AI Deal Safety Checklist Modal */}
  {aiSafetyModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
- <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 relative shadow-none">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in">
+ <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 relative">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2.5">
  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">

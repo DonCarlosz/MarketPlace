@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { verifyAccessToken } from '../utils/token.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -16,11 +16,7 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'dev_jwt_secret_marketplace_key_2026_secure'
-    );
-
+    const decoded = verifyAccessToken(token);
     const user = await User.findById(decoded.id).select('-refreshTokens');
 
     if (!user) {
@@ -54,13 +50,10 @@ export const optionalAuth = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1];
     }
     if (token) {
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'dev_jwt_secret_marketplace_key_2026_secure'
-      );
+      const decoded = verifyAccessToken(token);
       req.user = await User.findById(decoded.id).select('-refreshTokens');
     }
-  } catch (err) {
+  } catch {
     // Ignore invalid token for optional auth
   }
   next();

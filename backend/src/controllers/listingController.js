@@ -1,7 +1,21 @@
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 import Review from '../models/Review.js';
+import Conversation from '../models/Conversation.js';
 import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo.js';
+import { escapeRegex, isSafeImageUrl } from '../utils/sanitize.js';
+
+// Sanitize images array for create/update listing
+const sanitizeImagesList = (images) => {
+  if (!Array.isArray(images)) return [];
+  return images
+    .slice(0, 12)
+    .filter((img) => img && typeof img.url === 'string' && isSafeImageUrl(img.url) && img.url.trim() !== '')
+    .map((img) => ({
+      url: img.url.trim(),
+      caption: typeof img.caption === 'string' ? img.caption.trim().slice(0, 140) : '',
+    }));
+};
 
 // @desc    Get all listings with filtering, search, and radius/proximity support
 // @route   GET /api/listings
@@ -35,26 +49,33 @@ export const getListings = async (req, res, next) => {
       query.mode = mode;
     }
 
-    // Category filter
-    if (category && category !== 'all' && category !== 'All') {
-      query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+    // Category filter (ReDoS safe)
+    if (typeof category === 'string' && category.trim() && category.toLowerCase() !== 'all') {
+      const safeCat = escapeRegex(category.trim().slice(0, 80));
+      query.category = { $regex: new RegExp(`^${safeCat}$`, 'i') };
     }
 
     // Condition filter (for items)
-    if (condition && condition !== 'all') {
+    if (
+      typeof condition === 'string' &&
+      ['brand-new', 'like-new', 'good', 'fair', 'for-parts'].includes(condition)
+    ) {
       query.condition = condition;
     }
 
     // Price range
-    if (minPrice !== undefined || maxPrice !== undefined) {
+    const parsedMin = minPrice !== undefined && minPrice !== '' ? Number(minPrice) : null;
+    const parsedMax = maxPrice !== undefined && maxPrice !== '' ? Number(maxPrice) : null;
+    if ((parsedMin !== null && !isNaN(parsedMin)) || (parsedMax !== null && !isNaN(parsedMax))) {
       query.price = {};
-      if (minPrice) query.price.$gte = Number(minPrice);
-      if (maxPrice) query.price.$lte = Number(maxPrice);
+      if (parsedMin !== null && !isNaN(parsedMin) && parsedMin >= 0) query.price.$gte = parsedMin;
+      if (parsedMax !== null && !isNaN(parsedMax) && parsedMax >= 0) query.price.$lte = parsedMax;
     }
 
-    // Keyword search (searches title, description, category, city)
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
+    // Keyword search (ReDoS safe)
+    if (typeof search === 'string' && search.trim()) {
+      const safeSearch = escapeRegex(search.trim().slice(0, 100));
+      const searchRegex = new RegExp(safeSearch, 'i');
       query.$or = [
         { title: searchRegex },
         { description: searchRegex },
@@ -68,7 +89,7 @@ export const getListings = async (req, res, next) => {
     let userCoords = null;
     if (lat && lng && !isNaN(Number(lat)) && !isNaN(Number(lng))) {
       userCoords = [Number(lng), Number(lat)];
-    } else if (userCity && userCity !== 'All Locations') {
+    } else if (typeof userCity === 'string' && userCity && userCity !== 'All Locations') {
       userCoords = resolveCityCoordinates(userCity);
     } else if (req.user?.location?.coordinates?.length === 2 && req.user.location.coordinates[0] !== 0) {
       userCoords = req.user.location.coordinates;
@@ -76,7 +97,8 @@ export const getListings = async (req, res, next) => {
 
     // Geospatial search: filter within radiusKm if not 'all'
     if (userCoords && radiusKm && radiusKm !== 'all' && !isNaN(Number(radiusKm))) {
-      const radiusInRadians = Number(radiusKm) / 6378.1; // Earth radius in km
+      const clampedRadius = Math.max(1, Math.min(2000, Number(radiusKm)));
+      const radiusInRadians = clampedRadius / 6378.1;
       query['location.coordinates'] = {
         $geoWithin: {
           $centerSphere: [userCoords, radiusInRadians],
@@ -91,37 +113,43 @@ export const getListings = async (req, res, next) => {
     else if (sort === 'price-high') sortOption = { price: -1 };
     else if (sort === 'popular') sortOption = { views: -1 };
 
-    const skip = (Number(page) - 1) * Number(limit);
+    // Clamp pagination bounds to prevent unbounded DB dump DoS
+    const safePage = Math.max(1, parseInt(page, 10) || 1);
+    const safeLimit = Math.max(1, Math.min(50, parseInt(limit, 10) || 20));
+    const skip = (safePage - 1) * safeLimit;
 
     const [listings, total] = await Promise.all([
       Listing.find(query)
         .populate('seller', 'name avatar location isVerified createdAt')
         .sort(sortOption)
         .skip(skip)
-        .limit(Number(limit)),
+        .limit(safeLimit)
+        .lean(),
       Listing.countDocuments(query),
     ]);
 
     // Attach calculated distance in km if userCoords are known
     const listingsWithDistance = listings.map((item) => {
-      const itemObj = item.toObject();
       if (userCoords && item.location?.coordinates?.length === 2) {
-        itemObj.distanceKm = calculateDistanceKm(
-          userCoords[0],
-          userCoords[1],
-          item.location.coordinates[0],
-          item.location.coordinates[1]
-        );
+        return {
+          ...item,
+          distanceKm: calculateDistanceKm(
+            userCoords[0],
+            userCoords[1],
+            item.location.coordinates[0],
+            item.location.coordinates[1]
+          ),
+        };
       }
-      return itemObj;
+      return item;
     });
 
     res.json({
       success: true,
       count: listingsWithDistance.length,
       total,
-      totalPages: Math.ceil(total / Number(limit)),
-      currentPage: Number(page),
+      totalPages: Math.ceil(total / safeLimit),
+      currentPage: safePage,
       listings: listingsWithDistance,
     });
   } catch (error) {
@@ -133,9 +161,10 @@ export const getListings = async (req, res, next) => {
 // @route   GET /api/listings/:id
 export const getListingById = async (req, res, next) => {
   try {
+    // Public seller fields ONLY (never leak private seller email!)
     const listing = await Listing.findById(req.params.id).populate(
       'seller',
-      'name email avatar location isVerified createdAt bio feedbackScore detailedRatings'
+      'name avatar location isVerified createdAt bio feedbackScore detailedRatings'
     );
 
     if (!listing) {
@@ -145,24 +174,35 @@ export const getListingById = async (req, res, next) => {
       });
     }
 
-    // Increment views asynchronously
-    listing.views = (listing.views || 0) + 1;
-    await listing.save();
+    // Increment views only if viewer is not the seller
+    const viewerId = req.user?._id?.toString();
+    const sellerId = (listing.seller?._id || listing.seller)?.toString();
+    if (!viewerId || viewerId !== sellerId) {
+      listing.views = (listing.views || 0) + 1;
+      await Listing.updateOne({ _id: listing._id }, { $inc: { views: 1 } });
+    }
 
-    // Calculate real live metrics for seller
-    const sellerId = listing.seller?._id || listing.seller;
-    const [itemsSoldCount, totalReviews, allReviews, activeListingsCount] = await Promise.all([
-      Listing.countDocuments({ seller: sellerId, status: { $in: ['sold', 'completed'] } }),
-      Review.countDocuments({ seller: sellerId }),
-      Review.find({ seller: sellerId }).select('stars ratingType itemAccuracy communication punctuality'),
-      Listing.countDocuments({ seller: sellerId, status: 'active' }),
-    ]);
+    // Calculate real live metrics for seller from MongoDB (zero dummy metrics)
+    const [itemsSoldCount, allReviews, activeListingsCount, totalReceivedChats, acceptedChats] =
+      await Promise.all([
+        Listing.countDocuments({ seller: sellerId, status: { $in: ['sold', 'completed'] } }),
+        Review.find({ seller: sellerId })
+          .select('stars ratingType itemAccuracy communication punctuality')
+          .lean(),
+        Listing.countDocuments({ seller: sellerId, status: 'active' }),
+        Conversation.countDocuments({ receiver: sellerId }),
+        Conversation.countDocuments({ receiver: sellerId, status: 'accepted' }),
+      ]);
 
+    const totalReviews = allReviews.length;
     let positiveCount = 0;
     let sumStars = 0;
+
     allReviews.forEach((r) => {
       let s = Number(r.stars);
-      if (isNaN(s) || s < 1) s = r.ratingType === 'negative' ? 1 : r.ratingType === 'neutral' ? 3 : 5;
+      if (isNaN(s) || s < 1) {
+        s = r.ratingType === 'negative' ? 1 : r.ratingType === 'neutral' ? 3 : 5;
+      }
       if (r.ratingType === 'negative' && s > 2) {
         s = Math.min(2, Math.round(((r.itemAccuracy || 2) + (r.communication || 2) + (r.punctuality || 2)) / 3));
       }
@@ -172,9 +212,21 @@ export const getListingById = async (req, res, next) => {
       }
     });
 
-    const averageRating = totalReviews > 0 ? Number((sumStars / totalReviews).toFixed(1)) : 5.0;
-    const positivePercentage =
-      totalReviews > 0 ? Math.round((positiveCount / totalReviews) * 100) : 100;
+    const hasReviews = totalReviews > 0;
+    const averageRating = hasReviews ? Number((sumStars / totalReviews).toFixed(1)) : null;
+    const positivePercentage = hasReviews ? Math.round((positiveCount / totalReviews) * 100) : null;
+
+    // Real backend-computed response badge from actual seller chat responsiveness
+    let responseBadge = 'New Seller';
+    let responseRate = null;
+    if (totalReceivedChats > 0) {
+      responseRate = Math.round((acceptedChats / totalReceivedChats) * 100);
+      if (responseRate >= 80) responseBadge = `${responseRate}% Reply Rate`;
+      else if (responseRate >= 50) responseBadge = `${responseRate}% Reply Rate`;
+      else responseBadge = 'Responds Soon';
+    } else if (activeListingsCount >= 3) {
+      responseBadge = `${activeListingsCount} Active`;
+    }
 
     res.json({
       success: true,
@@ -185,8 +237,9 @@ export const getListingById = async (req, res, next) => {
         averageRating,
         positivePercentage,
         activeListingsCount,
-        hasReviews: totalReviews > 0,
-        responseBadge: 'Replies fast',
+        hasReviews,
+        responseBadge,
+        responseRate,
       },
     });
   } catch (error) {
@@ -227,34 +280,67 @@ export const createListing = async (req, res, next) => {
       });
     }
 
+    const numericPrice = Number(price);
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid non-negative price',
+      });
+    }
+
     const resolvedCoords =
-      coordinates && coordinates.length === 2 && (coordinates[0] !== 0 || coordinates[1] !== 0)
+      Array.isArray(coordinates) &&
+      coordinates.length === 2 &&
+      coordinates.every((c) => typeof c === 'number' && Number.isFinite(c)) &&
+      (coordinates[0] !== 0 || coordinates[1] !== 0)
         ? coordinates
         : resolveCityCoordinates(city);
 
+    const normalizedMode = ['second-hand', 'new', 'service'].includes(mode) ? mode : 'second-hand';
+
+    // Clean itemSpecifics string map
+    const cleanSpecifics = {};
+    if (itemSpecifics && typeof itemSpecifics === 'object' && !Array.isArray(itemSpecifics)) {
+      Object.entries(itemSpecifics)
+        .slice(0, 20)
+        .forEach(([k, v]) => {
+          if (typeof k === 'string' && typeof v === 'string' && k.trim() && v.trim()) {
+            cleanSpecifics[k.trim().slice(0, 50)] = v.trim().slice(0, 120);
+          }
+        });
+    }
+
     const listing = await Listing.create({
       seller: req.user._id,
-      mode: mode || 'second-hand',
-      title,
-      description,
-      price: Number(price),
-      priceType: priceType || 'fixed',
-      category,
-      condition: mode === 'services' || mode === 'service' ? 'not-applicable' : condition,
-      serviceType: serviceType || '',
-      availabilityNotes: availabilityNotes || '',
-      images: Array.isArray(images) ? images : [],
-      itemSpecifics: itemSpecifics && typeof itemSpecifics === 'object' ? itemSpecifics : {},
-      flawDescription: flawDescription || '',
+      mode: normalizedMode,
+      title: String(title).trim().slice(0, 100),
+      description: String(description).trim().slice(0, 2000),
+      price: numericPrice,
+      priceType: ['fixed', 'negotiable', 'starting-at', 'hourly', 'free'].includes(priceType)
+        ? priceType
+        : 'fixed',
+      category: String(category).trim().slice(0, 80),
+      condition: normalizedMode === 'service' ? 'not-applicable' : condition,
+      serviceType: typeof serviceType === 'string' ? serviceType.trim().slice(0, 80) : '',
+      availabilityNotes:
+        typeof availabilityNotes === 'string' ? availabilityNotes.trim().slice(0, 300) : '',
+      images: sanitizeImagesList(images),
+      itemSpecifics: cleanSpecifics,
+      flawDescription: typeof flawDescription === 'string' ? flawDescription.trim().slice(0, 500) : '',
       acceptsOffers: acceptsOffers !== undefined ? Boolean(acceptsOffers) : true,
-      minimumOfferPrice: minimumOfferPrice ? Number(minimumOfferPrice) : 0,
+      minimumOfferPrice:
+        minimumOfferPrice && Number(minimumOfferPrice) > 0 ? Number(minimumOfferPrice) : 0,
       allowsDelivery: allowsDelivery !== undefined ? Boolean(allowsDelivery) : false,
       location: {
-        city,
-        neighborhood: neighborhood || '',
+        type: 'Point',
+        city: String(city).trim().slice(0, 80),
+        neighborhood: typeof neighborhood === 'string' ? neighborhood.trim().slice(0, 80) : '',
         coordinates: resolvedCoords,
       },
-      preferredMeetup: preferredMeetup || 'Public meetup place (malls, busy cafés, police station safe-zone)',
+      preferredMeetup:
+        typeof preferredMeetup === 'string' && preferredMeetup.trim()
+          ? preferredMeetup.trim().slice(0, 300)
+          : 'Open public meetup place (shopping plaza, supermarket parking, bank security zone)',
     });
 
     const populatedListing = await Listing.findById(listing._id).populate(
@@ -277,7 +363,7 @@ export const createListing = async (req, res, next) => {
   }
 };
 
-// @desc    Update listing
+// @desc    Update listing (Explicit field allowlist - prevents mass assignment)
 // @route   PUT /api/listings/:id
 export const updateListing = async (req, res, next) => {
   try {
@@ -290,7 +376,6 @@ export const updateListing = async (req, res, next) => {
       });
     }
 
-    // Check ownership
     if (listing.seller.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
@@ -298,10 +383,87 @@ export const updateListing = async (req, res, next) => {
       });
     }
 
-    listing = await Listing.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const {
+      title,
+      description,
+      price,
+      priceType,
+      category,
+      condition,
+      serviceType,
+      availabilityNotes,
+      images,
+      itemSpecifics,
+      flawDescription,
+      acceptsOffers,
+      minimumOfferPrice,
+      allowsDelivery,
+      city,
+      neighborhood,
+      preferredMeetup,
+    } = req.body;
+
+    const allowedUpdates = {};
+    if (typeof title === 'string' && title.trim()) allowedUpdates.title = title.trim().slice(0, 100);
+    if (typeof description === 'string' && description.trim()) {
+      allowedUpdates.description = description.trim().slice(0, 2000);
+    }
+    if (price !== undefined && Number.isFinite(Number(price)) && Number(price) >= 0) {
+      allowedUpdates.price = Number(price);
+    }
+    if (['fixed', 'negotiable', 'starting-at', 'hourly', 'free'].includes(priceType)) {
+      allowedUpdates.priceType = priceType;
+    }
+    if (typeof category === 'string' && category.trim()) {
+      allowedUpdates.category = category.trim().slice(0, 80);
+    }
+    if (['brand-new', 'like-new', 'good', 'fair', 'for-parts', 'not-applicable'].includes(condition)) {
+      allowedUpdates.condition = condition;
+    }
+    if (typeof serviceType === 'string') allowedUpdates.serviceType = serviceType.trim().slice(0, 80);
+    if (typeof availabilityNotes === 'string') {
+      allowedUpdates.availabilityNotes = availabilityNotes.trim().slice(0, 300);
+    }
+    if (Array.isArray(images)) allowedUpdates.images = sanitizeImagesList(images);
+    if (itemSpecifics && typeof itemSpecifics === 'object' && !Array.isArray(itemSpecifics)) {
+      const cleanSpecifics = {};
+      Object.entries(itemSpecifics)
+        .slice(0, 20)
+        .forEach(([k, v]) => {
+          if (typeof k === 'string' && typeof v === 'string' && k.trim() && v.trim()) {
+            cleanSpecifics[k.trim().slice(0, 50)] = v.trim().slice(0, 120);
+          }
+        });
+      allowedUpdates.itemSpecifics = cleanSpecifics;
+    }
+    if (typeof flawDescription === 'string') {
+      allowedUpdates.flawDescription = flawDescription.trim().slice(0, 500);
+    }
+    if (acceptsOffers !== undefined) allowedUpdates.acceptsOffers = Boolean(acceptsOffers);
+    if (minimumOfferPrice !== undefined && Number.isFinite(Number(minimumOfferPrice)) && Number(minimumOfferPrice) >= 0) {
+      allowedUpdates.minimumOfferPrice = Number(minimumOfferPrice);
+    }
+    if (allowsDelivery !== undefined) allowedUpdates.allowsDelivery = Boolean(allowsDelivery);
+    if (typeof preferredMeetup === 'string') {
+      allowedUpdates.preferredMeetup = preferredMeetup.trim().slice(0, 300);
+    }
+    if (typeof city === 'string' && city.trim()) {
+      allowedUpdates.location = {
+        type: 'Point',
+        city: city.trim().slice(0, 80),
+        neighborhood:
+          typeof neighborhood === 'string'
+            ? neighborhood.trim().slice(0, 80)
+            : listing.location?.neighborhood || '',
+        coordinates: resolveCityCoordinates(city),
+      };
+    }
+
+    listing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { $set: allowedUpdates },
+      { new: true, runValidators: true }
+    );
 
     res.json({
       success: true,
@@ -353,7 +515,7 @@ export const deleteListing = async (req, res, next) => {
 // @route   GET /api/listings/user/my-listings
 export const getMyListings = async (req, res, next) => {
   try {
-    const listings = await Listing.find({ seller: req.user._id }).sort({ createdAt: -1 });
+    const listings = await Listing.find({ seller: req.user._id }).sort({ createdAt: -1 }).lean();
     res.json({
       success: true,
       count: listings.length,
@@ -364,11 +526,18 @@ export const getMyListings = async (req, res, next) => {
   }
 };
 
-// @desc    Update listing status (mark sold, completed, active)
+// @desc    Update listing status (mark sold, completed, active, inactive)
 // @route   PATCH /api/listings/:id/status
 export const updateListingStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
+    if (!['active', 'sold', 'completed', 'inactive'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Allowed values: active, sold, completed, inactive.',
+      });
+    }
+
     const listing = await Listing.findById(req.params.id);
 
     if (!listing) {
@@ -402,10 +571,16 @@ export const updateListingStatus = async (req, res, next) => {
 export const toggleFavorite = async (req, res, next) => {
   try {
     const listingId = req.params.id;
-    const user = await User.findById(req.user._id);
+    const [user, listingExists] = await Promise.all([
+      User.findById(req.user._id),
+      Listing.findById(listingId).select('_id'),
+    ]);
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    if (!listingExists) {
+      return res.status(404).json({ success: false, message: 'Listing not found' });
     }
 
     if (!Array.isArray(user.favorites)) {

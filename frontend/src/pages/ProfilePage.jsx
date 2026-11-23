@@ -1,21 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import API from '../services/api';
+import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ListingCard from '../components/ListingCard';
 import ConfirmModal from '../components/ConfirmModal';
-import { formatPrice } from '../utils/format';
 import {
- User as UserIcon,
  MapPin,
  Mail,
  Edit3,
- Check,
  Package,
  Trash2,
  CheckCircle,
- Clock,
- Sparkles,
  CheckCircle2,
  ShieldCheck,
  Plus,
@@ -29,14 +24,14 @@ import {
  Calendar,
  X,
  Send,
- ExternalLink,
  Camera,
  Loader2,
+ LogOut,
 } from 'lucide-react';
 
 export default function ProfilePage() {
  const { userId } = useParams();
- const { user: currentUser, updateUser, openAuthModal } = useAuth();
+ const { user: currentUser, updateUser, logout, openAuthModal } = useAuth();
  const navigate = useNavigate();
 
  const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
@@ -83,21 +78,34 @@ export default function ProfilePage() {
  onConfirm: () => {},
  });
 
- // Fetch Profile & Reputation Data
+ // Fetch Profile & Reputation Data in parallel
  useEffect(() => {
  if (!targetUserId) {
- if (!currentUser) {
+ if (!currentUserId) {
  openAuthModal('login');
  navigate('/');
  }
  return;
  }
 
+ let cancelled = false;
  const loadProfile = async () => {
  setLoading(true);
  try {
- // 1. Fetch public profile and 12-month scorecard
- const profRes = await API.get(`/users/${targetUserId}/profile`);
+ const requests = [
+ API.get(`/users/${targetUserId}/profile`),
+ isOwnProfile
+ ? API.get('/listings/user/my-listings')
+ : API.get(`/users/${targetUserId}/listings`),
+ API.get(`/users/${targetUserId}/reviews`),
+ ];
+ if (isOwnProfile) {
+ requests.push(API.get('/listings/user/favorites'));
+ }
+
+ const [profRes, listRes, revRes, favRes] = await Promise.all(requests);
+ if (cancelled) return;
+
  if (profRes.data?.success) {
  setProfileData(profRes.data.user);
  setReputation(profRes.data.reputation);
@@ -107,37 +115,29 @@ export default function ProfilePage() {
  setAvatarUrl(profRes.data.user.avatar || '');
  }
 
- // 2. Fetch Listings
- if (isOwnProfile) {
- const myListRes = await API.get('/listings/user/my-listings');
- if (myListRes.data?.success) {
- setListings(myListRes.data.listings || []);
- }
- const favRes = await API.get('/listings/user/favorites');
- if (favRes.data?.success) {
- setFavorites(favRes.data.favorites || []);
- }
- } else {
- const publicListRes = await API.get(`/users/${targetUserId}/listings`);
- if (publicListRes.data?.success) {
- setListings(publicListRes.data.listings || []);
- }
+ if (listRes.data?.success) {
+ setListings(listRes.data.listings || []);
  }
 
- // 3. Fetch Reviews
- const revRes = await API.get(`/users/${targetUserId}/reviews`);
  if (revRes.data?.success) {
  setReviews(revRes.data.reviews || []);
+ }
+
+ if (favRes?.data?.success) {
+ setFavorites(favRes.data.listings || favRes.data.favorites || []);
  }
  } catch (err) {
  console.error('Failed to load profile:', err);
  } finally {
- setLoading(false);
+ if (!cancelled) setLoading(false);
  }
  };
 
  loadProfile();
- }, [targetUserId, isOwnProfile, currentUser]);
+ return () => {
+ cancelled = true;
+ };
+ }, [targetUserId, isOwnProfile, currentUserId, navigate, openAuthModal]);
 
  // Handle Avatar Image File Selection
  const handleAvatarChange = async (e) => {
@@ -237,13 +237,17 @@ export default function ProfilePage() {
  });
 
  if (res.data?.success) {
- setReviews((prev) => [res.data.review, ...prev]);
+ setReviews((prev) => {
+ const filtered = prev.filter((r) => r._id !== res.data.review._id);
+ return [res.data.review, ...filtered];
+ });
  setReviewModalOpen(false);
  setReviewComment('');
- // Refresh profile to reflect new score
+ // Refresh profile to reflect updated score
  const profRes = await API.get(`/users/${targetUserId}/profile`);
  if (profRes.data?.success) {
  setReputation(profRes.data.reputation);
+ setProfileData(profRes.data.user);
  }
  }
  } catch (err) {
@@ -329,6 +333,9 @@ export default function ProfilePage() {
 
  const activeListings = listings.filter((l) => l.status === 'active');
  const pastListings = listings.filter((l) => l.status === 'sold' || l.status === 'completed');
+ const completedDealsCount = isOwnProfile
+ ? pastListings.length
+ : profileData?.itemsSoldCount ?? reputation?.itemsSoldCount ?? pastListings.length;
 
  const scorecard = reputation?.scorecardMatrix || {
  oneMonth: { positive: 0, neutral: 0, negative: 0 },
@@ -336,44 +343,64 @@ export default function ProfilePage() {
  twelveMonths: { positive: 0, neutral: 0, negative: 0 },
  };
 
+ const hasReviews = Boolean(reputation?.hasReviews && (reputation?.totalReviews || 0) > 0);
  const dsr = reputation?.detailedRatings || {
- itemAccuracy: 5.0,
- communication: 5.0,
- punctuality: 5.0,
+ itemAccuracy: 0,
+ communication: 0,
+ punctuality: 0,
  };
+
+ const promptLogout = () => {
+ setConfirmModalConfig({
+ isOpen: true,
+ title: 'Log Out of oBuy?',
+ message: 'Are you sure you want to end your current session? You will need your password to sign back in.',
+ confirmText: 'Log Out',
+ variant: 'danger',
+ onConfirm: async () => {
+ await logout();
+ setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+ navigate('/');
+ },
+ });
+ };
+
+ const resolvedProfileAvatar = resolveMediaUrl(avatarUrl || profileData?.avatar || '');
 
  const memberSinceFormatted = profileData?.createdAt
  ? new Date(profileData.createdAt).toLocaleDateString([], { month: 'short', year: 'numeric' })
  : 'Recent';
 
  return (
- <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6">
+ <div className="min-h-screen bg-slate-50 py-6 sm:py-8 px-4 sm:px-6">
  <div className="max-w-5xl mx-auto space-y-6">
  {/* Profile Header Card */}
- <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden ">
+ <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
  {/* Header Accent Banner */}
  <div className="h-28 sm:h-36 bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 relative">
+ {profileData?.isVerified && (
  <div className="absolute top-3.5 right-4 flex items-center gap-2">
- <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-bold border border-white/30">
+ <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/60 text-white text-[11px] font-bold border border-white/25">
  <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
- <span>Verified Local Member</span>
+ <span>Verified oBuy Member</span>
  </span>
  </div>
+ )}
  </div>
 
  <div className="px-5 sm:px-8 pb-6 sm:pb-8 pt-0 relative z-10 space-y-5">
  {/* Avatar & Top Desktop Action Row */}
  <div className="flex items-end justify-between -mt-10 sm:-mt-12">
- {/* Avatar Container with optional Edit Camera Badge */}
  <div className="relative group">
- <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-indigo-600 text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-white shrink-0 overflow-hidden bg-slate-100">
+ <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-indigo-600 text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-white shrink-0 overflow-hidden">
  {avatarUploading ? (
  <Loader2 className="w-7 h-7 text-white animate-spin" />
- ) : (avatarUrl || profileData?.avatar) ? (
+ ) : resolvedProfileAvatar ? (
  <img
- src={avatarUrl || profileData?.avatar}
+ src={resolvedProfileAvatar}
  alt={profileData?.name || 'User'}
  className="w-full h-full object-cover"
+ decoding="async"
  />
  ) : (
  profileData?.name?.charAt(0).toUpperCase() || 'U'
@@ -385,7 +412,7 @@ export default function ProfilePage() {
  onClick={() => avatarInputRef.current?.click()}
  disabled={avatarUploading}
  title="Change Profile Picture"
- className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full border-2 border-white shadow-none transition cursor-pointer"
+ className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full border-2 border-white transition-colors cursor-pointer"
  >
  <Camera className="w-3.5 h-3.5" />
  </button>
@@ -395,25 +422,38 @@ export default function ProfilePage() {
  {/* Desktop / Tablet Actions */}
  <div className="hidden sm:flex items-center gap-2">
  {isOwnProfile ? (
+ <>
  <button
+ type="button"
  onClick={toggleEditing}
- className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+ className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <Edit3 className="w-3.5 h-3.5" />
  <span>{editing ? 'Cancel Editing' : 'Edit Profile'}</span>
  </button>
+ <button
+ type="button"
+ onClick={promptLogout}
+ className="px-3.5 py-2 text-xs font-bold rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ >
+ <LogOut className="w-3.5 h-3.5" />
+ <span>Log Out</span>
+ </button>
+ </>
  ) : (
  <div className="flex items-center gap-2">
  <button
+ type="button"
  onClick={handleContactSeller}
- className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-1.5 transition cursor-pointer"
+ className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <MessageSquare className="w-3.5 h-3.5" />
  <span>Contact Seller</span>
  </button>
  <button
+ type="button"
  onClick={() => setReviewModalOpen(true)}
- className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+ className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
  <span>Leave Feedback</span>
@@ -423,16 +463,24 @@ export default function ProfilePage() {
  </div>
  </div>
 
- {/* User Identity & Feedback Details (100% on Clean White Background) */}
+ {/* User Identity & Feedback Details */}
  <div className="space-y-1.5 pt-1">
  <div className="flex items-center gap-2 flex-wrap">
  <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
- {profileData?.name || 'Local Member'}
+ {profileData?.name || 'oBuy Member'}
  </h1>
+ {profileData?.isVerified && (
  <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" title="Verified Member" />
+ )}
+ {hasReviews ? (
  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
- {reputation?.positivePercentage ?? 100}% Positive Feedback
+ {reputation.positivePercentage}% Positive ({reputation.averageRating?.toFixed(1)}★)
  </span>
+ ) : (
+ <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+ New Member • No reviews yet
+ </span>
+ )}
  </div>
 
  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
@@ -459,28 +507,41 @@ export default function ProfilePage() {
  )}
  </div>
 
- {/* Mobile Action Buttons (Full-Width on Small Screens) */}
+ {/* Mobile Action Buttons (includes Log Out directly on Profile for mobile users) */}
  <div className="sm:hidden pt-1">
  {isOwnProfile ? (
+ <div className="grid grid-cols-2 gap-2">
  <button
+ type="button"
  onClick={toggleEditing}
- className="w-full px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+ className="px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <Edit3 className="w-3.5 h-3.5" />
- <span>{editing ? 'Cancel Editing' : 'Edit Profile'}</span>
+ <span>{editing ? 'Cancel' : 'Edit Profile'}</span>
  </button>
+ <button
+ type="button"
+ onClick={promptLogout}
+ className="px-4 py-2.5 text-xs font-bold rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ >
+ <LogOut className="w-3.5 h-3.5" />
+ <span>Log Out</span>
+ </button>
+ </div>
  ) : (
  <div className="flex items-center gap-2 w-full">
  <button
+ type="button"
  onClick={handleContactSeller}
- className="flex-1 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-1.5 transition cursor-pointer"
+ className="flex-1 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <MessageSquare className="w-3.5 h-3.5" />
  <span>Contact Seller</span>
  </button>
  <button
+ type="button"
  onClick={() => setReviewModalOpen(true)}
- className="flex-1 px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+ className="flex-1 px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
  <span>Leave Feedback</span>
@@ -489,23 +550,29 @@ export default function ProfilePage() {
  )}
  </div>
 
- {/* Quick Stats Strip */}
+ {/* Quick Stats Strip (100% Live Backend Counts) */}
  <div className="grid grid-cols-4 gap-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
  <div>
- <span className="text-base sm:text-lg font-black text-slate-900">{activeListings.length}</span>
+ <span className="text-base sm:text-lg font-black text-slate-900">
+ {profileData?.activeListingsCount ?? activeListings.length}
+ </span>
  <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active</span>
  </div>
  <div className="border-l border-slate-200">
- <span className="text-base sm:text-lg font-black text-slate-900">{pastListings.length}</span>
- <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed</span>
+ <span className="text-base sm:text-lg font-black text-slate-900">{completedDealsCount}</span>
+ <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sold</span>
  </div>
  <div className="border-l border-slate-200">
- <span className="text-base sm:text-lg font-black text-emerald-700">{reputation?.totalReviews ?? reviews.length}</span>
+ <span className="text-base sm:text-lg font-black text-emerald-700">
+ {reputation?.totalReviews ?? reviews.length}
+ </span>
  <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reviews</span>
  </div>
  <div className="border-l border-slate-200">
- <span className="text-base sm:text-lg font-black text-indigo-600">0%</span>
- <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Fees</span>
+ <span className="text-base sm:text-lg font-black text-amber-600">
+ {hasReviews && reputation?.averageRating ? `${reputation.averageRating.toFixed(1)}★` : 'New'}
+ </span>
+ <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rating</span>
  </div>
  </div>
 
@@ -527,7 +594,7 @@ export default function ProfilePage() {
  {avatarUploading ? (
  <Loader2 className="w-6 h-6 animate-spin text-white" />
  ) : avatarUrl ? (
- <img src={avatarUrl} alt="Preview" className="w-full h-full object-cover" />
+ <img src={resolveMediaUrl(avatarUrl)} alt="Preview" className="w-full h-full object-cover" />
  ) : (
  name?.charAt(0).toUpperCase() || 'U'
  )}
@@ -611,15 +678,10 @@ export default function ProfilePage() {
  </form>
  )}
 
- {profileData?.bio && !editing && (
- <div className="pt-3 border-t border-slate-100 text-xs text-slate-600">
- <p className="italic">"{profileData.bio}"</p>
- </div>
- )}
  </div>
  </div>
 
- {/* eBay-Style 12-Month Reputation Scorecard & Detailed Seller Ratings (DSR) */}
+ {/* 12-Month Reputation Scorecard & Detailed Seller Ratings (DSR) */}
  <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 space-y-6">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
  <div>
@@ -634,7 +696,9 @@ export default function ProfilePage() {
 
  <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
  <span>Overall Positive:</span>
- <span className="text-emerald-700 font-black">{reputation?.positivePercentage ?? 100}%</span>
+ <span className={hasReviews ? 'text-emerald-700 font-black' : 'text-slate-500 font-bold'}>
+ {hasReviews ? `${reputation.positivePercentage}%` : 'No reviews yet'}
+ </span>
  </div>
  </div>
 
@@ -700,12 +764,14 @@ export default function ProfilePage() {
  <div>
  <div className="flex items-center justify-between text-slate-700 font-semibold mb-1">
  <span>Item as Described</span>
- <span className="font-bold text-slate-900">{dsr.itemAccuracy.toFixed(1)} / 5.0</span>
+ <span className="font-bold text-slate-900">
+ {hasReviews ? `${dsr.itemAccuracy.toFixed(1)} / 5.0` : 'No ratings'}
+ </span>
  </div>
  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
  <div
  className="bg-amber-500 h-full rounded-full transition-all"
- style={{ width: `${(dsr.itemAccuracy / 5.0) * 100}%` }}
+ style={{ width: `${hasReviews ? (dsr.itemAccuracy / 5.0) * 100 : 0}%` }}
  />
  </div>
  </div>
@@ -713,12 +779,14 @@ export default function ProfilePage() {
  <div>
  <div className="flex items-center justify-between text-slate-700 font-semibold mb-1">
  <span>Communication & Promptness</span>
- <span className="font-bold text-slate-900">{dsr.communication.toFixed(1)} / 5.0</span>
+ <span className="font-bold text-slate-900">
+ {hasReviews ? `${dsr.communication.toFixed(1)} / 5.0` : 'No ratings'}
+ </span>
  </div>
  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
  <div
  className="bg-amber-500 h-full rounded-full transition-all"
- style={{ width: `${(dsr.communication / 5.0) * 100}%` }}
+ style={{ width: `${hasReviews ? (dsr.communication / 5.0) * 100 : 0}%` }}
  />
  </div>
  </div>
@@ -726,12 +794,14 @@ export default function ProfilePage() {
  <div>
  <div className="flex items-center justify-between text-slate-700 font-semibold mb-1">
  <span>Safe Meetup & Punctuality</span>
- <span className="font-bold text-slate-900">{dsr.punctuality.toFixed(1)} / 5.0</span>
+ <span className="font-bold text-slate-900">
+ {hasReviews ? `${dsr.punctuality.toFixed(1)} / 5.0` : 'No ratings'}
+ </span>
  </div>
  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
  <div
  className="bg-amber-500 h-full rounded-full transition-all"
- style={{ width: `${(dsr.punctuality / 5.0) * 100}%` }}
+ style={{ width: `${hasReviews ? (dsr.punctuality / 5.0) * 100 : 0}%` }}
  />
  </div>
  </div>
@@ -932,7 +1002,7 @@ export default function ProfilePage() {
  <div className="flex items-center gap-2.5">
  <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100 shrink-0 overflow-hidden">
  {rev.buyer?.avatar ? (
- <img src={rev.buyer.avatar} alt={rev.buyer?.name} className="w-full h-full object-cover" />
+ <img src={resolveMediaUrl(rev.buyer.avatar)} alt={rev.buyer?.name} className="w-full h-full object-cover" decoding="async" />
  ) : (
  rev.buyer?.name?.charAt(0).toUpperCase() || 'B'
  )}
@@ -996,23 +1066,24 @@ export default function ProfilePage() {
 
  {/* Leave Feedback / Review Modal */}
  {reviewModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
- <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-100 relative">
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55">
+ <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 relative">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2">
  <Award className="w-5 h-5 text-indigo-600" />
  <h3 className="text-base font-black text-slate-900">Leave Seller Feedback</h3>
  </div>
  <button
+ type="button"
  onClick={() => setReviewModalOpen(false)}
- className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+ className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
  >
  <X className="w-4 h-4" />
  </button>
  </div>
 
  <form onSubmit={handleSubmitReview} className="space-y-4">
- {/* Overall Sentiment Picker (eBay Style) */}
+ {/* Overall Sentiment Picker */}
  <div>
  <label className="block text-xs font-bold text-slate-700 mb-2">Overall Experience</label>
  <div className="grid grid-cols-3 gap-2">

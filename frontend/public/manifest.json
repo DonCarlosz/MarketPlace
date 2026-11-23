@@ -1,8 +1,8 @@
 {
   "id": "/?source=pwa",
-  "name": "LocalMarket: Buy, Sell & Services",
-  "short_name": "LocalMarket",
-  "description": "Local peer-to-peer marketplace in Nigeria for second-hand items, brand-new goods, and local services with safe in-person meetups.",
+  "name": "oBuy: Buy, Sell & Local Services",
+  "short_name": "oBuy",
+  "description": "oBuy peer-to-peer marketplace in Nigeria for second-hand items, brand-new goods, and local services with safe in-person meetups.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -39,7 +39,7 @@
   ],
   "shortcuts": [
     {
-      "name": "Browse Marketplace",
+      "name": "Browse oBuy",
       "short_name": "Market",
       "description": "Find items and services nearby",
       "url": "/market",

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 
 const PWAInstallContext = createContext();
 
@@ -9,7 +9,6 @@ export function PWAInstallProvider({ children }) {
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
 
   useEffect(() => {
-    // Check if app is already running standalone
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true;
@@ -20,7 +19,6 @@ export function PWAInstallProvider({ children }) {
       return;
     }
 
-    // Capture Chromium / Android beforeinstallprompt
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -36,9 +34,7 @@ export function PWAInstallProvider({ children }) {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Also check for iOS Safari
-    const isIOS =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS && !isStandalone) {
       setIsInstallable(true);
     }
@@ -49,7 +45,7 @@ export function PWAInstallProvider({ children }) {
     };
   }, []);
 
-  const installApp = async () => {
+  const installApp = useCallback(async () => {
     if (deferredPrompt) {
       try {
         deferredPrompt.prompt();
@@ -63,24 +59,22 @@ export function PWAInstallProvider({ children }) {
         console.warn('Install prompt error:', err);
       }
     } else {
-      // If iOS or browser doesn't expose deferredPrompt, show the guided install modal
       setShowIOSPrompt(true);
     }
-  };
+  }, [deferredPrompt]);
 
-  return (
-    <PWAInstallContext.Provider
-      value={{
-        isInstallable,
-        isInstalled,
-        installApp,
-        showIOSPrompt,
-        setShowIOSPrompt,
-      }}
-    >
-      {children}
-    </PWAInstallContext.Provider>
+  const value = useMemo(
+    () => ({
+      isInstallable,
+      isInstalled,
+      installApp,
+      showIOSPrompt,
+      setShowIOSPrompt,
+    }),
+    [isInstallable, isInstalled, installApp, showIOSPrompt]
   );
+
+  return <PWAInstallContext.Provider value={value}>{children}</PWAInstallContext.Provider>;
 }
 
 export function usePWAInstall() {

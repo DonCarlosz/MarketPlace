@@ -13,6 +13,7 @@ import {
   suggestSafeMeetupSpots,
 } from '../controllers/chatController.js';
 import { protect } from '../middleware/auth.js';
+import { aiLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
@@ -23,10 +24,10 @@ router.post('/conversations', createOrGetConversation);
 router.get('/conversations/:id/messages', getMessages);
 router.post('/conversations/:id/messages', sendMessage);
 
-// eBay-style In-Chat Offer Response
+// In-Chat Offer Response
 router.patch('/messages/:id/offer', respondToOffer);
 
-// TikTok-style acceptance & decline
+// Message request acceptance & decline
 router.patch('/conversations/:id/accept', acceptConversation);
 router.patch('/conversations/:id/decline', declineConversation);
 
@@ -36,6 +37,6 @@ router.post('/unblock/:userId', unblockUser);
 router.get('/blocked-users', getBlockedUsers);
 
 // Smart Geo-AI Safe Meetup Discovery
-router.post('/suggest-safe-spots', suggestSafeMeetupSpots);
+router.post('/suggest-safe-spots', aiLimiter, suggestSafeMeetupSpots);
 
 export default router;

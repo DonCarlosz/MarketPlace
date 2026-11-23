@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, X, ChevronRight } from 'lucide-react';
+import { ShieldAlert, X } from 'lucide-react';
 
 export default function SafetyBanner() {
  const [dismissed, setDismissed] = useState(false);
@@ -24,7 +24,7 @@ export default function SafetyBanner() {
 
  {/* Desktop Message */}
  <p className="hidden md:block text-amber-900 text-[11.5px] font-medium tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
- • All deals are off-platform. Meet in public well-lit places (cafés, malls, police stations). • Never transfer money before inspecting items or agreeing on service scope in person.
+ • All oBuy deals are peer-to-peer. Meet in open public spaces (plazas, malls, bank forecourts, police stations). • Never transfer money before inspecting items or confirming service scope in person.
  </p>
 
  {/* Tablet & Mobile Message */}

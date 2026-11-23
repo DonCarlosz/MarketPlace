@@ -1,7 +1,23 @@
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import validator from 'validator';
 import User from '../models/User.js';
 import Otp from '../models/Otp.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/token.js';
 import { sendOtpEmail } from '../utils/email.js';
+import { isSafeImageUrl } from '../utils/sanitize.js';
+
+const MAX_OTP_ATTEMPTS = 5;
+
+const generateSecureOtp = () => crypto.randomInt(100000, 1000000).toString();
+
+const safeOtpCompare = (storedOtp, submittedOtp) => {
+  if (typeof storedOtp !== 'string' || typeof submittedOtp !== 'string') return false;
+  const bufA = Buffer.from(storedOtp);
+  const bufB = Buffer.from(submittedOtp);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+};
 
 // @desc    Send 6-digit OTP for signup verification
 // @route   POST /api/auth/send-signup-otp
@@ -9,21 +25,34 @@ export const sendSignupOtp = async (req, res, next) => {
   try {
     const { name, email, password, city, neighborhood, coordinates } = req.body;
 
-    if (!name || !email || !password) {
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !name.trim() ||
+      !email.trim() ||
+      !password
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Name, email, and password are required',
       });
     }
 
-    if (password.length < 8) {
+    const cleanEmail = email.toLowerCase().trim();
+    if (!validator.isEmail(cleanEmail)) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 8 characters long',
+        message: 'Please provide a valid email address',
       });
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    if (password.length < 8 || password.length > 128) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be between 8 and 128 characters long',
+      });
+    }
 
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser && existingUser.isVerified) {
@@ -33,33 +62,40 @@ export const sendSignupOtp = async (req, res, next) => {
       });
     }
 
-    // Generate random 6-digit numeric OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate cryptographically secure 6-digit numeric OTP
+    const otp = generateSecureOtp();
 
-    // Remove any previous pending signup OTP for this email
+    // Hash password BEFORE storing in temporary OTP collection (never persist plaintext passwords)
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     await Otp.deleteMany({ email: cleanEmail, purpose: 'signup' });
 
-    // Store OTP with pending registration details
     await Otp.create({
       email: cleanEmail,
       otp,
       purpose: 'signup',
+      attempts: 0,
       pendingUserData: {
-        name: name.trim(),
+        name: name.trim().slice(0, 60),
         email: cleanEmail,
-        password,
+        password: hashedPassword,
         location: {
-          city: city || 'Local Area',
-          neighborhood: neighborhood || '',
-          coordinates: coordinates && coordinates.length === 2 ? coordinates : [0, 0],
+          city: typeof city === 'string' && city.trim() ? city.trim().slice(0, 80) : 'Local Area',
+          neighborhood: typeof neighborhood === 'string' ? neighborhood.trim().slice(0, 80) : '',
+          coordinates:
+            Array.isArray(coordinates) &&
+            coordinates.length === 2 &&
+            coordinates.every((c) => typeof c === 'number' && Number.isFinite(c))
+              ? coordinates
+              : [0, 0],
         },
       },
     });
 
-    // Send email via Brevo
     await sendOtpEmail({
       toEmail: cleanEmail,
-      toName: name.trim(),
+      toName: name.trim().slice(0, 60),
       otp,
       purpose: 'signup',
     });
@@ -79,7 +115,7 @@ export const verifySignupOtp = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
-    if (!email || !otp) {
+    if (typeof email !== 'string' || !email.trim() || !otp) {
       return res.status(400).json({
         success: false,
         message: 'Email and 6-digit verification code are required',
@@ -100,10 +136,24 @@ export const verifySignupOtp = async (req, res, next) => {
       });
     }
 
-    if (otpRecord.otp !== cleanOtp) {
+    if ((otpRecord.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+      await Otp.deleteMany({ email: cleanEmail, purpose: 'signup' });
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed verification attempts. Please request a fresh code.',
+      });
+    }
+
+    if (!safeOtpCompare(otpRecord.otp, cleanOtp)) {
+      otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+      await otpRecord.save();
+      const remaining = Math.max(0, MAX_OTP_ATTEMPTS - otpRecord.attempts);
       return res.status(400).json({
         success: false,
-        message: 'Incorrect verification code. Please check your email and try again.',
+        message:
+          remaining > 0
+            ? `Incorrect verification code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+            : 'Too many incorrect attempts. Please request a new verification code.',
       });
     }
 
@@ -115,7 +165,6 @@ export const verifySignupOtp = async (req, res, next) => {
       });
     }
 
-    // Verify user doesn't exist already as verified
     let user = await User.findOne({ email: cleanEmail });
     if (user && user.isVerified) {
       await Otp.deleteMany({ email: cleanEmail });
@@ -130,15 +179,16 @@ export const verifySignupOtp = async (req, res, next) => {
       user.password = pendingData.password;
       user.location = pendingData.location;
       user.isVerified = true;
+      user.verifiedEmail = true;
       await user.save();
     } else {
       user = await User.create({
         ...pendingData,
         isVerified: true,
+        verifiedEmail: true,
       });
     }
 
-    // Clean up OTP record
     await Otp.deleteMany({ email: cleanEmail, purpose: 'signup' });
 
     const accessToken = generateAccessToken(user._id);
@@ -160,6 +210,7 @@ export const verifySignupOtp = async (req, res, next) => {
         location: user.location,
         avatar: user.avatar,
         role: user.role,
+        isVerified: user.isVerified,
         favorites: user.favorites || [],
       },
     });
@@ -174,7 +225,7 @@ export const sendForgotPasswordOtp = async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
+    if (typeof email !== 'string' || !email.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Please enter your registered email',
@@ -182,16 +233,24 @@ export const sendForgotPasswordOtp = async (req, res, next) => {
     }
 
     const cleanEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: cleanEmail });
-
-    if (!user) {
-      return res.status(404).json({
+    if (!validator.isEmail(cleanEmail)) {
+      return res.status(400).json({
         success: false,
-        message: 'No account registered with this email address.',
+        message: 'Please provide a valid email address',
       });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const user = await User.findOne({ email: cleanEmail });
+
+    // Prevent account enumeration: respond consistently even if account does not exist
+    if (!user) {
+      return res.json({
+        success: true,
+        message: `If an account exists for ${cleanEmail}, a 6-digit password reset code has been sent.`,
+      });
+    }
+
+    const otp = generateSecureOtp();
 
     await Otp.deleteMany({ email: cleanEmail, purpose: 'forgot_password' });
 
@@ -199,6 +258,7 @@ export const sendForgotPasswordOtp = async (req, res, next) => {
       email: cleanEmail,
       otp,
       purpose: 'forgot_password',
+      attempts: 0,
     });
 
     await sendOtpEmail({
@@ -210,7 +270,7 @@ export const sendForgotPasswordOtp = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `A 6-digit password reset code has been sent to ${cleanEmail}.`,
+      message: `If an account exists for ${cleanEmail}, a 6-digit password reset code has been sent.`,
     });
   } catch (error) {
     next(error);
@@ -223,17 +283,17 @@ export const resetPasswordWithOtp = async (req, res, next) => {
   try {
     const { email, otp, newPassword } = req.body;
 
-    if (!email || !otp || !newPassword) {
+    if (typeof email !== 'string' || !email.trim() || !otp || typeof newPassword !== 'string') {
       return res.status(400).json({
         success: false,
         message: 'Email, verification code, and new password are required',
       });
     }
 
-    if (newPassword.length < 8) {
+    if (newPassword.length < 8 || newPassword.length > 128) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 8 characters long',
+        message: 'New password must be between 8 and 128 characters long',
       });
     }
 
@@ -252,10 +312,24 @@ export const resetPasswordWithOtp = async (req, res, next) => {
       });
     }
 
-    if (otpRecord.otp !== cleanOtp) {
+    if ((otpRecord.attempts || 0) >= MAX_OTP_ATTEMPTS) {
+      await Otp.deleteMany({ email: cleanEmail, purpose: 'forgot_password' });
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed verification attempts. Please request a fresh reset code.',
+      });
+    }
+
+    if (!safeOtpCompare(otpRecord.otp, cleanOtp)) {
+      otpRecord.attempts = (otpRecord.attempts || 0) + 1;
+      await otpRecord.save();
+      const remaining = Math.max(0, MAX_OTP_ATTEMPTS - otpRecord.attempts);
       return res.status(400).json({
         success: false,
-        message: 'Incorrect verification code. Please check your email.',
+        message:
+          remaining > 0
+            ? `Incorrect verification code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+            : 'Too many incorrect attempts. Please request a fresh reset code.',
       });
     }
 
@@ -267,13 +341,13 @@ export const resetPasswordWithOtp = async (req, res, next) => {
       });
     }
 
-    // Update password (triggers User pre-save hash hook)
+    // Update password and revoke ALL active refresh tokens across all devices
     user.password = newPassword;
     user.failedLoginAttempts = 0;
     user.lockUntil = null;
+    user.refreshTokens = [];
     await user.save();
 
-    // Clean up OTP record
     await Otp.deleteMany({ email: cleanEmail, purpose: 'forgot_password' });
 
     res.json({
@@ -291,16 +365,17 @@ export const resendOtp = async (req, res, next) => {
   try {
     const { email, purpose = 'signup' } = req.body;
 
-    if (!email) {
+    if (typeof email !== 'string' || !email.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Email is required to resend code',
       });
     }
 
+    const validPurpose = purpose === 'forgot_password' ? 'forgot_password' : 'signup';
     const cleanEmail = email.toLowerCase().trim();
 
-    const existingOtp = await Otp.findOne({ email: cleanEmail, purpose }).sort({
+    const existingOtp = await Otp.findOne({ email: cleanEmail, purpose: validPurpose }).sort({
       createdAt: -1,
     });
 
@@ -311,8 +386,9 @@ export const resendOtp = async (req, res, next) => {
       });
     }
 
-    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const newOtp = generateSecureOtp();
     existingOtp.otp = newOtp;
+    existingOtp.attempts = 0;
     existingOtp.createdAt = new Date(); // Reset 10m TTL
     await existingOtp.save();
 
@@ -322,7 +398,7 @@ export const resendOtp = async (req, res, next) => {
       toEmail: cleanEmail,
       toName: userName,
       otp: newOtp,
-      purpose,
+      purpose: validPurpose,
     });
 
     res.json({
@@ -334,73 +410,13 @@ export const resendOtp = async (req, res, next) => {
   }
 };
 
-// @desc    Register a new user
+// @desc    Legacy direct registration disabled to enforce OTP email verification
 // @route   POST /api/auth/register
-export const register = async (req, res, next) => {
-  try {
-    const { name, email, password, city, neighborhood, coordinates } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email, and password are required',
-      });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password must be at least 8 characters long',
-      });
-    }
-
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'An account with this email already exists',
-      });
-    }
-
-    const userData = {
-      name,
-      email: email.toLowerCase(),
-      password,
-      location: {
-        city: city || 'Local Area',
-        neighborhood: neighborhood || '',
-        coordinates: coordinates && coordinates.length === 2 ? coordinates : [0, 0],
-      },
-    };
-
-    const user = await User.create(userData);
-
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
-
-    // Store refresh token
-    user.refreshTokens.push({ token: refreshToken });
-    await user.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'Account created successfully',
-      accessToken,
-      refreshToken,
-      user: {
-        _id: user._id.toString(),
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        location: user.location,
-        avatar: user.avatar,
-        role: user.role,
-        favorites: user.favorites || [],
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+export const register = async (req, res) => {
+  return res.status(403).json({
+    success: false,
+    message: 'Email verification is required to create an oBuy account. Please register using the 6-digit email verification code.',
+  });
 };
 
 // @desc    Login user with rate-limiting and progressive lockout check
@@ -409,14 +425,15 @@ export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
       return res.status(400).json({
         success: false,
         message: 'Please provide both email and password',
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
 
     if (!user) {
       return res.status(401).json({
@@ -438,16 +455,18 @@ export const login = async (req, res, next) => {
 
     if (!isMatch) {
       await user.handleFailedLogin();
-      const remainingAttempts = Math.max(0, 5 - user.failedLoginAttempts);
+      if (user.isLocked()) {
+        return res.status(423).json({
+          success: false,
+          message: 'Account temporarily locked for 15 minutes due to multiple failed login attempts.',
+        });
+      }
       return res.status(401).json({
         success: false,
-        message: remainingAttempts > 0
-          ? `Invalid credentials. ${remainingAttempts} attempts remaining before temporary lockout.`
-          : 'Invalid credentials. Account has now been locked for 15 minutes.',
+        message: 'Invalid email or password',
       });
     }
 
-    // Reset failed attempts on success
     await user.resetFailedLogin();
 
     const accessToken = generateAccessToken(user._id);
@@ -473,6 +492,7 @@ export const login = async (req, res, next) => {
         location: user.location,
         avatar: user.avatar,
         role: user.role,
+        isVerified: user.isVerified,
         favorites: user.favorites || [],
       },
     });
@@ -487,7 +507,7 @@ export const refreshToken = async (req, res, next) => {
   try {
     const { token } = req.body;
 
-    if (!token) {
+    if (typeof token !== 'string' || !token) {
       return res.status(401).json({
         success: false,
         message: 'Refresh token is required',
@@ -497,7 +517,7 @@ export const refreshToken = async (req, res, next) => {
     let decoded;
     try {
       decoded = verifyRefreshToken(token);
-    } catch (err) {
+    } catch {
       return res.status(403).json({
         success: false,
         message: 'Invalid or expired refresh token. Please log in again.',
@@ -512,7 +532,6 @@ export const refreshToken = async (req, res, next) => {
       });
     }
 
-    // Check if token exists in user's active tokens list
     const tokenExists = user.refreshTokens.some((t) => t.token === token);
     if (!tokenExists) {
       return res.status(403).json({
@@ -538,7 +557,7 @@ export const logout = async (req, res, next) => {
   try {
     const { token } = req.body;
 
-    if (token && req.user) {
+    if (typeof token === 'string' && token && req.user) {
       await User.findByIdAndUpdate(req.user._id, {
         $pull: { refreshTokens: { token } },
       });
@@ -574,16 +593,39 @@ export const updateProfile = async (req, res, next) => {
     const { name, bio, phone, avatar, city, neighborhood, coordinates } = req.body;
 
     const updateFields = {};
-    if (name) updateFields.name = name;
-    if (bio !== undefined) updateFields.bio = bio;
-    if (phone !== undefined) updateFields.phone = phone;
-    if (avatar !== undefined) updateFields.avatar = avatar;
+    if (typeof name === 'string' && name.trim()) {
+      updateFields.name = name.trim().slice(0, 60);
+    }
+    if (typeof bio === 'string') {
+      updateFields.bio = bio.trim().slice(0, 300);
+    }
+    if (typeof phone === 'string') {
+      updateFields.phone = phone.trim().slice(0, 25);
+    }
+    if (avatar !== undefined) {
+      if (!isSafeImageUrl(avatar)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid profile image URL.',
+        });
+      }
+      updateFields.avatar = typeof avatar === 'string' ? avatar.trim() : '';
+    }
 
     if (city !== undefined || neighborhood !== undefined || coordinates !== undefined) {
       updateFields.location = {
-        city: city ?? req.user.location.city,
-        neighborhood: neighborhood ?? req.user.location.neighborhood,
-        coordinates: coordinates ?? req.user.location.coordinates,
+        type: 'Point',
+        city: typeof city === 'string' && city.trim() ? city.trim().slice(0, 80) : req.user.location?.city || '',
+        neighborhood:
+          typeof neighborhood === 'string'
+            ? neighborhood.trim().slice(0, 80)
+            : req.user.location?.neighborhood || '',
+        coordinates:
+          Array.isArray(coordinates) &&
+          coordinates.length === 2 &&
+          coordinates.every((c) => typeof c === 'number' && Number.isFinite(c))
+            ? coordinates
+            : req.user.location?.coordinates || [0, 0],
       };
     }
 

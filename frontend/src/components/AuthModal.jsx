@@ -187,10 +187,10 @@ export default function AuthModal() {
  };
 
  return (
- <div
- className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
- onClick={closeAuthModal}
- >
+  <div
+  className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 overflow-y-auto"
+  onClick={closeAuthModal}
+  >
  <div
  className="relative w-full max-w-[420px] max-h-[calc(100vh-2rem)] flex flex-col bg-white rounded-3xl border border-slate-100 overflow-hidden text-slate-900 my-auto animate-in zoom-in-95 duration-200"
  onClick={(e) => e.stopPropagation()}
@@ -214,8 +214,8 @@ export default function AuthModal() {
  </div>
 
  <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-snug">
- {authModalView === 'login' && 'Welcome to LocalMarket'}
- {authModalView === 'register' && 'Join LocalMarket'}
+ {authModalView === 'login' && 'Welcome to oBuy'}
+ {authModalView === 'register' && 'Join oBuy'}
  {authModalView === 'verify-signup' && 'Verify Your Email'}
  {authModalView === 'forgot' && 'Reset your password'}
  {authModalView === 'verify-forgot' && 'Enter Verification Code'}
@@ -303,7 +303,7 @@ export default function AuthModal() {
 
  <div className="pt-3 border-t border-slate-100 text-center">
  <p className="text-xs text-slate-600">
- Not on LocalMarket yet?{' '}
+ Not on oBuy yet?{' '}
  <button
  type="button"
  onClick={() => switchView('register')}

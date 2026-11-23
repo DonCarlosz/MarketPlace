@@ -11,20 +11,20 @@ const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 export const sendOtpEmail = async ({ toEmail, toName = 'Member', otp, purpose = 'signup' }) => {
   const BREVO_API_KEY = process.env.BREVO_API_KEY;
   const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'denrichy111@gmail.com';
-  const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'MarketPlace';
+  const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'oBuy';
   const isForgotPassword = purpose === 'forgot_password';
 
   const subject = isForgotPassword
-    ? `LocalMarket password reset code: ${otp}`
-    : `Your LocalMarket verification code: ${otp}`;
+    ? `oBuy password reset code: ${otp}`
+    : `Your oBuy verification code: ${otp}`;
 
   const heading = isForgotPassword ? 'Password Reset Code' : 'Email Verification';
   const intro = isForgotPassword
-    ? 'Use the 6-digit code below to reset your LocalMarket password:'
-    : 'Welcome to LocalMarket! Use the 6-digit code below to confirm your email and activate your account:';
+    ? 'Use the 6-digit code below to reset your oBuy password:'
+    : 'Welcome to oBuy! Use the 6-digit code below to confirm your email and activate your account:';
 
   const textContent = `
-LocalMarket Verification
+oBuy Verification
 
 Hello ${toName},
 
@@ -36,7 +36,7 @@ This code expires in 10 minutes. Enter it in the app to complete your verificati
 
 If you did not request this code, you can safely ignore this email.
 
-LocalMarket - Safe, direct neighborhood buying & selling
+oBuy - Safe, direct neighborhood buying & selling
 `.trim();
 
   const htmlContent = `
@@ -51,10 +51,10 @@ LocalMarket - Safe, direct neighborhood buying & selling
       <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
         <tr>
           <td style="padding: 28px 28px 16px 28px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-            <div style="display: inline-block; width: 40px; height: 40px; line-height: 40px; border-radius: 10px; background-color: #4f46e5; color: #ffffff; font-weight: 800; font-size: 18px; text-align: center; margin-bottom: 8px;">
-              LM
+            <div style="display: inline-block; width: 40px; height: 40px; line-height: 40px; border-radius: 10px; background-color: #4f46e5; color: #ffffff; font-weight: 800; font-size: 16px; text-align: center; margin-bottom: 8px;">
+              oB
             </div>
-            <h1 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">LocalMarket</h1>
+            <h1 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">oBuy</h1>
           </td>
         </tr>
         <tr>
@@ -75,7 +75,7 @@ LocalMarket - Safe, direct neighborhood buying & selling
         </tr>
         <tr>
           <td style="padding: 16px 28px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;">
-            <p style="margin: 0; font-size: 11px; color: #94a3b8;">LocalMarket &bull; Safe, direct neighborhood commerce</p>
+            <p style="margin: 0; font-size: 11px; color: #94a3b8;">oBuy &bull; Safe, direct neighborhood commerce</p>
           </td>
         </tr>
       </table>
@@ -105,7 +105,6 @@ LocalMarket - Safe, direct neighborhood buying & selling
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    // If primary sender failed, automatically retry with verified account sender
     if (SENDER_EMAIL !== 'denrichy111@gmail.com') {
       console.warn(`[Brevo Email] Sender ${SENDER_EMAIL} failed, falling back to verified sender denrichy111@gmail.com...`);
       payload.sender.email = 'denrichy111@gmail.com';

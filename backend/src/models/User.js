@@ -94,19 +94,19 @@ const userSchema = new mongoose.Schema(
         ref: 'Listing',
       },
     ],
-    // eBay-Grade Reputation & Feedback Score
+    // Reputation & Feedback Score
     feedbackScore: {
       positive: { type: Number, default: 0 },
       neutral: { type: Number, default: 0 },
       negative: { type: Number, default: 0 },
       totalReviews: { type: Number, default: 0 },
-      positivePercentage: { type: Number, default: 100 },
+      positivePercentage: { type: Number, default: 0 },
     },
-    // Detailed Seller Ratings (DSR - 1.0 to 5.0)
+    // Detailed Seller Ratings (DSR - 0.0 to 5.0)
     detailedRatings: {
-      itemAccuracy: { type: Number, default: 5.0 },
-      communication: { type: Number, default: 5.0 },
-      punctuality: { type: Number, default: 5.0 },
+      itemAccuracy: { type: Number, default: 0 },
+      communication: { type: Number, default: 0 },
+      punctuality: { type: Number, default: 0 },
     },
     verifiedPhone: {
       type: Boolean,
@@ -126,9 +126,12 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ 'location.coordinates': '2dsphere' });
 
-// Hash password before saving
+// Hash password before saving (skip if already a bcrypt hash)
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
+  if (typeof this.password === 'string' && /^\$2[aby]\$\d{2}\$/.test(this.password)) {
+    return next();
+  }
   const salt = await bcrypt.genSalt(12);
   this.password = await bcrypt.hash(this.password, salt);
   next();

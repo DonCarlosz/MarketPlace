@@ -1,24 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
+import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
 import { formatPrice } from '../utils/format';
+import { NIGERIAN_CITY_LIST } from '../utils/geo';
 import {
  Upload,
  X,
- Plus,
  RefreshCw,
  Sparkles,
  Wrench,
- ShieldAlert,
  MapPin,
- DollarSign,
  AlertCircle,
  Eye,
  CheckCircle2,
  ChevronRight,
- ChevronLeft,
  Star,
  Camera,
  Info,
@@ -27,14 +24,11 @@ import {
  Check,
  Building,
  Landmark,
- Coffee,
+ Store,
  Shield,
  GraduationCap,
  Truck,
- Tag,
  Loader2,
- Bot,
- Wand2,
 } from 'lucide-react';
 
 const CATEGORIES_BY_MODE = {
@@ -107,17 +101,17 @@ const SAFE_MEETUP_PRESETS = [
  {
  label: 'Shopping Mall / Plaza',
  icon: Building,
- text: 'Busy shopping mall / commercial plaza (main entrance or food court).',
+ text: 'Busy shopping mall / commercial plaza (main entrance or open car park).',
  },
  {
- label: 'Bank Branch / ATM Gallery',
+ label: 'Bank Branch / ATM Forecourt',
  icon: Landmark,
- text: 'Bank branch / ATM foyer (well-lit security camera coverage).',
+ text: 'Bank branch / ATM foyer (well-lit security camera coverage and parking).',
  },
  {
- label: 'Café / Fast Food Eatery',
- icon: Coffee,
- text: 'Popular local café or busy fast-food eatery in town.',
+ label: 'Supermarket Car Park',
+ icon: Store,
+ text: 'Open supermarket customer car park with security guards and easy vehicle access.',
  },
  {
  label: 'Police Station / Security Post',
@@ -127,37 +121,11 @@ const SAFE_MEETUP_PRESETS = [
  {
  label: 'University Campus Gate',
  icon: GraduationCap,
- text: 'University campus main security gate / student center.',
+ text: 'University campus main security gate / open courtyard.',
  },
 ];
 
-const NIGERIAN_CITIES = [
- 'Uromi',
- 'Ekpoma',
- 'Auchi',
- 'Benin City',
- 'Abraka',
- 'Warri',
- 'Asaba',
- 'Sapele',
- 'Ughelli',
- 'Lagos',
- 'Ikeja',
- 'Lekki',
- 'Yaba',
- 'Abuja',
- 'Port Harcourt',
- 'Ibadan',
- 'Enugu',
- 'Awka',
- 'Onitsha',
- 'Calabar',
- 'Uyo',
- 'Kano',
- 'Kaduna',
- 'Jos',
- 'Ilorin',
-];
+const NIGERIAN_CITIES = NIGERIAN_CITY_LIST.filter((c) => c !== 'All Locations');
 
 export default function CreateListingPage() {
  const { user, openAuthModal } = useAuth();
@@ -196,7 +164,10 @@ export default function CreateListingPage() {
  const [priceType, setPriceType] = useState('fixed');
  const [acceptsOffers, setAcceptsOffers] = useState(true);
  const [minimumOfferPrice, setMinimumOfferPrice] = useState('');
- const [city, setCity] = useState(user?.location?.city || userLocation.city || 'Benin City');
+ const [city, setCity] = useState(
+ user?.location?.city ||
+ (userLocation.city && userLocation.city !== 'All Locations' ? userLocation.city : 'Benin City')
+ );
  const [neighborhood, setNeighborhood] = useState(user?.location?.neighborhood || '');
  const [preferredMeetup, setPreferredMeetup] = useState(SAFE_MEETUP_PRESETS[0].text);
  const [allowsDelivery, setAllowsDelivery] = useState(false);
@@ -316,7 +287,8 @@ export default function CreateListingPage() {
  if (!files.length) return;
 
  if (images.length + files.length > 12) {
- alert('You can upload a maximum of 12 photos.');
+ setError('You can upload a maximum of 12 photos per listing.');
+ e.target.value = '';
  return;
  }
 
@@ -333,15 +305,18 @@ export default function CreateListingPage() {
 
  if (res.data?.success && res.data.images) {
  setImages((prev) => [...prev, ...res.data.images]);
+ } else {
+ setError('Image upload did not return any saved photos. Please try again.');
  }
  } catch (err) {
- console.error('Image upload failed, falling back to local preview:', err);
- const fallbackUrls = files.map((file) => ({
- url: URL.createObjectURL(file),
- }));
- setImages((prev) => [...prev, ...fallbackUrls]);
+ console.error('Image upload failed:', err);
+ setError(
+ err.response?.data?.message ||
+ 'Failed to upload photos. Ensure each image is JPG, PNG, or WebP under 8MB.'
+ );
  } finally {
  setUploading(false);
+ e.target.value = '';
  }
  };
 
@@ -572,7 +547,7 @@ export default function CreateListingPage() {
  Want AI to draft this listing for you?
  </h3>
  <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider">
- Gemini 3.5
+ oBuy AI
  </span>
  </div>
  <p className="text-[11px] text-slate-500 mt-0.5">
@@ -711,7 +686,7 @@ export default function CreateListingPage() {
  <div className="p-3 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-start gap-2.5 text-xs text-slate-600">
  <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
  <p className="leading-relaxed">
- <strong>eBay Title Best Practice:</strong> Include brand, model, key technical specs, and color. Avoid vague titles like "Used phone for sale".
+ <strong>oBuy Title Best Practice:</strong> Include brand, model, key technical specs, and color. Avoid vague titles like "Used phone for sale".
  </p>
  </div>
  </div>
@@ -793,7 +768,7 @@ export default function CreateListingPage() {
  isCover ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-slate-300'
  }`}
  >
- <img src={img.url} alt="" className="w-full h-full object-cover" />
+ <img src={resolveMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
 
  {/* Cover Badge or Set-as-Cover Button */}
  {isCover ? (
@@ -806,7 +781,7 @@ export default function CreateListingPage() {
  type="button"
  onClick={() => setCoverPhoto(index)}
  title="Make this the Cover Photo"
- className="absolute top-1.5 left-1.5 bg-black/60 hover:bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md backdrop-blur-sm transition opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer"
+ className="absolute top-1.5 left-1.5 bg-slate-900/80 hover:bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md transition opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer"
  >
  <Star className="w-2.5 h-2.5" />
  Set Cover
@@ -818,7 +793,7 @@ export default function CreateListingPage() {
  type="button"
  onClick={() => removeImage(index)}
  title="Remove photo"
- className="absolute top-1.5 right-1.5 p-1 bg-black/60 hover:bg-rose-600 text-white rounded-full backdrop-blur-sm transition cursor-pointer"
+ className="absolute top-1.5 right-1.5 p-1 bg-slate-900/80 hover:bg-rose-600 text-white rounded-full transition cursor-pointer"
  >
  <X className="w-3 h-3" />
  </button>
@@ -1082,7 +1057,7 @@ export default function CreateListingPage() {
  </div>
  </div>
 
- {/* 3.2 eBay Negotiation / Offers Toggle */}
+ {/* 3.2 Negotiation / Offers Toggle */}
  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
  <div className="flex items-center justify-between">
  <div>
@@ -1228,7 +1203,7 @@ export default function CreateListingPage() {
  className="mt-1 h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
  />
  <label htmlFor="terms" className="text-xs text-amber-950 leading-relaxed cursor-pointer">
- <strong>Direct Safe Deal Blueprint:</strong> I agree that all transactions take place in-person with thorough inspection before payment. LocalMarket charges zero commission and assumes no liability for off-platform funds.
+ <strong>Direct Safe Deal Blueprint:</strong> I agree that all transactions take place in-person with thorough inspection before payment. oBuy charges zero commission and assumes no liability for off-platform funds.
  </label>
  </div>
  </div>
@@ -1275,7 +1250,7 @@ export default function CreateListingPage() {
  <div className="bg-white rounded-2xl p-4 border border-slate-200 space-y-3 select-none">
  <div className="relative aspect-square rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center border border-slate-200/80">
  {images.length > 0 ? (
- <img src={images[0].url} alt="" className="w-full h-full object-cover" />
+ <img src={resolveMediaUrl(images[0].url)} alt="" className="w-full h-full object-cover" />
  ) : (
  <div className="flex flex-col items-center justify-center text-slate-400 gap-1.5 p-4 text-center">
  <Camera className="w-8 h-8 stroke-1 text-slate-300" />
@@ -1301,14 +1276,14 @@ export default function CreateListingPage() {
  </span>
  )}
  {mode !== 'service' && condition && (
- <span className="bg-black/60 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded backdrop-blur-sm">
+ <span className="bg-slate-900/80 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded">
  {condition === 'brand-new' ? 'Sealed' : condition}
  </span>
  )}
  </div>
 
  {acceptsOffers && (
- <div className="absolute bottom-2 right-2 bg-indigo-600/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-sm">
+ <div className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
  Accepts Offers
  </div>
  )}
@@ -1351,8 +1326,8 @@ export default function CreateListingPage() {
 
  {/* AI Listing Wizard Co-Pilot Modal */}
  {aiModalOpen && (
- <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
- <div className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-7 space-y-5 shadow-none relative">
+ <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+ <div className="bg-white rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-7 space-y-5 relative">
  {/* Header */}
  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
  <div className="flex items-center gap-2.5">
@@ -1441,7 +1416,7 @@ export default function CreateListingPage() {
  {aiLoading ? (
  <>
  <Loader2 className="w-4 h-4 animate-spin" />
- <span>Analyzing & Drafting with Gemini...</span>
+ <span>Analyzing & Drafting with oBuy AI...</span>
  </>
  ) : (
  <>

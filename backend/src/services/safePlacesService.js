@@ -551,7 +551,7 @@ export async function getSmartSafeMeetupSpots({
   if (ai) {
     try {
     const prompt = `
-You are the LocalMarket Safe Meetup Reasoner.
+You are the oBuy Safe Meetup Reasoner.
 Item being traded: "${itemTitle}" (Category: "${itemCategory}")
 Target City: "${city}" (Neighborhood: "${neighborhood || 'Central'}")
 User Location Context: Lat: ${lat || 'unknown'}, Lng: ${lng || 'unknown'}.

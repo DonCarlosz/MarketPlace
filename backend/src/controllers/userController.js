@@ -2,26 +2,31 @@ import User from '../models/User.js';
 import Listing from '../models/Listing.js';
 import Review from '../models/Review.js';
 
-// @desc    Get public user profile and eBay-style 12-month reputation scorecard
+// @desc    Get public user profile and 12-month reputation scorecard
 // @route   GET /api/users/:id/profile
 export const getUserProfile = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id)
-      .select('-password -refreshTokens -failedLoginAttempts -lockUntil');
+      .select('-password -refreshTokens -failedLoginAttempts -lockUntil -blockedUsers')
+      .lean();
 
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    const isOwnRequest = req.user?._id?.toString() === user._id.toString();
 
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
     const twelveMonthsAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 
-    // Fetch all reviews for this seller
-    const allReviews = await Review.find({ seller: user._id }).sort({ createdAt: -1 });
+    const [allReviews, activeListingsCount, itemsSoldCount] = await Promise.all([
+      Review.find({ seller: user._id }).sort({ createdAt: -1 }).lean(),
+      Listing.countDocuments({ seller: user._id, status: 'active' }),
+      Listing.countDocuments({ seller: user._id, status: { $in: ['sold', 'completed'] } }),
+    ]);
 
-    // Calculate 12-month scorecard matrix
     const matrix = {
       oneMonth: { positive: 0, neutral: 0, negative: 0 },
       sixMonths: { positive: 0, neutral: 0, negative: 0 },
@@ -31,76 +36,69 @@ export const getUserProfile = async (req, res, next) => {
     let totalItemAccuracy = 0;
     let totalCommunication = 0;
     let totalPunctuality = 0;
+    let totalStars = 0;
     let positiveCount = 0;
     let neutralCount = 0;
     let negativeCount = 0;
 
     allReviews.forEach((rev) => {
       const revDate = new Date(rev.createdAt);
-      const type = rev.ratingType || (rev.stars >= 4 ? 'positive' : rev.stars === 3 ? 'neutral' : 'negative');
+      const type =
+        rev.ratingType || (rev.stars >= 4 ? 'positive' : rev.stars === 3 ? 'neutral' : 'negative');
 
       if (type === 'positive') positiveCount++;
       else if (type === 'neutral') neutralCount++;
       else if (type === 'negative') negativeCount++;
 
-      totalItemAccuracy += rev.itemAccuracy || 5;
-      totalCommunication += rev.communication || 5;
-      totalPunctuality += rev.punctuality || 5;
+      const acc = Number(rev.itemAccuracy) || 3;
+      const comm = Number(rev.communication) || 3;
+      const punct = Number(rev.punctuality) || 3;
+      let s = Number(rev.stars);
+      if (isNaN(s) || s < 1) s = type === 'negative' ? 1 : type === 'neutral' ? 3 : 5;
 
-      if (revDate >= oneMonthAgo) {
-        matrix.oneMonth[type]++;
-      }
-      if (revDate >= sixMonthsAgo) {
-        matrix.sixMonths[type]++;
-      }
-      if (revDate >= twelveMonthsAgo) {
-        matrix.twelveMonths[type]++;
-      }
+      totalItemAccuracy += acc;
+      totalCommunication += comm;
+      totalPunctuality += punct;
+      totalStars += s;
+
+      if (revDate >= oneMonthAgo) matrix.oneMonth[type]++;
+      if (revDate >= sixMonthsAgo) matrix.sixMonths[type]++;
+      if (revDate >= twelveMonthsAgo) matrix.twelveMonths[type]++;
     });
 
     const totalReviews = allReviews.length;
-    const positivePercentage =
-      totalReviews > 0
-        ? Math.round(
-            (positiveCount / (positiveCount + negativeCount || 1)) * 100
-          )
-        : 100;
+    const hasReviews = totalReviews > 0;
+
+    // Unified honest metrics: never show fake 100% or 5.0 when totalReviews === 0
+    const positivePercentage = hasReviews ? Math.round((positiveCount / totalReviews) * 100) : null;
+    const averageRating = hasReviews ? Number((totalStars / totalReviews).toFixed(1)) : null;
 
     const detailedRatings = {
-      itemAccuracy: totalReviews > 0 ? Number((totalItemAccuracy / totalReviews).toFixed(1)) : 5.0,
-      communication: totalReviews > 0 ? Number((totalCommunication / totalReviews).toFixed(1)) : 5.0,
-      punctuality: totalReviews > 0 ? Number((totalPunctuality / totalReviews).toFixed(1)) : 5.0,
+      itemAccuracy: hasReviews ? Number((totalItemAccuracy / totalReviews).toFixed(1)) : 0,
+      communication: hasReviews ? Number((totalCommunication / totalReviews).toFixed(1)) : 0,
+      punctuality: hasReviews ? Number((totalPunctuality / totalReviews).toFixed(1)) : 0,
     };
-
-    // Count active and completed listings
-    const [activeListingsCount, itemsSoldCount] = await Promise.all([
-      Listing.countDocuments({
-        seller: user._id,
-        status: 'active',
-      }),
-      Listing.countDocuments({
-        seller: user._id,
-        status: { $in: ['sold', 'completed'] },
-      }),
-    ]);
 
     res.json({
       success: true,
       user: {
         _id: user._id,
         name: user.name,
+        ...(isOwnRequest ? { email: user.email } : {}),
         avatar: user.avatar,
         bio: user.bio,
         location: user.location,
-        isVerified: user.isVerified,
-        verifiedEmail: user.verifiedEmail ?? true,
-        verifiedPhone: user.verifiedPhone ?? false,
+        isVerified: Boolean(user.isVerified),
+        verifiedEmail: Boolean(user.verifiedEmail ?? user.isVerified),
+        verifiedPhone: Boolean(user.verifiedPhone),
         createdAt: user.createdAt,
         activeListingsCount,
         itemsSoldCount,
       },
       reputation: {
         scorecardMatrix: matrix,
+        hasReviews,
+        averageRating,
         positivePercentage,
         totalReviews,
         positiveCount,
@@ -124,7 +122,8 @@ export const getUserListings = async (req, res, next) => {
       status: 'active',
     })
       .sort({ createdAt: -1 })
-      .populate('seller', 'name avatar location isVerified');
+      .populate('seller', 'name avatar location isVerified')
+      .lean();
 
     res.json({
       success: true,
@@ -143,7 +142,8 @@ export const getUserReviews = async (req, res, next) => {
       .populate('buyer', 'name avatar location')
       .populate('listing', 'title price images')
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
 
     res.json({
       success: true,
@@ -168,6 +168,14 @@ export const submitReview = async (req, res, next) => {
       });
     }
 
+    const sellerExists = await User.exists({ _id: sellerId });
+    if (!sellerExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller account not found.',
+      });
+    }
+
     const {
       listingId,
       ratingType = 'positive',
@@ -178,16 +186,24 @@ export const submitReview = async (req, res, next) => {
       comment,
     } = req.body;
 
-    if (!comment || !comment.trim()) {
+    if (typeof comment !== 'string' || !comment.trim()) {
       return res.status(400).json({
         success: false,
         message: 'Feedback comment is required.',
       });
     }
 
-    const validRatingType = ['positive', 'neutral', 'negative'].includes(ratingType) ? ratingType : 'positive';
+    // Prevent duplicate review flooding by the same buyer on the same seller/listing
+    const duplicateFilter = listingId
+      ? { seller: sellerId, buyer: buyerId, listing: listingId }
+      : { seller: sellerId, buyer: buyerId, listing: null };
 
-    // Automatically derive or clamp stars to match ratingType
+    const existingReview = await Review.findOne(duplicateFilter);
+
+    const validRatingType = ['positive', 'neutral', 'negative'].includes(ratingType)
+      ? ratingType
+      : 'positive';
+
     let parsedStars = Number(stars);
     const parsedAccuracy = Math.max(1, Math.min(5, Number(itemAccuracy) || 3));
     const parsedComm = Math.max(1, Math.min(5, Number(communication) || 3));
@@ -206,24 +222,35 @@ export const submitReview = async (req, res, next) => {
       parsedStars = Math.max(4, parsedStars);
     }
 
-    const review = await Review.create({
-      seller: sellerId,
-      buyer: buyerId,
-      listing: listingId || null,
-      ratingType: validRatingType,
-      stars: parsedStars,
-      itemAccuracy: parsedAccuracy,
-      communication: parsedComm,
-      punctuality: parsedPunct,
-      comment: comment.trim(),
-    });
+    let review;
+    if (existingReview) {
+      existingReview.ratingType = validRatingType;
+      existingReview.stars = parsedStars;
+      existingReview.itemAccuracy = parsedAccuracy;
+      existingReview.communication = parsedComm;
+      existingReview.punctuality = parsedPunct;
+      existingReview.comment = comment.trim().slice(0, 1000);
+      review = await existingReview.save();
+    } else {
+      review = await Review.create({
+        seller: sellerId,
+        buyer: buyerId,
+        listing: listingId || null,
+        ratingType: validRatingType,
+        stars: parsedStars,
+        itemAccuracy: parsedAccuracy,
+        communication: parsedComm,
+        punctuality: parsedPunct,
+        comment: comment.trim().slice(0, 1000),
+      });
+    }
 
     const populatedReview = await Review.findById(review._id)
       .populate('buyer', 'name avatar location')
       .populate('listing', 'title price images');
 
-    // Update seller cached feedback metrics on User model
-    const allReviews = await Review.find({ seller: sellerId });
+    // Synchronize cached feedback metrics on User model
+    const allReviews = await Review.find({ seller: sellerId }).lean();
     let positive = 0;
     let neutral = 0;
     let negative = 0;
@@ -241,7 +268,7 @@ export const submitReview = async (req, res, next) => {
     });
 
     const total = allReviews.length;
-    const positivePercentage = total > 0 ? Math.round((positive / total) * 100) : 100;
+    const positivePercentage = total > 0 ? Math.round((positive / total) * 100) : 0;
 
     await User.findByIdAndUpdate(sellerId, {
       'feedbackScore.positive': positive,
@@ -249,15 +276,18 @@ export const submitReview = async (req, res, next) => {
       'feedbackScore.negative': negative,
       'feedbackScore.totalReviews': total,
       'feedbackScore.positivePercentage': positivePercentage,
-      'detailedRatings.itemAccuracy': Number((sumAccuracy / total).toFixed(1)),
-      'detailedRatings.communication': Number((sumComm / total).toFixed(1)),
-      'detailedRatings.punctuality': Number((sumPunct / total).toFixed(1)),
+      'detailedRatings.itemAccuracy': total > 0 ? Number((sumAccuracy / total).toFixed(1)) : 0,
+      'detailedRatings.communication': total > 0 ? Number((sumComm / total).toFixed(1)) : 0,
+      'detailedRatings.punctuality': total > 0 ? Number((sumPunct / total).toFixed(1)) : 0,
     });
 
-    res.status(201).json({
+    res.status(existingReview ? 200 : 201).json({
       success: true,
+      updated: Boolean(existingReview),
       review: populatedReview,
-      message: 'Feedback submitted successfully.',
+      message: existingReview
+        ? 'Your previous feedback has been updated.'
+        : 'Feedback submitted successfully.',
     });
   } catch (error) {
     next(error);

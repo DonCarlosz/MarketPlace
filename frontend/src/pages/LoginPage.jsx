@@ -34,8 +34,8 @@ export default function LoginPage() {
  <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mx-auto ">
  <Store className="w-6 h-6" />
  </div>
- <h2 className="text-2xl font-bold text-slate-900">Welcome Back</h2>
- <p className="text-xs text-slate-500">Sign in to contact sellers and manage your listings</p>
+ <h2 className="text-2xl font-bold text-slate-900">Welcome Back to oBuy</h2>
+ <p className="text-xs text-slate-500">Sign in to contact sellers and manage your oBuy listings</p>
  </div>
 
  {error && (
