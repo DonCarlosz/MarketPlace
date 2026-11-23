@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { PWAInstallProvider } from './context/PWAInstallContext';
+import { ToastProvider } from './context/ToastContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
@@ -150,10 +151,12 @@ export default function App() {
       <ModeProvider>
         <FavoritesProvider>
           <PWAInstallProvider>
-            <Router>
-              <ScrollToTop />
-              <AppContent />
-            </Router>
+            <ToastProvider>
+              <Router>
+                <ScrollToTop />
+                <AppContent />
+              </Router>
+            </ToastProvider>
           </PWAInstallProvider>
         </FavoritesProvider>
       </ModeProvider>

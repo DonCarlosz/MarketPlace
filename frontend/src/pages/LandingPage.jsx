@@ -766,9 +766,9 @@ export default function LandingPage() {
  )}
  </section>
 
- {/* 5. Light-Themed Promo Showcase Card */}
- <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
- <div className="rounded-2xl sm:rounded-3xl bg-slate-100/90 border border-slate-200/90 p-6 sm:p-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+ {/* 5. Full-Bleed Light Promo Showcase Band (zero outer wrapper card) */}
+ <section className="w-full bg-slate-50 border-y border-slate-200 mt-10 sm:mt-12 py-8 sm:py-10 overflow-hidden">
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-8">
  <div className="space-y-4 max-w-xl">
  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
  Endless local finds. Epic community prices.
@@ -1017,9 +1017,9 @@ export default function LandingPage() {
  </div>
  </section>
 
- {/* 8. Safe Local Meetup Blueprint (Trust & Zero-Liability) */}
- <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 pb-6 overflow-hidden">
- <div className="bg-slate-50 rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-200/90 space-y-6">
+ {/* 8. Full-Bleed Safe Local Meetup Blueprint Band (zero cards inside cards) */}
+ <section className="w-full bg-slate-50 border-t border-slate-200 mt-10 sm:mt-12 py-8 sm:py-10 overflow-hidden">
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
  <div className="text-center space-y-1.5 max-w-lg mx-auto">
  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
  How Safe Community Commerce Works

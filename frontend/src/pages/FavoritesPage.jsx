@@ -55,20 +55,20 @@ export default function FavoritesPage() {
  }
 
  return (
- <div className="min-h-screen bg-slate-50 py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
- <div className="max-w-7xl mx-auto space-y-6">
- {/* Header Banner */}
- <div className="bg-white rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+ <div className="min-h-screen bg-slate-50 pb-10">
+ {/* Flat Edge-to-Edge Header Band (no nested box margins) */}
+ <div className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+ <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
  <div className="space-y-1">
- <div className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+ <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-600">
  <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
  <span>Your Saved Collection</span>
  </div>
- <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+ <h1 className="text-xl sm:text-2xl font-black text-slate-900">
  Favorites & Saved Deals
  </h1>
- <p className="text-xs sm:text-sm text-slate-500">
- {count} {count === 1 ? 'item saved' : 'items saved'} in your private wishlist. Tap the heart to remove any item.
+ <p className="text-xs text-slate-500">
+ {count} {count === 1 ? 'item saved' : 'items saved'} in your private watchlist.
  </p>
  </div>
 
@@ -81,13 +81,16 @@ export default function FavoritesPage() {
  )}
  <Link
  to="/market"
- className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition"
+ className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold transition"
  >
  <Compass className="w-4 h-4" />
  <span>Explore Market</span>
  </Link>
  </div>
  </div>
+ </div>
+
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-5">
 
  {/* Filter Mode Pills (if items exist) */}
  {favoriteListings.length > 0 && (
@@ -158,10 +161,10 @@ export default function FavoritesPage() {
  )}
 
  {/* Safety Note */}
- <div className="bg-amber-50/70 border border-amber-200/60 rounded-2xl p-4 flex items-center gap-3 text-xs text-amber-900">
- <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0" />
+ <div className="pt-4 border-t border-slate-200 flex items-center gap-2.5 text-xs text-slate-500">
+ <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
  <span>
- <strong>Safe Meetup Reminder:</strong> Favorited listings remain off-platform deals. Always inspect items in person and agree on terms before paying the seller.
+ <strong className="text-slate-700">Safe Meetup Reminder:</strong> Always inspect items in person at a public spot before paying the seller.
  </span>
  </div>
  </div>

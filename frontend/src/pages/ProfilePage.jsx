@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { profileRouteCache } from '../utils/routeCache';
 import ListingCard from '../components/ListingCard';
 import ConfirmModal from '../components/ConfirmModal';
@@ -28,11 +29,13 @@ import {
  Image as ImageIcon,
  Loader2,
  LogOut,
+ ChevronDown,
 } from 'lucide-react';
 
 export default function ProfilePage() {
  const { userId } = useParams();
  const { user: currentUser, updateUser, logout, openAuthModal } = useAuth();
+ const { showToast } = useToast();
  const navigate = useNavigate();
 
  const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
@@ -63,7 +66,7 @@ export default function ProfilePage() {
  const [avatarUploading, setAvatarUploading] = useState(false);
  const [coverUploading, setCoverUploading] = useState(false);
  const [saveLoading, setSaveLoading] = useState(false);
- const [profileNotice, setProfileNotice] = useState(null);
+ const [scorecardExpanded, setScorecardExpanded] = useState(false);
  const avatarInputRef = useRef(null);
  const coverInputRef = useRef(null);
 
@@ -195,8 +198,7 @@ export default function ProfilePage() {
  }, [profileCacheKey, profileData, reputation, listings, favorites, reviews]);
 
  const showNotice = (text, type = 'success') => {
- setProfileNotice({ text, type });
- setTimeout(() => setProfileNotice(null), 4000);
+ showToast(text, type);
  };
 
  // Handle Avatar Image File Selection (uploads to persistent MongoDB storage & saves immediately)
@@ -348,7 +350,7 @@ export default function ProfilePage() {
  return;
  }
  if (!reviewComment.trim()) {
- alert('Please write feedback comments.');
+ showToast('Please write feedback comments.', 'error');
  return;
  }
 
@@ -370,6 +372,7 @@ export default function ProfilePage() {
  });
  setReviewModalOpen(false);
  setReviewComment('');
+ showToast('Feedback submitted.', 'success');
  // Refresh profile to reflect updated score
  const profRes = await API.get(`/users/${targetUserId}/profile`);
  if (profRes.data?.success) {
@@ -378,7 +381,7 @@ export default function ProfilePage() {
  }
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to submit feedback.');
+ showToast(err.response?.data?.message || 'Failed to submit feedback.', 'error');
  } finally {
  setReviewSubmitting(false);
  }
@@ -391,7 +394,7 @@ export default function ProfilePage() {
  return;
  }
  if (listings.length === 0) {
- alert('This seller currently has no active listings to message about.');
+ showToast('This seller currently has no active listings to message about.', 'info');
  return;
  }
  try {
@@ -401,7 +404,7 @@ export default function ProfilePage() {
  navigate(`/messages?conversationId=${res.data.conversation._id}`);
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to start conversation.');
+ showToast(err.response?.data?.message || 'Failed to start conversation.', 'error');
  }
  };
 
@@ -427,7 +430,7 @@ export default function ProfilePage() {
  );
  }
  } catch {
- alert('Failed to update listing status');
+ showToast('Failed to update listing status.', 'error');
  } finally {
  setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
  }
@@ -448,9 +451,10 @@ export default function ProfilePage() {
  const res = await API.delete(`/listings/${listingId}`);
  if (res.data?.success) {
  setListings((prev) => prev.filter((item) => item._id !== listingId));
+ showToast('Listing deleted.', 'info');
  }
  } catch {
- alert('Failed to delete listing');
+ showToast('Failed to delete listing.', 'error');
  } finally {
  setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
  }
@@ -499,8 +503,10 @@ export default function ProfilePage() {
  ? new Date(profileData.createdAt).toLocaleDateString([], { month: 'short', year: 'numeric' })
  : 'Recent';
 
+ const showScorecardBody = hasReviews || scorecardExpanded;
+
  return (
- <div className="min-h-screen bg-slate-50 py-6 sm:py-8 px-4 sm:px-6">
+ <div className="min-h-screen bg-slate-50 sm:py-6 sm:px-6">
  {/* Always-mounted file inputs for direct one-tap Avatar & Cover Background changes */}
  {isOwnProfile && (
  <>
@@ -521,31 +527,9 @@ export default function ProfilePage() {
  </>
  )}
 
- <div className="max-w-5xl mx-auto space-y-6">
- {/* Inline Status Notice */}
- {profileNotice && (
- <div
- role="status"
- className={`px-4 py-3 rounded-2xl border text-xs font-bold flex items-center justify-between gap-2 ${
- profileNotice.type === 'error'
- ? 'bg-rose-50 border-rose-200 text-rose-800'
- : 'bg-emerald-50 border-emerald-200 text-emerald-800'
- }`}
- >
- <span>{profileNotice.text}</span>
- <button
- type="button"
- onClick={() => setProfileNotice(null)}
- className="p-0.5 opacity-70 hover:opacity-100 cursor-pointer"
- aria-label="Dismiss notice"
- >
- <X className="w-3.5 h-3.5" />
- </button>
- </div>
- )}
-
- {/* Profile Header Card */}
- <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
+ <div className="max-w-5xl mx-auto sm:space-y-5">
+ {/* Full-Bleed Profile Header (flat edge-to-edge on mobile, framed on sm+) */}
+ <section className="bg-white border-b border-slate-200 sm:border sm:rounded-2xl overflow-hidden">
  {/* Changeable Header Cover Banner */}
  <div className="h-32 sm:h-40 bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 relative overflow-hidden">
  {resolvedCoverImage && (
@@ -587,7 +571,7 @@ export default function ProfilePage() {
  )}
  </div>
 
- <div className="px-5 sm:px-8 pb-6 sm:pb-8 pt-0 relative z-10 space-y-5">
+ <div className="px-4 sm:px-6 pb-5 pt-0 relative z-10 space-y-4">
  {/* Avatar & Top Desktop Action Row */}
  <div className="flex items-end justify-between -mt-10 sm:-mt-12">
  <div className="relative group">
@@ -629,7 +613,7 @@ export default function ProfilePage() {
  className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <Edit3 className="w-3.5 h-3.5" />
- <span>{editing ? 'Cancel Editing' : 'Edit Profile'}</span>
+ <span>Edit Profile</span>
  </button>
  <button
  type="button"
@@ -664,7 +648,7 @@ export default function ProfilePage() {
  </div>
 
  {/* User Identity & Feedback Details */}
- <div className="space-y-1.5 pt-1">
+ <div className="space-y-1.5">
  <div className="flex items-center gap-2 flex-wrap">
  <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
  {profileData?.name || 'oBuy Member'}
@@ -700,15 +684,15 @@ export default function ProfilePage() {
  )}
  </div>
 
- {profileData?.bio && !editing && (
- <p className="text-xs text-slate-600 pt-1.5 leading-relaxed max-w-2xl">
+ {profileData?.bio && (
+ <p className="text-xs text-slate-600 pt-1 leading-relaxed max-w-2xl">
  "{profileData.bio}"
  </p>
  )}
  </div>
 
  {/* Mobile Action Buttons (includes Log Out directly on Profile for mobile users) */}
- <div className="sm:hidden pt-1">
+ <div className="sm:hidden">
  {isOwnProfile ? (
  <div className="grid grid-cols-2 gap-2">
  <button
@@ -717,7 +701,7 @@ export default function ProfilePage() {
  className="px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <Edit3 className="w-3.5 h-3.5" />
- <span>{editing ? 'Cancel' : 'Edit Profile'}</span>
+ <span>Edit Profile</span>
  </button>
  <button
  type="button"
@@ -749,197 +733,86 @@ export default function ProfilePage() {
  </div>
  )}
  </div>
+ </div>
 
- {/* Quick Stats Strip (100% Live Backend Counts) */}
- <div className="grid grid-cols-4 gap-2.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+ {/* Flat Edge-to-Edge Quick Stats Strip (zero nested box margins) */}
+ <div className="grid grid-cols-4 border-t border-slate-100 py-3.5 text-center bg-slate-50/50">
  <div>
  <span className="text-base sm:text-lg font-black text-slate-900">
  {profileData?.activeListingsCount ?? activeListings.length}
  </span>
  <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Active</span>
  </div>
- <div className="border-l border-slate-200">
+ <div className="border-l border-slate-200/80">
  <span className="text-base sm:text-lg font-black text-slate-900">{completedDealsCount}</span>
  <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sold</span>
  </div>
- <div className="border-l border-slate-200">
+ <div className="border-l border-slate-200/80">
  <span className="text-base sm:text-lg font-black text-emerald-700">
  {reputation?.totalReviews ?? reviews.length}
  </span>
  <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Reviews</span>
  </div>
- <div className="border-l border-slate-200">
+ <div className="border-l border-slate-200/80">
  <span className="text-base sm:text-lg font-black text-amber-600">
  {hasReviews && reputation?.averageRating ? `${reputation.averageRating.toFixed(1)}★` : 'New'}
  </span>
  <span className="block text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-wider">Rating</span>
  </div>
  </div>
+ </section>
 
- {/* Edit Profile Form */}
- {editing && isOwnProfile && (
- <form onSubmit={handleSaveProfile} className="pt-4 border-t border-slate-100 space-y-4">
- {/* Profile Picture & Cover Background Uploaders */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
- <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
- <div className="relative w-14 h-14 rounded-2xl bg-indigo-600 text-white font-black text-xl flex items-center justify-center overflow-hidden border-2 border-white shrink-0">
- {avatarUploading ? (
- <Loader2 className="w-5 h-5 animate-spin text-white" />
- ) : avatarUrl ? (
- <img src={resolveMediaUrl(avatarUrl)} alt="Preview" className="w-full h-full object-cover" />
- ) : (
- name?.charAt(0).toUpperCase() || 'U'
- )}
- </div>
- <div className="space-y-1 flex-1 min-w-0">
- <div className="text-xs font-bold text-slate-800">Profile Picture</div>
- <p className="text-[11px] text-slate-500">Square photo, up to 8MB.</p>
- <div className="flex items-center gap-2 pt-0.5 flex-wrap">
- <button
- type="button"
- onClick={() => avatarInputRef.current?.click()}
- disabled={avatarUploading}
- className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1 transition cursor-pointer"
- >
- <Camera className="w-3 h-3 text-indigo-600" />
- <span>{avatarUrl ? 'Change' : 'Upload'}</span>
- </button>
- {avatarUrl && (
- <button
- type="button"
- onClick={() => setAvatarUrl('')}
- className="px-2 py-1 text-[11px] text-rose-600 hover:bg-rose-50 rounded-lg transition font-semibold cursor-pointer"
- >
- Remove
- </button>
- )}
- </div>
- </div>
- </div>
-
- <div className="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
- <div className="relative w-20 h-14 rounded-xl bg-gradient-to-r from-indigo-700 to-purple-800 text-white flex items-center justify-center overflow-hidden border-2 border-white shrink-0">
- {coverUploading ? (
- <Loader2 className="w-5 h-5 animate-spin text-white" />
- ) : coverUrl ? (
- <img src={resolveMediaUrl(coverUrl)} alt="Cover preview" className="w-full h-full object-cover" />
- ) : (
- <ImageIcon className="w-5 h-5 text-white/80" />
- )}
- </div>
- <div className="space-y-1 flex-1 min-w-0">
- <div className="text-xs font-bold text-slate-800">Cover Background</div>
- <p className="text-[11px] text-slate-500">Wide header image, up to 8MB.</p>
- <div className="flex items-center gap-2 pt-0.5 flex-wrap">
- <button
- type="button"
- onClick={() => coverInputRef.current?.click()}
- disabled={coverUploading}
- className="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 hover:bg-slate-100 flex items-center gap-1 transition cursor-pointer"
- >
- <ImageIcon className="w-3 h-3 text-indigo-600" />
- <span>{coverUrl ? 'Change' : 'Upload'}</span>
- </button>
- {coverUrl && (
- <button
- type="button"
- onClick={handleRemoveCover}
- disabled={coverUploading}
- className="px-2 py-1 text-[11px] text-rose-600 hover:bg-rose-50 rounded-lg transition font-semibold cursor-pointer"
- >
- Reset
- </button>
- )}
- </div>
- </div>
- </div>
- </div>
-
- <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
- <div>
- <label className="block text-xs font-semibold text-slate-700 mb-1">Display Name</label>
- <input
- type="text"
- value={name}
- onChange={(e) => setName(e.target.value)}
- required
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
- />
- </div>
- <div>
- <label className="block text-xs font-semibold text-slate-700 mb-1">City / Region</label>
- <input
- type="text"
- value={city}
- onChange={(e) => setCity(e.target.value)}
- required
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
- />
- </div>
- </div>
- <div>
- <label className="block text-xs font-semibold text-slate-700 mb-1">Short Bio</label>
- <textarea
- rows={2}
- value={bio}
- onChange={(e) => setBio(e.target.value)}
- placeholder="Introduce yourself to neighbors and buyers..."
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
- />
- </div>
- <div className="flex items-center gap-2">
- <button
- type="submit"
- disabled={saveLoading || avatarUploading}
- className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 cursor-pointer disabled:opacity-50"
- >
- {saveLoading ? 'Saving...' : 'Save Changes'}
- </button>
- <button
- type="button"
- onClick={toggleEditing}
- className="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer"
- >
- Cancel
- </button>
- </div>
- </form>
- )}
-
- </div>
- </div>
-
- {/* 12-Month Reputation Scorecard & Detailed Seller Ratings (DSR) */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 space-y-6">
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
- <div>
- <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
- <Award className="w-5 h-5 text-indigo-600" />
- <span>Seller Reputation & 12-Month Scorecard</span>
+ {/* Flat Seller Reputation & 12-Month Scorecard Section (zero triple nesting; compact when 0 reviews) */}
+ <section className="bg-white border-y border-slate-200 sm:border sm:rounded-2xl mt-2 sm:mt-0 px-4 sm:px-6 py-4 sm:py-5">
+ <div className="flex items-center justify-between gap-2">
+ <div className="min-w-0">
+ <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+ <Award className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 shrink-0" />
+ <span className="truncate">Seller Reputation & Scorecard</span>
  </h2>
- <p className="text-xs text-slate-500 mt-0.5">
- Verified peer-to-peer feedback matrix tracking item accuracy, speed, and safety.
+ {!showScorecardBody && (
+ <p className="text-[11px] text-slate-500 mt-0.5">
+ Overall Positive: <strong className="text-slate-700">No reviews yet</strong>
  </p>
+ )}
  </div>
 
- <div className="inline-flex items-center gap-2 text-xs font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+ <div className="flex items-center gap-2 shrink-0">
+ {showScorecardBody && (
+ <div className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
  <span>Overall Positive:</span>
  <span className={hasReviews ? 'text-emerald-700 font-black' : 'text-slate-500 font-bold'}>
  {hasReviews ? `${reputation.positivePercentage}%` : 'No reviews yet'}
  </span>
  </div>
+ )}
+ {!hasReviews && (
+ <button
+ type="button"
+ onClick={() => setScorecardExpanded((prev) => !prev)}
+ className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+ aria-expanded={showScorecardBody}
+ >
+ <span>{showScorecardBody ? 'Hide' : 'Details'}</span>
+ <ChevronDown
+ className={`w-3.5 h-3.5 transition-transform ${showScorecardBody ? 'rotate-180' : ''}`}
+ />
+ </button>
+ )}
+ </div>
  </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+ {showScorecardBody && (
+ <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 pt-4 mt-4 border-t border-slate-100">
  {/* 12-Month Matrix Table (7 cols) */}
  <div className="lg:col-span-7 overflow-x-auto">
  <table className="w-full text-left text-xs">
  <thead>
  <tr className="border-b border-slate-200 text-slate-500 font-bold">
- <th className="pb-2.5 font-bold">Feedback Rating</th>
- <th className="pb-2.5 text-center">Past Month</th>
- <th className="pb-2.5 text-center">Past 6 Months</th>
- <th className="pb-2.5 text-center">Past 12 Months</th>
+ <th className="pb-2 font-bold">Feedback</th>
+ <th className="pb-2 text-center">1 Mo</th>
+ <th className="pb-2 text-center">6 Mo</th>
+ <th className="pb-2 text-center">12 Mo</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-slate-100 font-semibold">
@@ -982,13 +855,13 @@ export default function ProfilePage() {
  </table>
  </div>
 
- {/* Detailed Seller Ratings (DSR - 5 cols) */}
- <div className="lg:col-span-5 bg-slate-50/80 rounded-2xl p-4 border border-slate-200/70 space-y-3.5">
- <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+ {/* Detailed Seller Ratings (flat divided column, zero inner card box) */}
+ <div className="lg:col-span-5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6 space-y-3">
+ <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
  Detailed Seller Ratings
  </h3>
 
- <div className="space-y-3 text-xs">
+ <div className="space-y-2.5 text-xs">
  <div>
  <div className="flex items-center justify-between text-slate-700 font-semibold mb-1">
  <span>Item as Described</span>
@@ -996,7 +869,7 @@ export default function ProfilePage() {
  {hasReviews ? `${dsr.itemAccuracy.toFixed(1)} / 5.0` : 'No ratings'}
  </span>
  </div>
- <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+ <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
  <div
  className="bg-amber-500 h-full rounded-full transition-all"
  style={{ width: `${hasReviews ? (dsr.itemAccuracy / 5.0) * 100 : 0}%` }}
@@ -1011,7 +884,7 @@ export default function ProfilePage() {
  {hasReviews ? `${dsr.communication.toFixed(1)} / 5.0` : 'No ratings'}
  </span>
  </div>
- <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+ <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
  <div
  className="bg-amber-500 h-full rounded-full transition-all"
  style={{ width: `${hasReviews ? (dsr.communication / 5.0) * 100 : 0}%` }}
@@ -1026,7 +899,7 @@ export default function ProfilePage() {
  {hasReviews ? `${dsr.punctuality.toFixed(1)} / 5.0` : 'No ratings'}
  </span>
  </div>
- <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+ <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
  <div
  className="bg-amber-500 h-full rounded-full transition-all"
  style={{ width: `${hasReviews ? (dsr.punctuality / 5.0) * 100 : 0}%` }}
@@ -1036,10 +909,11 @@ export default function ProfilePage() {
  </div>
  </div>
  </div>
- </div>
+ )}
+ </section>
 
  {/* Multi-Perspective Navigation Tabs (Active -> Saved Watchlist -> Sold -> Reviews) */}
- <div>
+ <div className="px-4 sm:px-0 pt-4 pb-8">
  <div className="flex items-center gap-1.5 sm:gap-2 border-b border-slate-200 pb-3 overflow-x-auto no-scrollbar">
  <button
  type="button"
@@ -1492,6 +1366,165 @@ export default function ProfilePage() {
  >
  <Send className="w-3.5 h-3.5" />
  <span>{reviewSubmitting ? 'Posting...' : 'Submit Feedback'}</span>
+ </button>
+ </div>
+ </form>
+ </div>
+ </div>
+ )}
+
+ {/* Edit Profile Slide-Up Sheet / Modal (zero layout shift on profile page) */}
+ {editing && isOwnProfile && (
+ <div
+ className="fixed inset-0 z-50 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4"
+ onClick={toggleEditing}
+ >
+ <div
+ className="bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-5"
+ onClick={(e) => e.stopPropagation()}
+ >
+ <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ <div className="flex items-center gap-2">
+ <Edit3 className="w-4 h-4 text-indigo-600" />
+ <h3 className="text-base font-black text-slate-900">Edit Profile</h3>
+ </div>
+ <button
+ type="button"
+ onClick={toggleEditing}
+ className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+ aria-label="Close edit profile"
+ >
+ <X className="w-4 h-4" />
+ </button>
+ </div>
+
+ <form onSubmit={handleSaveProfile} className="space-y-4">
+ {/* Avatar & Cover Quick Controls */}
+ <div className="divide-y divide-slate-100 border-y border-slate-100">
+ <div className="flex items-center justify-between gap-3 py-3">
+ <div className="flex items-center gap-3 min-w-0">
+ <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-black text-base flex items-center justify-center overflow-hidden shrink-0">
+ {avatarUploading ? (
+ <Loader2 className="w-4 h-4 animate-spin text-white" />
+ ) : avatarUrl ? (
+ <img src={resolveMediaUrl(avatarUrl)} alt="Avatar preview" className="w-full h-full object-cover" />
+ ) : (
+ name?.charAt(0).toUpperCase() || 'U'
+ )}
+ </div>
+ <div className="min-w-0">
+ <div className="text-xs font-bold text-slate-800">Profile Picture</div>
+ <div className="text-[11px] text-slate-500">JPG, PNG, or WebP up to 8MB</div>
+ </div>
+ </div>
+ <div className="flex items-center gap-1.5 shrink-0">
+ <button
+ type="button"
+ onClick={() => avatarInputRef.current?.click()}
+ disabled={avatarUploading}
+ className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer"
+ >
+ {avatarUrl ? 'Change' : 'Upload'}
+ </button>
+ {avatarUrl && (
+ <button
+ type="button"
+ onClick={() => setAvatarUrl('')}
+ className="px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+ >
+ Remove
+ </button>
+ )}
+ </div>
+ </div>
+
+ <div className="flex items-center justify-between gap-3 py-3">
+ <div className="flex items-center gap-3 min-w-0">
+ <div className="w-14 h-10 rounded-lg bg-gradient-to-r from-indigo-700 to-purple-800 text-white flex items-center justify-center overflow-hidden shrink-0">
+ {coverUploading ? (
+ <Loader2 className="w-4 h-4 animate-spin text-white" />
+ ) : coverUrl ? (
+ <img src={resolveMediaUrl(coverUrl)} alt="Cover preview" className="w-full h-full object-cover" />
+ ) : (
+ <ImageIcon className="w-4 h-4 text-white/80" />
+ )}
+ </div>
+ <div className="min-w-0">
+ <div className="text-xs font-bold text-slate-800">Cover Background</div>
+ <div className="text-[11px] text-slate-500">Wide profile banner photo</div>
+ </div>
+ </div>
+ <div className="flex items-center gap-1.5 shrink-0">
+ <button
+ type="button"
+ onClick={() => coverInputRef.current?.click()}
+ disabled={coverUploading}
+ className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-[11px] font-bold text-slate-700 cursor-pointer"
+ >
+ {coverUrl ? 'Change' : 'Upload'}
+ </button>
+ {coverUrl && (
+ <button
+ type="button"
+ onClick={handleRemoveCover}
+ disabled={coverUploading}
+ className="px-2 py-1.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+ >
+ Reset
+ </button>
+ )}
+ </div>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+ <div>
+ <label className="block text-xs font-semibold text-slate-700 mb-1">Display Name</label>
+ <input
+ type="text"
+ value={name}
+ onChange={(e) => setName(e.target.value)}
+ required
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ />
+ </div>
+ <div>
+ <label className="block text-xs font-semibold text-slate-700 mb-1">City / Region</label>
+ <input
+ type="text"
+ value={city}
+ onChange={(e) => setCity(e.target.value)}
+ required
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ />
+ </div>
+ </div>
+
+ <div>
+ <label className="block text-xs font-semibold text-slate-700 mb-1">Short Bio</label>
+ <textarea
+ rows={3}
+ value={bio}
+ onChange={(e) => setBio(e.target.value)}
+ placeholder="Introduce yourself to neighbors and buyers..."
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ />
+ </div>
+
+ <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+ <button
+ type="button"
+ onClick={toggleEditing}
+ className="px-4 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 cursor-pointer"
+ >
+ Cancel
+ </button>
+ <button
+ type="submit"
+ disabled={saveLoading || avatarUploading || coverUploading}
+ className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 cursor-pointer disabled:opacity-50"
+ >
+ {saveLoading ? 'Saving...' : 'Save Changes'}
  </button>
  </div>
  </form>

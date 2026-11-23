@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { chatInboxCache, chatMessagesCache } from '../utils/routeCache';
 import { formatPrice } from '../utils/format';
 import ConfirmModal from '../components/ConfirmModal';
@@ -105,14 +106,7 @@ export default function ChatPage() {
  const socketRef = useRef(null);
  const activeConvIdRef = useRef(activeConvId);
  const typingTimeoutRef = useRef(null);
- const toastTimeoutRef = useRef(null);
- const [toast, setToast] = useState(null);
-
- const showToast = useCallback((text, type = 'info') => {
- setToast({ text, type });
- if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
- toastTimeoutRef.current = setTimeout(() => setToast(null), 4000);
- }, []);
+ const { showToast } = useToast();
 
  useEffect(() => {
  activeConvIdRef.current = activeConvId;
@@ -121,7 +115,6 @@ export default function ChatPage() {
  useEffect(() => {
  return () => {
  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
- if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
  };
  }, []);
 
@@ -733,30 +726,8 @@ export default function ChatPage() {
  activeConversation?.listing?.status !== 'completed';
 
  return (
- <div className="flex-1 h-full w-full max-w-7xl mx-auto p-2 sm:p-4 md:p-6 overflow-hidden flex flex-col relative">
- {toast && (
- <div
- role="status"
- className={`fixed top-16 right-4 z-[60] max-w-sm px-4 py-2.5 rounded-2xl border text-xs font-bold flex items-center gap-2 ${
- toast.type === 'error'
- ? 'bg-rose-50 border-rose-200 text-rose-800'
- : toast.type === 'success'
- ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
- : 'bg-slate-900 border-slate-800 text-white'
- }`}
- >
- <span className="flex-1">{toast.text}</span>
- <button
- type="button"
- onClick={() => setToast(null)}
- className="p-0.5 opacity-70 hover:opacity-100 cursor-pointer"
- aria-label="Dismiss notification"
- >
- <X className="w-3.5 h-3.5" />
- </button>
- </div>
- )}
- <div className="flex-1 bg-white rounded-3xl border border-slate-200 overflow-hidden flex min-h-0">
+ <div className="flex-1 h-full w-full md:max-w-7xl md:mx-auto p-0 md:p-4 lg:p-6 overflow-hidden flex flex-col relative">
+ <div className="flex-1 bg-white rounded-none md:rounded-2xl border-0 md:border md:border-slate-200 overflow-hidden flex min-h-0">
  {/* Left Sidebar: Conversations List & TikTok-style Tabs */}
  <aside
  className={`w-full md:w-80 border-r border-slate-200 flex flex-col shrink-0 ${

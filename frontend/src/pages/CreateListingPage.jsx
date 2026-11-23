@@ -452,10 +452,10 @@ export default function CreateListingPage() {
  }
 
  return (
- <div className="min-h-screen bg-slate-50 py-6 sm:py-10 px-4 sm:px-6 lg:px-8">
- <div className="max-w-6xl mx-auto space-y-6">
- {/* Wizard Top Header */}
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+ <div className="min-h-screen bg-slate-50 sm:py-8 sm:px-6 lg:px-8">
+ <div className="max-w-6xl mx-auto sm:space-y-6">
+ {/* Wizard Top Header (flat edge-to-edge on mobile) */}
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white sm:bg-transparent px-4 py-4 sm:px-0 sm:pt-0 sm:pb-3 border-b border-slate-200">
  <div>
  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Create a Listing</h1>
  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -523,20 +523,20 @@ export default function CreateListingPage() {
 
  {/* Global Error Alert */}
  {error && (
- <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-xs flex items-center gap-2.5 ">
+ <div className="mx-4 sm:mx-0 mt-3 sm:mt-0 p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2.5">
  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
  <span className="font-semibold">{error}</span>
  </div>
  )}
 
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+ <div className="grid grid-cols-1 lg:grid-cols-12 sm:gap-8 items-start">
  {/* Main Wizard Form (8 Columns) */}
- <div className="lg:col-span-8 space-y-6">
+ <div className="lg:col-span-8 sm:space-y-5">
  {/* ================= STEP 1: ITEM & CLASSIFICATION ================= */}
  {step === 1 && (
- <div className="space-y-6 animate-in fade-in duration-200">
+ <div className="space-y-0 sm:space-y-5 animate-in fade-in duration-200">
  {/* AI Listing Wizard Co-Pilot Banner */}
- <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50 border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+ <div className="px-4 py-4 sm:p-5 sm:rounded-2xl bg-indigo-50/70 border-b sm:border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
  <Sparkles className="w-5 h-5 text-amber-300" />
@@ -566,7 +566,7 @@ export default function CreateListingPage() {
  </button>
  </div>
  {/* 1.1 Trading Mode Selection */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-3">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Trading Mode
@@ -650,7 +650,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* 1.2 Title Input with Live Length Indicator */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-4">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Listing Title <span className="text-rose-500">*</span>
@@ -692,7 +692,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* 1.3 Category Picker */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-3">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Category <span className="text-rose-500">*</span>
@@ -724,7 +724,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* Step 1 Actions */}
- <div className="flex justify-end pt-2">
+ <div className="flex justify-end px-4 py-4 sm:px-0 sm:pt-2">
  <button
  type="button"
  onClick={handleStep1Next}
@@ -739,9 +739,9 @@ export default function CreateListingPage() {
 
  {/* ================= STEP 2: PHOTOS & SPECIFICS ================= */}
  {step === 2 && (
- <div className="space-y-6 animate-in fade-in duration-200">
+ <div className="space-y-0 sm:space-y-5 animate-in fade-in duration-200">
  {/* 2.1 Multi-Photo Drag & Drop Gallery */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-4">
  <div className="flex items-center justify-between">
  <div>
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
@@ -833,7 +833,7 @@ export default function CreateListingPage() {
 
  {/* 2.2 Condition Grading (Goods Only) */}
  {mode !== 'service' && (
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-4">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Item Condition <span className="text-rose-500">*</span>
  </label>
@@ -893,7 +893,7 @@ export default function CreateListingPage() {
  )}
 
  {/* 2.3 Dynamic Structured Specifics */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-4">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Item Specifics ({category})
@@ -965,7 +965,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* 2.4 Detailed Description */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-3">
  <div className="flex items-center justify-between">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Detailed Description <span className="text-rose-500">*</span>
@@ -983,7 +983,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* Step 2 Actions */}
- <div className="flex items-center justify-between pt-2">
+ <div className="flex items-center justify-between px-4 py-4 sm:px-0 sm:pt-2 gap-2">
  <button
  type="button"
  onClick={() => setStep(1)}
@@ -1007,9 +1007,9 @@ export default function CreateListingPage() {
 
  {/* ================= STEP 3: PRICING & SAFE MEETUP ================= */}
  {step === 3 && (
- <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in duration-200">
+ <form onSubmit={handleSubmit} className="space-y-0 sm:space-y-5 animate-in fade-in duration-200">
  {/* 3.1 Price & Format */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-4">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Pricing & Format <span className="text-rose-500">*</span>
  </label>
@@ -1103,7 +1103,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* 3.3 Location & Safe Meetup Presets */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+ <div className="bg-white border-b sm:border border-slate-200 sm:rounded-2xl px-4 py-5 sm:p-6 space-y-4">
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Location & Safe Meetup Guidance <span className="text-rose-500">*</span>
  </label>
@@ -1193,7 +1193,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* 3.4 Safety & Terms Agreement */}
- <div className="bg-amber-50/80 border border-amber-200/90 rounded-3xl p-5 space-y-2">
+ <div className="bg-amber-50/80 border-b sm:border border-amber-200/90 sm:rounded-2xl px-4 py-4 sm:p-5 space-y-2">
  <div className="flex items-start gap-3">
  <input
  type="checkbox"
@@ -1209,7 +1209,7 @@ export default function CreateListingPage() {
  </div>
 
  {/* Step 3 Actions */}
- <div className="flex items-center justify-between pt-2">
+ <div className="flex items-center justify-between px-4 py-4 sm:px-0 sm:pt-2 gap-2">
  <button
  type="button"
  onClick={() => setStep(2)}

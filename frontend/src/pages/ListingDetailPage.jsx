@@ -4,6 +4,7 @@ import API, { resolveMediaUrl } from '../services/api';
 import { listingDetailCache } from '../utils/routeCache';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useToast } from '../context/ToastContext';
 import { formatPrice } from '../utils/format';
 import SafetyBanner from '../components/SafetyBanner';
 import ListingCard from '../components/ListingCard';
@@ -37,6 +38,7 @@ export default function ListingDetailPage() {
  const navigate = useNavigate();
  const { user, openAuthModal } = useAuth();
  const { isFavorite, toggleFavorite } = useFavorites();
+ const { showToast } = useToast();
 
  const cachedItem = id ? listingDetailCache.get(id) : null;
  const currentUserId = (user?._id || user?.id)?.toString();
@@ -86,7 +88,7 @@ export default function ListingDetailPage() {
  listingDetailCache.delete(listing._id);
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Could not update listing status.');
+ showToast(err.response?.data?.message || 'Could not update listing status.', 'error');
  } finally {
  setStatusUpdating(false);
  }
@@ -178,7 +180,7 @@ export default function ListingDetailPage() {
  const sellerId = (listing?.seller?._id || listing?.seller?.id || listing?.seller)?.toString();
 
  if (currentUserId && sellerId && currentUserId === sellerId) {
- alert('You cannot start a conversation with yourself on your own listing.');
+ showToast('You cannot start a conversation with yourself on your own listing.', 'info');
  return;
  }
 
@@ -189,7 +191,7 @@ export default function ListingDetailPage() {
  navigate(`/messages?conversationId=${res.data.conversation._id}`);
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to open chat');
+ showToast(err.response?.data?.message || 'Failed to open chat.', 'error');
  } finally {
  setActionLoading(false);
  }
@@ -205,7 +207,7 @@ export default function ListingDetailPage() {
  const sellerId = (listing?.seller?._id || listing?.seller?.id || listing?.seller)?.toString();
 
  if (currentUserId && sellerId && currentUserId === sellerId) {
- alert('You cannot make an offer on your own listing.');
+ showToast('You cannot make an offer on your own listing.', 'info');
  return;
  }
 
@@ -248,7 +250,7 @@ export default function ListingDetailPage() {
  }, 1200);
  }
  } catch (err) {
- alert(err.response?.data?.message || 'Failed to submit offer. Please try again.');
+ showToast(err.response?.data?.message || 'Failed to submit offer. Please try again.', 'error');
  } finally {
  setOfferSubmitting(false);
  }
@@ -274,8 +276,8 @@ export default function ListingDetailPage() {
  setReportSuccess(false);
  setReportDetails('');
  }, 2000);
- } catch (err) {
- alert('Failed to submit report.');
+ } catch {
+ showToast('Failed to submit report.', 'error');
  }
  };
 
@@ -324,60 +326,59 @@ export default function ListingDetailPage() {
  <div className="min-h-screen bg-slate-50 pb-20">
  <SafetyBanner />
 
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+ <div className="max-w-7xl mx-auto lg:px-8 lg:py-6">
  {/* Breadcrumb Navigation */}
- <div className="flex items-center justify-between mb-4 flex-wrap gap-2 text-xs text-slate-500">
- <div className="flex items-center gap-1.5 flex-wrap">
+ <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200 lg:bg-transparent lg:border-0 lg:px-0 lg:py-0 lg:mb-4 flex-wrap gap-2 text-xs text-slate-500">
+ <div className="flex items-center gap-1.5 flex-wrap min-w-0">
  <Link to="/market" className="hover:text-indigo-600 font-semibold transition">
  Market
  </Link>
  <span>/</span>
  <span className="font-semibold text-slate-700">{listing.category}</span>
- <span>/</span>
- <span className="text-slate-400 line-clamp-1 max-w-[240px] sm:max-w-xs">{listing.title}</span>
+ <span className="hidden sm:inline">/</span>
+ <span className="hidden sm:inline text-slate-400 line-clamp-1 max-w-xs">{listing.title}</span>
  </div>
 
  <Link
  to="/market"
- className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition"
+ className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition shrink-0"
  >
  <ChevronLeft className="w-4 h-4" />
- <span>Back to listings</span>
+ <span>Back</span>
  </Link>
  </div>
 
- {/* Main 2-Column Product Grid */}
- <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
- {/* Left Column: Multi-Image Zoom Gallery & Structured Details (7 cols) */}
- <div className="lg:col-span-7 space-y-6">
- {/* Image Gallery Card */}
- <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden p-3.5">
- {/* Main Image Viewport */}
+ {/* Mobile-First Hierarchy Grid:
+     Mobile (< lg): 1. Edge-to-Edge Gallery -> 2. Title, Price & CTAs -> 3. Seller Row -> 4. Specifics & Description -> 5. Inspection Guarantee
+     Desktop (lg+): Left 7 cols (Gallery + Specifics/Description), Right 5 cols (Pricing/CTA + Seller + Guarantee) */}
+ <div className="grid grid-cols-1 lg:grid-cols-12 lg:gap-8 items-start">
+ {/* 1. Image Gallery (Full-bleed on mobile, framed on lg+) */}
+ <section className="lg:col-span-7 lg:row-start-1 bg-white border-b border-slate-200 lg:border lg:rounded-2xl overflow-hidden">
  <div
  onClick={() => setLightboxOpen(true)}
- className="aspect-[16/11] bg-slate-50 rounded-2xl overflow-hidden relative flex items-center justify-center border border-slate-100 group cursor-zoom-in"
+ className="aspect-[4/3] sm:aspect-[16/11] bg-slate-100/70 overflow-hidden relative flex items-center justify-center group cursor-zoom-in"
  >
  <img
  src={images[selectedImageIndex]}
  alt={listing.title}
- className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+ className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
  decoding="async"
  />
 
  {/* Mode Tag */}
  <div className="absolute top-3 left-3 z-10">
  {listing.mode === 'new' && (
- <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full ">
+ <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
  <Sparkles className="w-3.5 h-3.5" /> Brand New
  </span>
  )}
  {listing.mode === 'service' && (
- <span className="inline-flex items-center gap-1 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full ">
+ <span className="inline-flex items-center gap-1 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
  <Wrench className="w-3.5 h-3.5" /> Local Handwork
  </span>
  )}
  {listing.mode === 'second-hand' && (
- <span className="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full ">
+ <span className="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">
  <RefreshCw className="w-3.5 h-3.5" /> Second-hand
  </span>
  )}
@@ -390,10 +391,10 @@ export default function ListingDetailPage() {
  e.stopPropagation();
  toggleFavorite(listing._id);
  }}
- className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition ${
+ className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
  isFavorite(listing._id)
  ? 'bg-rose-50 text-rose-600 border border-rose-200'
- : 'bg-white/90 hover:bg-white text-slate-700 hover:text-rose-600 border border-slate-200/80'
+ : 'bg-white/95 hover:bg-white text-slate-700 hover:text-rose-600 border border-slate-200'
  }`}
  title={isFavorite(listing._id) ? 'Remove from favorites' : 'Save to favorites'}
  >
@@ -409,13 +410,13 @@ export default function ListingDetailPage() {
 
  {/* Thumbnail Strip */}
  {images.length > 1 && (
- <div className="flex gap-2.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
+ <div className="flex gap-2 p-3 overflow-x-auto no-scrollbar border-t border-slate-100">
  {images.map((img, idx) => (
  <button
  key={idx}
  type="button"
  onClick={() => setSelectedImageIndex(idx)}
- className={`relative w-20 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-transform cursor-pointer ${
+ className={`relative w-16 h-14 sm:w-20 sm:h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-transform cursor-pointer ${
  selectedImageIndex === idx
  ? 'border-indigo-600 ring-2 ring-indigo-200 scale-95'
  : 'border-slate-200 opacity-75 hover:opacity-100'
@@ -426,119 +427,12 @@ export default function ListingDetailPage() {
  ))}
  </div>
  )}
- </div>
+ </section>
 
- {/* Structured Item Specifics Grid */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
- <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
- Item Specifics & Details
- </h3>
-
- <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
- <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium">Condition</span>
- <span className="font-bold text-slate-800 capitalize mt-0.5 block">
- {listing.mode === 'service'
- ? 'Professional Service'
- : listing.condition?.replace('-', ' ') || 'Good (Pre-owned)'}
- </span>
- </div>
-
- <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium">Category</span>
- <span className="font-bold text-slate-800 mt-0.5 block">{listing.category}</span>
- </div>
-
- <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium">Fulfillment</span>
- <span className="font-bold text-emerald-700 mt-0.5 block">
- {listing.allowsDelivery ? 'Meetup & Local Delivery' : 'Direct Meetup'}
- </span>
- </div>
-
- <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium">Payment Model</span>
- <span className="font-bold text-slate-800 mt-0.5 block">Inspect Before Paying</span>
- </div>
-
- <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium">Location</span>
- <span className="font-bold text-slate-800 mt-0.5 block truncate">
- {listing.location?.neighborhood
- ? `${listing.location.neighborhood}, ${listing.location.city}`
- : listing.location?.city || 'Nigeria'}
- </span>
- </div>
-
- <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium">Negotiation</span>
- <span className="font-bold text-indigo-700 mt-0.5 block">
- {listing.acceptsOffers !== false ? 'Offers Welcome' : 'Fixed Price'}
- </span>
- </div>
-
- {/* Dynamic Seller-Provided Item Specifics */}
- {specificEntries.map(([specKey, specVal]) => (
- <div key={specKey} className="p-3 bg-slate-50 rounded-2xl border border-slate-100">
- <span className="text-slate-400 block font-medium capitalize">
- {specKey.replace(/([A-Z])/g, ' $1').trim()}
- </span>
- <span className="font-bold text-slate-800 mt-0.5 block truncate">{specVal}</span>
- </div>
- ))}
- </div>
-
- {/* Honest Flaw Disclosure if provided by seller */}
- {listing.flawDescription && (
- <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-2xl text-xs text-amber-950 space-y-1">
- <p className="font-bold flex items-center gap-1.5 text-amber-900">
- <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
- <span>Seller Flaw & Cosmetic Disclosure</span>
- </p>
- <p className="leading-relaxed">{listing.flawDescription}</p>
- </div>
- )}
-
- {/* Service Availability note if present */}
- {listing.availabilityNotes && (
- <div className="p-3.5 bg-purple-50 border border-purple-100 rounded-2xl text-xs text-purple-900 space-y-1">
- <p className="font-bold flex items-center gap-1.5">
- <Clock className="w-3.5 h-3.5 text-purple-600" />
- Availability & Scheduling Notes:
- </p>
- <p>{listing.availabilityNotes}</p>
- </div>
- )}
-
- {/* Description Body */}
- <div className="pt-2">
- <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
- Seller Description
- </h4>
- <p className="text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">
- {listing.description}
- </p>
- </div>
-
- {/* Preferred Meetup Guidelines Card */}
- <div className="p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl space-y-1.5">
- <h4 className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
- <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
- <span>Seller's Preferred Meetup Spot</span>
- </h4>
- <p className="text-xs text-emerald-800">
- {listing.preferredMeetup ||
- 'Public meetup location (busy shopping plaza, supermarket parking, mall entrance, or bank security post).'}
- </p>
- </div>
- </div>
- </div>
-
- {/* Right Column: Pricing, Dual CTA, Seller Trust & Guarantees (5 cols) */}
- <div className="lg:col-span-5 space-y-6">
- {/* Pricing & Conversion Card */}
- <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
- {/* Urgency & Social Proof Ribbons */}
+ {/* 2. Right Column on Desktop / Immediately Below Gallery on Mobile: Price, CTAs, Seller, Guarantee */}
+ <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:row-span-2 lg:space-y-5">
+ {/* Pricing & Action Band (flat on mobile, framed on lg+) */}
+ <section className="bg-white border-b border-slate-200 lg:border lg:rounded-2xl px-4 sm:px-6 py-5 space-y-4">
  <div className="flex items-center gap-2 flex-wrap">
  <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
  <Eye className="w-3.5 h-3.5 text-slate-500" />
@@ -556,20 +450,18 @@ export default function ListingDetailPage() {
  </span>
  </div>
 
- {/* Title & Price Header */}
  <div>
  <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-snug">
  {listing.title}
  </h1>
- <div className="flex items-baseline gap-2 mt-2">
- <span className="text-3xl sm:text-4xl font-black text-slate-900">
+ <div className="flex items-baseline gap-2 mt-1.5">
+ <span className="text-2xl sm:text-3xl font-black text-slate-900">
  {formatPrice(listing.price, listing.priceType)}
  </span>
  <span className="text-xs font-bold text-slate-500 uppercase">NGN</span>
  </div>
  </div>
 
- {/* Action Buttons: Owner Controls OR Buyer Contact + Make Offer */}
  <div className="space-y-2.5 pt-1">
  {isOwnListing ? (
  <>
@@ -577,7 +469,7 @@ export default function ListingDetailPage() {
  type="button"
  onClick={handleToggleOwnStatus}
  disabled={statusUpdating}
- className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 font-bold text-xs sm:text-sm rounded-2xl transition-colors cursor-pointer disabled:opacity-50 ${
+ className={`w-full flex items-center justify-center gap-2 py-3 px-4 font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer disabled:opacity-50 ${
  listing.status === 'active'
  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
@@ -594,14 +486,14 @@ export default function ListingDetailPage() {
  </button>
  <Link
  to="/profile"
- className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl transition-colors border border-slate-200"
+ className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-slate-200"
  >
  <span>Manage All My Listings</span>
  <ExternalLink className="w-4 h-4 text-indigo-600" />
  </Link>
  </>
  ) : listing.status !== 'active' ? (
- <div className="p-3.5 bg-slate-100 border border-slate-200 rounded-2xl text-center text-xs font-bold text-slate-600 capitalize">
+ <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-center text-xs font-bold text-slate-600 capitalize">
  This listing is currently marked as {listing.status}.
  </div>
  ) : (
@@ -610,7 +502,7 @@ export default function ListingDetailPage() {
  type="button"
  onClick={handleStartChat}
  disabled={actionLoading}
- className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-2xl transition-colors cursor-pointer"
+ className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl transition-colors cursor-pointer"
  >
  <MessageCircle className="w-4 h-4" />
  <span>
@@ -626,7 +518,7 @@ export default function ListingDetailPage() {
  <button
  type="button"
  onClick={handleOpenOfferModal}
- className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-2xl transition-colors border border-slate-200 cursor-pointer"
+ className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-slate-200 cursor-pointer"
  >
  <Tag className="w-4 h-4 text-indigo-600" />
  <span>Make an Offer</span>
@@ -636,7 +528,7 @@ export default function ListingDetailPage() {
  )}
  </div>
 
- <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+ <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
  {!isOwnListing ? (
  <button
  type="button"
@@ -653,19 +545,19 @@ export default function ListingDetailPage() {
  <button
  type="button"
  onClick={handleShareListing}
- className="inline-flex items-center gap-1 hover:text-indigo-600 transition-colors cursor-pointer"
+ className="inline-flex items-center gap-1 hover:text-indigo-600 transition-colors cursor-pointer font-medium"
  >
  <Share2 className="w-3.5 h-3.5" />
  <span>{shareFeedback ? 'Link Copied!' : 'Share'}</span>
  </button>
  </div>
- </div>
+ </section>
 
- {/* Seller Trust & Reputation Card */}
- <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4">
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
- <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
- {listing.mode === 'service' ? 'Provider Trust & Bio' : 'Seller Trust Score'}
+ {/* Seller Trust Band (flat on mobile, framed on lg+, zero nested stat boxes) */}
+ <section className="bg-white border-y border-slate-200 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-5 py-4 space-y-3.5">
+ <div className="flex items-center justify-between">
+ <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+ {listing.mode === 'service' ? 'Provider' : 'Seller'}
  </h4>
  <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
  <ThumbsUp className="w-3 h-3" />
@@ -682,7 +574,7 @@ export default function ListingDetailPage() {
  <div className="flex items-center gap-3">
  <Link
  to={sellerId ? `/profile/${sellerId}` : '#'}
- className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-base flex items-center justify-center border border-indigo-200 shrink-0 overflow-hidden hover:opacity-90 transition-opacity"
+ className="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-700 font-bold text-base flex items-center justify-center border border-indigo-200 shrink-0 overflow-hidden hover:opacity-90 transition-opacity"
  >
  {listing.seller?.avatar ? (
  <img
@@ -709,15 +601,25 @@ export default function ListingDetailPage() {
  )}
  </div>
  <p className="text-xs text-slate-500 truncate">
- {listing.seller?.isVerified ? 'Verified oBuy Member' : 'oBuy Member'} •{' '}
- {listing.location?.city || 'Nigeria'}
+ {listing.location?.city || 'Nigeria'} •{' '}
+ {sellerStats ? `${sellerStats.itemsSoldCount} Sold` : '0 Sold'} •{' '}
+ {sellerStats?.responseBadge || 'New Seller'}
  </p>
  </div>
+
+ {sellerId && (
+ <Link
+ to={`/profile/${sellerId}`}
+ className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors shrink-0"
+ >
+ Profile
+ </Link>
+ )}
  </div>
 
- {/* 3-Point Seller Metrics (100% Backend-Driven) */}
- <div className="grid grid-cols-3 gap-2 pt-1 text-center border-t border-slate-100">
- <div className="p-2 bg-slate-50 rounded-xl">
+ {/* Clean horizontal metrics strip (zero nested boxes) */}
+ <div className="grid grid-cols-3 border-t border-slate-100 pt-3 text-center">
+ <div>
  <span className="text-[10px] text-slate-400 block font-medium">Rating</span>
  <div className="inline-flex items-center gap-0.5 text-xs font-bold text-amber-600">
  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
@@ -728,66 +630,149 @@ export default function ListingDetailPage() {
  </span>
  </div>
  </div>
- <div className="p-2 bg-slate-50 rounded-xl">
+ <div className="border-l border-slate-100">
  <span className="text-[10px] text-slate-400 block font-medium">Deals</span>
  <span className="text-xs font-bold text-slate-800">
  {sellerStats ? `${sellerStats.itemsSoldCount} Sold` : '0 Sold'}
  </span>
  </div>
- <div className="p-2 bg-slate-50 rounded-xl">
+ <div className="border-l border-slate-100">
  <span className="text-[10px] text-slate-400 block font-medium">Activity</span>
- <span className="text-xs font-bold text-indigo-700 truncate block">
+ <span className="text-xs font-bold text-indigo-700 truncate block px-1">
  {sellerStats?.responseBadge || 'New Seller'}
  </span>
  </div>
  </div>
 
  {listing.seller?.bio && (
- <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 italic">
+ <p className="text-xs text-slate-600 pt-2 border-t border-slate-100 leading-relaxed">
  "{listing.seller.bio}"
  </p>
  )}
+ </section>
 
- {sellerId && (
- <Link
- to={`/profile/${sellerId}`}
- className="flex items-center justify-center gap-1.5 w-full text-center text-xs font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100/80 py-2.5 rounded-xl border border-indigo-200/60 transition-colors"
- >
- <span>View Seller Profile & Scorecard</span>
- <ExternalLink className="w-3.5 h-3.5" />
- </Link>
- )}
- </div>
-
- {/* oBuy Inspection Guarantee Card */}
- <div className="bg-gradient-to-br from-indigo-50/70 to-blue-50/70 border border-indigo-200/80 rounded-3xl p-5 space-y-3">
+ {/* oBuy Inspection Guarantee Band */}
+ <section className="bg-indigo-50/60 border-y border-indigo-100 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-5 py-4 space-y-2">
  <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs uppercase tracking-wider">
- <Shield className="w-4 h-4 text-indigo-600 fill-indigo-100" />
+ <Shield className="w-4 h-4 text-indigo-600 shrink-0" />
  <span>oBuy Inspection Guarantee</span>
  </div>
-
  <p className="text-xs text-slate-700 leading-relaxed">
- Meet in person at a public location. Test and inspect the item before making any payment.
- Zero wire transfer risk, zero platform deduction fees.
+ Meet in an open public space and inspect physically before paying. Zero upfront card charges or wire transfer risks.
  </p>
+ </section>
+ </div>
 
- <div className="pt-1 text-[11px] text-indigo-800 font-semibold space-y-1">
- <div className="flex items-center gap-1.5">
- <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
- <span>Inspect goods physically before paying</span>
+ {/* 3. Item Specifics, Description & Meetup Band (flat key/value list, zero mini-card grid) */}
+ <section className="lg:col-span-7 lg:col-start-1 lg:row-start-2 bg-white border-y border-slate-200 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-6 py-5 space-y-5">
+ <div>
+ <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">
+ Item Specifics & Details
+ </h3>
+
+ <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 text-xs border-t border-slate-100 pt-3">
+ <div>
+ <dt className="text-slate-400 font-medium">Condition</dt>
+ <dd className="font-bold text-slate-800 capitalize mt-0.5">
+ {listing.mode === 'service'
+ ? 'Professional Service'
+ : listing.condition?.replace('-', ' ') || 'Good (Pre-owned)'}
+ </dd>
  </div>
- <div className="flex items-center gap-1.5">
- <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
- <span>No upfront card charges or bank deposits</span>
+
+ <div>
+ <dt className="text-slate-400 font-medium">Category</dt>
+ <dd className="font-bold text-slate-800 mt-0.5">{listing.category}</dd>
  </div>
+
+ <div>
+ <dt className="text-slate-400 font-medium">Fulfillment</dt>
+ <dd className="font-bold text-emerald-700 mt-0.5">
+ {listing.allowsDelivery ? 'Meetup & Local Delivery' : 'Direct Meetup'}
+ </dd>
  </div>
+
+ <div>
+ <dt className="text-slate-400 font-medium">Payment Model</dt>
+ <dd className="font-bold text-slate-800 mt-0.5">Inspect Before Paying</dd>
  </div>
+
+ <div>
+ <dt className="text-slate-400 font-medium">Location</dt>
+ <dd className="font-bold text-slate-800 mt-0.5 truncate">
+ {listing.location?.neighborhood
+ ? `${listing.location.neighborhood}, ${listing.location.city}`
+ : listing.location?.city || 'Nigeria'}
+ </dd>
  </div>
+
+ <div>
+ <dt className="text-slate-400 font-medium">Negotiation</dt>
+ <dd className="font-bold text-indigo-700 mt-0.5">
+ {listing.acceptsOffers !== false ? 'Offers Welcome' : 'Fixed Price'}
+ </dd>
+ </div>
+
+ {specificEntries.map(([specKey, specVal]) => (
+ <div key={specKey}>
+ <dt className="text-slate-400 font-medium capitalize">
+ {specKey.replace(/([A-Z])/g, ' $1').trim()}
+ </dt>
+ <dd className="font-bold text-slate-800 mt-0.5 truncate">{specVal}</dd>
+ </div>
+ ))}
+ </dl>
+ </div>
+
+ {/* Honest Flaw Disclosure if provided */}
+ {listing.flawDescription && (
+ <div className="pt-4 border-t border-slate-100 text-xs text-amber-950 space-y-1">
+ <p className="font-bold flex items-center gap-1.5 text-amber-800">
+ <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+ <span>Seller Flaw & Cosmetic Disclosure</span>
+ </p>
+ <p className="leading-relaxed text-slate-700">{listing.flawDescription}</p>
+ </div>
+ )}
+
+ {/* Service Availability Note if present */}
+ {listing.availabilityNotes && (
+ <div className="pt-4 border-t border-slate-100 text-xs text-purple-900 space-y-1">
+ <p className="font-bold flex items-center gap-1.5">
+ <Clock className="w-3.5 h-3.5 text-purple-600" />
+ <span>Availability & Scheduling Notes</span>
+ </p>
+ <p className="text-slate-700">{listing.availabilityNotes}</p>
+ </div>
+ )}
+
+ {/* Description Body */}
+ <div className="pt-4 border-t border-slate-100">
+ <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+ Seller Description
+ </h4>
+ <p className="text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+ {listing.description}
+ </p>
+ </div>
+
+ {/* Preferred Meetup Guidance */}
+ <div className="pt-4 border-t border-slate-100 space-y-1">
+ <h4 className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+ <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+ <span>Seller's Preferred Meetup Spot</span>
+ </h4>
+ <p className="text-xs text-slate-600 leading-relaxed">
+ {listing.preferredMeetup ||
+ 'Public meetup location (busy shopping plaza, supermarket parking, mall entrance, or bank security post).'}
+ </p>
+ </div>
+ </section>
  </div>
 
  {/* Similar / Related Neighborhood Listings */}
  {relatedListings.length > 0 && (
- <div className="mt-14 pt-8 border-t border-slate-200">
+ <div className="mt-8 lg:mt-12 px-4 lg:px-0 pt-6 border-t border-slate-200">
  <div className="flex items-center justify-between mb-4">
  <div>
  <h3 className="text-lg sm:text-xl font-black text-slate-900">
