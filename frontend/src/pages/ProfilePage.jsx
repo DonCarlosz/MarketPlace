@@ -25,7 +25,6 @@ import {
  Calendar,
  X,
  Send,
- Camera,
  Image as ImageIcon,
  Loader2,
  LogOut,
@@ -506,7 +505,7 @@ export default function ProfilePage() {
  const showScorecardBody = hasReviews || scorecardExpanded;
 
  return (
- <div className="min-h-screen bg-slate-50 sm:py-6 sm:px-6">
+ <div className="min-h-screen bg-slate-50">
  {/* Always-mounted file inputs for direct one-tap Avatar & Cover Background changes */}
  {isOwnProfile && (
  <>
@@ -527,9 +526,9 @@ export default function ProfilePage() {
  </>
  )}
 
- <div className="max-w-5xl mx-auto sm:space-y-5">
- {/* Full-Bleed Profile Header (flat edge-to-edge on mobile, framed on sm+) */}
- <section className="bg-white border-b border-slate-200 sm:border sm:rounded-2xl overflow-hidden">
+ <div className="max-w-5xl mx-auto">
+ {/* Full-Bleed Profile Header across all breakpoints */}
+ <section className="bg-white border-b border-slate-200 sm:border-x overflow-hidden">
  {/* Changeable Header Cover Banner */}
  <div className="h-32 sm:h-40 bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 relative overflow-hidden">
  {resolvedCoverImage && (
@@ -552,23 +551,6 @@ export default function ProfilePage() {
  </span>
  </div>
  )}
-
- {isOwnProfile && (
- <button
- type="button"
- onClick={() => coverInputRef.current?.click()}
- disabled={coverUploading}
- title="Change Cover Background"
- className="absolute bottom-3 right-3 sm:right-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-950/90 text-white text-[11px] font-bold border border-white/25 transition-colors cursor-pointer disabled:opacity-60"
- >
- {coverUploading ? (
- <Loader2 className="w-3.5 h-3.5 animate-spin" />
- ) : (
- <Camera className="w-3.5 h-3.5" />
- )}
- <span>{coverUploading ? 'Uploading...' : resolvedCoverImage ? 'Change Cover' : 'Add Cover'}</span>
- </button>
- )}
  </div>
 
  <div className="px-4 sm:px-6 pb-5 pt-0 relative z-10 space-y-4">
@@ -589,18 +571,6 @@ export default function ProfilePage() {
  profileData?.name?.charAt(0).toUpperCase() || 'U'
  )}
  </div>
- {isOwnProfile && (
- <button
- type="button"
- onClick={() => avatarInputRef.current?.click()}
- disabled={avatarUploading}
- title="Change Profile Picture"
- aria-label="Change Profile Picture"
- className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full border-2 border-white transition-colors cursor-pointer disabled:opacity-60"
- >
- <Camera className="w-3.5 h-3.5" />
- </button>
- )}
  </div>
 
  {/* Desktop / Tablet Actions */}
@@ -762,8 +732,8 @@ export default function ProfilePage() {
  </div>
  </section>
 
- {/* Flat Seller Reputation & 12-Month Scorecard Section (zero triple nesting; compact when 0 reviews) */}
- <section className="bg-white border-y border-slate-200 sm:border sm:rounded-2xl mt-2 sm:mt-0 px-4 sm:px-6 py-4 sm:py-5">
+ {/* Flat Seller Reputation & 12-Month Scorecard Section across all breakpoints */}
+ <section className="bg-white border-y border-slate-200 sm:border-x mt-2 px-4 sm:px-6 py-4 sm:py-5">
  <div className="flex items-center justify-between gap-2">
  <div className="min-w-0">
  <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">

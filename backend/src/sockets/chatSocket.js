@@ -4,7 +4,7 @@ import { verifyAccessToken } from '../utils/token.js';
 export const setupChatSocket = (io) => {
   // Attach optional JWT authentication to every socket connection
   // Public feed broadcasts (listing_created, etc.) remain available to guests,
-  // while private chat rooms strictly enforce authenticated participant verification.
+  // while private chat and personal notification rooms enforce verified JWT auth.
   io.use((socket, next) => {
     const token =
       socket.handshake.auth?.token ||
@@ -25,18 +25,32 @@ export const setupChatSocket = (io) => {
     next();
   });
 
+  const syncUserRoom = (socket, nextUserId) => {
+    if (socket.userId && socket.userId !== nextUserId) {
+      socket.leave(`user_${socket.userId}`);
+    }
+    socket.userId = nextUserId || null;
+    if (socket.userId) {
+      socket.join(`user_${socket.userId}`);
+    }
+  };
+
   io.on('connection', (socket) => {
-    // Allow re-authenticating socket after client logs in without page reload
+    if (socket.userId) {
+      socket.join(`user_${socket.userId}`);
+    }
+
+    // Allow re-authenticating socket after client logs in or logs out without page reload
     socket.on('authenticate', ({ token }) => {
       if (!token || typeof token !== 'string') {
-        socket.userId = null;
+        syncUserRoom(socket, null);
         return;
       }
       try {
         const decoded = verifyAccessToken(token);
-        socket.userId = decoded.id?.toString() || null;
+        syncUserRoom(socket, decoded.id?.toString() || null);
       } catch {
-        socket.userId = null;
+        syncUserRoom(socket, null);
       }
     });
 
@@ -72,6 +86,7 @@ export const setupChatSocket = (io) => {
       const room = `conv_${conversationId}`;
       if (socket.userId && socket.rooms.has(room)) {
         socket.to(room).emit('user_typing', {
+          conversationId,
           userName: typeof userName === 'string' ? userName.slice(0, 60) : 'Member',
         });
       }
@@ -80,7 +95,7 @@ export const setupChatSocket = (io) => {
     socket.on('stop_typing', ({ conversationId }) => {
       const room = `conv_${conversationId}`;
       if (socket.userId && socket.rooms.has(room)) {
-        socket.to(room).emit('user_stop_typing');
+        socket.to(room).emit('user_stop_typing', { conversationId });
       }
     });
 

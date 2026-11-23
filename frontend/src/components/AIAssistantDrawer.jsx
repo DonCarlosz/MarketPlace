@@ -361,26 +361,20 @@ export default function AIAssistantDrawer() {
         </div>
 
         {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
           {messages.map((msg, index) => {
             const isUser = msg.role === 'user';
             return (
               <div
                 key={index}
-                className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
               >
-                {!isUser && (
-                  <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5 border border-indigo-200">
-                    <Bot className="w-4 h-4" />
-                  </div>
-                )}
-
-                <div className={`max-w-[88%] space-y-2.5`}>
+                <div className="max-w-[92%] space-y-2.5">
                   <div
                     className={`text-xs rounded-2xl p-3.5 ${
                       isUser
-                        ? 'bg-indigo-600 text-white rounded-tr-xs'
-                        : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-xs'
+                        ? 'bg-indigo-600 text-white rounded-br-sm'
+                        : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-bl-sm'
                     }`}
                   >
                     {renderFormattedText(msg.content)}
@@ -458,23 +452,14 @@ export default function AIAssistantDrawer() {
                     </div>
                   )}
                 </div>
-
-                {isUser && (
-                  <div className="w-7 h-7 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <UserIcon className="w-4 h-4" />
-                  </div>
-                )}
               </div>
             );
           })}
 
           {/* Typing Indicator */}
           {loading && (
-            <div className="flex gap-2.5 items-start">
-              <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-200">
-                <Bot className="w-4 h-4" />
-              </div>
-              <div className="p-3 rounded-2xl rounded-tl-xs bg-slate-50 border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
+            <div className="flex items-start">
+              <div className="p-3 rounded-2xl rounded-bl-sm bg-slate-50 border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-600" />
                 <span>Thinking and scanning marketplace inventory...</span>
               </div>

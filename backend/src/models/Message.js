@@ -21,7 +21,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'offer', 'meetup_proposal', 'system'],
+      enum: ['text', 'offer', 'meetup_proposal', 'voice', 'system'],
       default: 'text',
     },
     offer: {
@@ -32,7 +32,14 @@ const messageSchema = new mongoose.Schema(
         default: 'pending',
       },
       counterAmount: { type: Number, default: 0 },
+      isCounter: { type: Boolean, default: false },
+      previousAmount: { type: Number, default: 0 },
       note: { type: String, default: '' },
+    },
+    voice: {
+      url: { type: String, default: '' },
+      duration: { type: Number, default: 0 },
+      mimeType: { type: String, default: 'audio/webm' },
     },
     meetup: {
       spotName: { type: String, default: '' },

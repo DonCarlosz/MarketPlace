@@ -1,10 +1,12 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { Home, Store, Plus, MessageSquare, User } from 'lucide-react';
 
 export default function BottomNav() {
   const { user, openAuthModal } = useAuth();
+  const { unreadCount } = useNotifications();
   const location = useLocation();
 
   const requireAuth = (e) => {
@@ -80,7 +82,14 @@ export default function BottomNav() {
             }`
           }
         >
-          <MessageSquare className="w-5 h-5" />
+          <span className="relative inline-flex">
+            <MessageSquare className="w-5 h-5" />
+            {user && unreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-emerald-600 text-white text-[9px] font-black flex items-center justify-center leading-none border border-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </span>
           <span className="text-[10px]">Inbox</span>
         </NavLink>
 

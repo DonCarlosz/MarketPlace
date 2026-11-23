@@ -31,8 +31,12 @@ const mediaSchema = new mongoose.Schema(
     },
     purpose: {
       type: String,
-      enum: ['listing', 'avatar', 'cover'],
+      enum: ['listing', 'avatar', 'cover', 'audio'],
       default: 'listing',
+    },
+    duration: {
+      type: Number,
+      default: 0,
     },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,

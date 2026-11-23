@@ -42,6 +42,42 @@ const upload = multer({
   fileFilter,
 });
 
+const ALLOWED_AUDIO_MIMES = new Set([
+  'audio/webm',
+  'audio/ogg',
+  'audio/mp4',
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/wav',
+  'audio/aac',
+  'audio/x-m4a',
+  'video/webm', // Some Chromium builds report MediaRecorder audio-only webm as video/webm
+]);
+
+const audioUpload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max per voice note
+    files: 1,
+  },
+  fileFilter: (req, file, cb) => {
+    const baseMime = (file.mimetype || '').split(';')[0].trim().toLowerCase();
+    if (ALLOWED_AUDIO_MIMES.has(baseMime)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only valid audio recordings (WebM, OGG, MP4/M4A, MP3, WAV) are accepted.'));
+    }
+  },
+});
+
+const audioExtFromMime = (mime) => {
+  if (mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac')) return 'm4a';
+  if (mime.includes('ogg')) return 'ogg';
+  if (mime.includes('mpeg') || mime.includes('mp3')) return 'mp3';
+  if (mime.includes('wav')) return 'wav';
+  return 'webm';
+};
+
 // @route   POST /api/upload
 // @desc    Compress images to lightweight WebP (EXIF stripped) and persist to MongoDB Atlas
 router.post('/', protect, uploadLimiter, upload.array('images', 6), async (req, res) => {
@@ -129,6 +165,50 @@ router.post('/', protect, uploadLimiter, upload.array('images', 6), async (req, 
     res.status(400).json({
       success: false,
       message: 'Failed to process image. Please upload a valid JPG, PNG, or WebP photo.',
+    });
+  }
+});
+
+// @route   POST /api/upload/audio
+// @desc    Persist WhatsApp-style voice note recordings directly to MongoDB Atlas
+router.post('/audio', protect, uploadLimiter, audioUpload.single('audio'), async (req, res) => {
+  try {
+    if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
+      return res.status(400).json({ success: false, message: 'No audio recording provided.' });
+    }
+
+    const baseMime = (req.file.mimetype || 'audio/webm').split(';')[0].trim().toLowerCase();
+    const contentType = baseMime === 'video/webm' ? 'audio/webm' : baseMime;
+    const ext = audioExtFromMime(contentType);
+    const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
+    const outputFilename = `voice-${uniqueSuffix}.${ext}`;
+    const rawDuration = Number(req.body?.duration);
+    const duration = Number.isFinite(rawDuration) ? Math.max(1, Math.min(300, Math.round(rawDuration))) : 1;
+
+    await Media.create({
+      filename: outputFilename,
+      contentType,
+      data: req.file.buffer,
+      size: req.file.buffer.length,
+      duration,
+      purpose: 'audio',
+      uploadedBy: req.user?._id || null,
+    });
+
+    res.status(201).json({
+      success: true,
+      audio: {
+        url: `/api/media/${outputFilename}`,
+        mimeType: contentType,
+        duration,
+        sizeKb: Math.max(1, Math.round(req.file.buffer.length / 1024)),
+      },
+    });
+  } catch (err) {
+    console.error('Voice upload error:', err.message);
+    res.status(400).json({
+      success: false,
+      message: 'Failed to save voice recording. Please try again.',
     });
   }
 });

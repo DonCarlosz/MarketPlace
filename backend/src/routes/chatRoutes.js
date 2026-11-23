@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  getUnreadSummary,
   getConversations,
   createOrGetConversation,
   getMessages,
@@ -19,6 +20,7 @@ const router = express.Router();
 
 router.use(protect); // all chat routes require authentication
 
+router.get('/unread-count', getUnreadSummary);
 router.get('/conversations', getConversations);
 router.post('/conversations', createOrGetConversation);
 router.get('/conversations/:id/messages', getMessages);

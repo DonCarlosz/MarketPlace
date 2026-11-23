@@ -3,24 +3,96 @@ import Message from '../models/Message.js';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 import { getSmartSafeMeetupSpots } from '../services/safePlacesService.js';
+import { isSafeImageUrl } from '../utils/sanitize.js';
 
-// @desc    Get all conversations for the authenticated user
+// Helper to emit real-time WhatsApp-style notification to the recipient's personal user room
+const emitUserNotification = (io, recipientId, payload) => {
+  if (!io || !recipientId) return;
+  io.to(`user_${recipientId.toString()}`).emit('new_message_notification', payload);
+};
+
+// @desc    Get unread messages & pending message requests summary for current user
+// @route   GET /api/chat/unread-count
+export const getUnreadSummary = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const conversations = await Conversation.find({
+      participants: userId,
+      status: { $ne: 'declined' },
+    })
+      .select('_id status receiver')
+      .lean();
+
+    const convIds = conversations.map((c) => c._id);
+    const pendingRequests = conversations.filter(
+      (c) => c.status === 'pending' && c.receiver?.toString() === userId.toString()
+    ).length;
+
+    let unreadMessages = 0;
+    if (convIds.length > 0) {
+      unreadMessages = await Message.countDocuments({
+        conversation: { $in: convIds },
+        sender: { $ne: userId },
+        readBy: { $ne: userId },
+      });
+    }
+
+    res.json({
+      success: true,
+      unreadMessages,
+      pendingRequests,
+      totalUnread: unreadMessages > 0 ? unreadMessages : pendingRequests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all conversations for the authenticated user (with per-thread unread counts)
 // @route   GET /api/chat/conversations
 export const getConversations = async (req, res, next) => {
   try {
+    const userId = req.user._id;
     const conversations = await Conversation.find({
-      participants: req.user._id,
+      participants: userId,
     })
       .populate('participants', 'name avatar location isVerified')
       .populate('listing', 'title price priceType mode images status location preferredMeetup seller acceptsOffers minimumOfferPrice')
       .populate('lastMessage')
       .populate('initiator', 'name avatar')
       .populate('receiver', 'name avatar')
-      .sort({ lastMessageAt: -1 });
+      .sort({ lastMessageAt: -1 })
+      .lean();
+
+    const convIds = conversations.map((c) => c._id);
+    const unreadMap = new Map();
+    if (convIds.length > 0) {
+      const counts = await Message.aggregate([
+        {
+          $match: {
+            conversation: { $in: convIds },
+            sender: { $ne: userId },
+            readBy: { $ne: userId },
+          },
+        },
+        {
+          $group: {
+            _id: '$conversation',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+      counts.forEach((row) => unreadMap.set(row._id.toString(), row.count));
+    }
+
+    const enriched = conversations.map((c) => ({
+      ...c,
+      unreadCount: unreadMap.get(c._id.toString()) || 0,
+    }));
 
     res.json({
       success: true,
-      conversations,
+      conversations: enriched,
     });
   } catch (error) {
     next(error);
@@ -130,6 +202,16 @@ export const getMessages = async (req, res, next) => {
       .populate('sender', 'name avatar')
       .sort({ createdAt: 1 });
 
+    // Mark unread incoming messages in this thread as read
+    await Message.updateMany(
+      {
+        conversation: req.params.id,
+        sender: { $ne: req.user._id },
+        readBy: { $ne: req.user._id },
+      },
+      { $addToSet: { readBy: req.user._id } }
+    );
+
     res.json({
       success: true,
       messages,
@@ -144,11 +226,11 @@ export const getMessages = async (req, res, next) => {
 // @route   POST /api/chat/conversations/:id/messages
 export const sendMessage = async (req, res, next) => {
   try {
-    let { content, text, messageType = 'text', offer, meetup } = req.body;
+    let { content, text, messageType = 'text', offer, meetup, voice } = req.body;
     content = typeof content === 'string' ? content : typeof text === 'string' ? text : '';
     const conversationId = req.params.id;
 
-    const validMessageTypes = ['text', 'offer', 'meetup_proposal'];
+    const validMessageTypes = ['text', 'offer', 'meetup_proposal', 'voice'];
     if (!validMessageTypes.includes(messageType)) {
       messageType = 'text';
     }
@@ -168,6 +250,7 @@ export const sendMessage = async (req, res, next) => {
 
     // Enforce real offer rules (acceptsOffers & minimumOfferPrice)
     let cleanOffer = undefined;
+    let cleanVoice = undefined;
     if (messageType === 'offer') {
       const amount = Number(offer?.amount);
       if (!Number.isFinite(amount) || amount <= 0) {
@@ -200,6 +283,8 @@ export const sendMessage = async (req, res, next) => {
         amount,
         note: typeof offer?.note === 'string' ? offer.note.trim().slice(0, 300) : '',
         status: 'pending',
+        isCounter: false,
+        previousAmount: 0,
       };
       if (!content.trim()) {
         content = `Price Offer: ₦${amount.toLocaleString()}${cleanOffer.note ? ` ("${cleanOffer.note}")` : ''}`;
@@ -211,6 +296,18 @@ export const sendMessage = async (req, res, next) => {
       if (!content.trim()) {
         content = `Suggested Public Meetup: ${meetup.spotName}${meetup.address ? ` (${meetup.address})` : ''}`;
       }
+    } else if (messageType === 'voice') {
+      if (!voice?.url || !isSafeImageUrl(voice.url)) {
+        return res.status(400).json({ success: false, message: 'Valid voice note URL is required.' });
+      }
+      const rawDur = Number(voice.duration);
+      const duration = Number.isFinite(rawDur) ? Math.max(1, Math.min(300, Math.round(rawDur))) : 1;
+      cleanVoice = {
+        url: voice.url.trim(),
+        duration,
+        mimeType: typeof voice.mimeType === 'string' ? voice.mimeType.slice(0, 60) : 'audio/webm',
+      };
+      content = `Voice message (${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')})`;
     }
 
     if (!content || !content.trim()) {
@@ -273,6 +370,7 @@ export const sendMessage = async (req, res, next) => {
       messageType,
       offer: cleanOffer,
       meetup: messageType === 'meetup_proposal' ? meetup : undefined,
+      voice: cleanVoice,
       readBy: [req.user._id],
     });
 
@@ -288,6 +386,18 @@ export const sendMessage = async (req, res, next) => {
       if (conversation.status === 'accepted') {
         io.to(`conv_${conversationId}`).emit('conversation_accepted', { conversationId });
       }
+      emitUserNotification(io, otherParticipantId, {
+        conversationId: conversation._id.toString(),
+        message: populatedMessage,
+        senderId: req.user._id.toString(),
+        senderName: currentUser?.name || 'oBuy Member',
+        senderAvatar: currentUser?.avatar || '',
+        listingTitle: conversation.listing?.title || 'oBuy Listing',
+        preview: populatedMessage.content,
+        messageType,
+        isRequest: conversation.status === 'pending' && isInitiator,
+        createdAt: populatedMessage.createdAt,
+      });
     }
 
     res.status(201).json({
@@ -467,7 +577,7 @@ export const respondToOffer = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Offer message not found' });
     }
 
-    const conversation = await Conversation.findById(message.conversation);
+    const conversation = await Conversation.findById(message.conversation).populate('listing', 'title');
     const userIdStr = req.user._id.toString();
     const isParticipant = conversation?.participants.some((p) => p.toString() === userIdStr);
     if (!isParticipant) {
@@ -490,7 +600,11 @@ export const respondToOffer = async (req, res, next) => {
       });
     }
 
+    const otherParticipantId = conversation.participants.find((p) => p.toString() !== userIdStr);
+    const actingUser = await User.findById(req.user._id).select('name avatar').lean();
+
     let parsedCounter = 0;
+    const previousAmount = Number(message.offer.amount) || 0;
     if (action === 'accept') {
       message.offer.status = 'accepted';
     } else if (action === 'decline') {
@@ -507,23 +621,47 @@ export const respondToOffer = async (req, res, next) => {
 
     const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatar');
 
-    const actionText =
-      action === 'accept'
-        ? `Offer of ₦${Number(message.offer.amount).toLocaleString()} was accepted!`
-        : action === 'counter'
-        ? `Counter-offer of ₦${parsedCounter.toLocaleString()} proposed.`
-        : `Offer of ₦${Number(message.offer.amount).toLocaleString()} was declined.`;
+    let populatedCounterMsg = null;
+    let populatedSystemMsg = null;
 
-    const systemMsg = await Message.create({
-      conversation: conversation._id,
-      sender: req.user._id,
-      content: actionText,
-      messageType: 'system',
-      readBy: [req.user._id],
-    });
-    const populatedSystemMsg = await Message.findById(systemMsg._id).populate('sender', 'name avatar');
+    if (action === 'counter') {
+      // Send a BRAND NEW pending offer message FROM the counter-bidder at the bottom of the chat
+      // so the counterparty can immediately Accept, Counter, or Decline without scrolling back up!
+      const counterNote =
+        typeof req.body.note === 'string' ? req.body.note.trim().slice(0, 300) : '';
+      const counterMsg = await Message.create({
+        conversation: conversation._id,
+        sender: req.user._id,
+        content: `Counter-Offer: ₦${parsedCounter.toLocaleString()}${counterNote ? ` ("${counterNote}")` : ''}`,
+        messageType: 'offer',
+        offer: {
+          amount: parsedCounter,
+          status: 'pending',
+          isCounter: true,
+          previousAmount,
+          note: counterNote,
+        },
+        readBy: [req.user._id],
+      });
+      populatedCounterMsg = await Message.findById(counterMsg._id).populate('sender', 'name avatar');
+      conversation.lastMessage = counterMsg._id;
+    } else {
+      const actionText =
+        action === 'accept'
+          ? `Offer of ₦${previousAmount.toLocaleString()} was accepted!`
+          : `Offer of ₦${previousAmount.toLocaleString()} was declined.`;
 
-    conversation.lastMessage = systemMsg._id;
+      const systemMsg = await Message.create({
+        conversation: conversation._id,
+        sender: req.user._id,
+        content: actionText,
+        messageType: 'system',
+        readBy: [req.user._id],
+      });
+      populatedSystemMsg = await Message.findById(systemMsg._id).populate('sender', 'name avatar');
+      conversation.lastMessage = systemMsg._id;
+    }
+
     conversation.lastMessageAt = new Date();
     if (conversation.status === 'pending') {
       conversation.status = 'accepted';
@@ -531,14 +669,30 @@ export const respondToOffer = async (req, res, next) => {
     await conversation.save();
 
     const io = req.app.get('io');
+    const latestMsg = populatedCounterMsg || populatedSystemMsg;
     if (io) {
       io.to(`conv_${conversation._id}`).emit('offer_updated', populatedMessage);
-      io.to(`conv_${conversation._id}`).emit('receive_message', populatedSystemMsg);
+      if (latestMsg) {
+        io.to(`conv_${conversation._id}`).emit('receive_message', latestMsg);
+        emitUserNotification(io, otherParticipantId, {
+          conversationId: conversation._id.toString(),
+          message: latestMsg,
+          senderId: userIdStr,
+          senderName: actingUser?.name || 'oBuy Member',
+          senderAvatar: actingUser?.avatar || '',
+          listingTitle: conversation.listing?.title || 'oBuy Listing',
+          preview: latestMsg.content,
+          messageType: latestMsg.messageType,
+          isRequest: false,
+          createdAt: latestMsg.createdAt,
+        });
+      }
     }
 
     res.json({
       success: true,
       message: populatedMessage,
+      counterMessage: populatedCounterMsg,
       systemMessage: populatedSystemMsg,
     });
   } catch (error) {

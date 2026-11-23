@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { usePWAInstall } from '../context/PWAInstallContext';
+import { useNotifications } from '../context/NotificationContext';
 import { resolveMediaUrl } from '../services/api';
 import ConfirmModal from './ConfirmModal';
 import {
@@ -26,6 +27,7 @@ export default function Navbar() {
   const { user, logout, openAuthModal } = useAuth();
   const { count: favoritesCount } = useFavorites();
   const { isInstalled, installApp } = usePWAInstall();
+  const { unreadCount } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -141,6 +143,11 @@ export default function Navbar() {
                   title="Messages"
                 >
                   <MessageSquare className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center leading-none border border-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
 
                 {/* User Dropdown */}

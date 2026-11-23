@@ -5,6 +5,7 @@ import { ModeProvider } from './context/ModeContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { PWAInstallProvider } from './context/PWAInstallContext';
 import { ToastProvider } from './context/ToastContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
@@ -153,8 +154,10 @@ export default function App() {
           <PWAInstallProvider>
             <ToastProvider>
               <Router>
-                <ScrollToTop />
-                <AppContent />
+                <NotificationProvider>
+                  <ScrollToTop />
+                  <AppContent />
+                </NotificationProvider>
               </Router>
             </ToastProvider>
           </PWAInstallProvider>

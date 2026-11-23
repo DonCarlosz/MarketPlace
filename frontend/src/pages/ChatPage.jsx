@@ -4,9 +4,11 @@ import API, { resolveMediaUrl } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useNotifications } from '../context/NotificationContext';
 import { chatInboxCache, chatMessagesCache } from '../utils/routeCache';
 import { formatPrice } from '../utils/format';
 import ConfirmModal from '../components/ConfirmModal';
+import VoiceMessageBubble from '../components/VoiceMessageBubble';
 import {
  Send,
  ShieldCheck,
@@ -35,6 +37,8 @@ import {
  Loader2,
  Search,
  ShieldAlert,
+ Mic,
+ Trash2,
 } from 'lucide-react';
 
 export default function ChatPage() {
@@ -103,18 +107,40 @@ export default function ChatPage() {
  });
 
  const messagesEndRef = useRef(null);
+ const textareaRef = useRef(null);
  const socketRef = useRef(null);
  const activeConvIdRef = useRef(activeConvId);
  const typingTimeoutRef = useRef(null);
+ const mediaRecorderRef = useRef(null);
+ const audioChunksRef = useRef([]);
+ const recordingStreamRef = useRef(null);
+ const recordingTimerRef = useRef(null);
+ const recordingStartRef = useRef(0);
+ const shouldSendRecordingRef = useRef(false);
+
+ const [isRecording, setIsRecording] = useState(false);
+ const [recordingSeconds, setRecordingSeconds] = useState(0);
+ const [uploadingVoice, setUploadingVoice] = useState(false);
+
  const { showToast } = useToast();
+ const { setActiveConversationId, refreshUnreadCount, requestNotificationPermission } = useNotifications();
 
  useEffect(() => {
  activeConvIdRef.current = activeConvId;
- }, [activeConvId]);
+ setActiveConversationId(activeConvId);
+ return () => {
+ setActiveConversationId(null);
+ };
+ }, [activeConvId, setActiveConversationId]);
 
+ // Cleanup timers and microphone tracks on unmount
  useEffect(() => {
  return () => {
  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+ if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+ if (recordingStreamRef.current) {
+ recordingStreamRef.current.getTracks().forEach((t) => t.stop());
+ }
  };
  }, []);
 
@@ -273,9 +299,16 @@ export default function ChatPage() {
  chatMessagesCache.set(activeConvId, freshMsgs);
  if (res.data.conversation) {
  setConversations((prev) =>
- prev.map((c) => (c._id === activeConvId ? { ...c, ...res.data.conversation } : c))
+ prev.map((c) =>
+ c._id === activeConvId ? { ...c, ...res.data.conversation, unreadCount: 0 } : c
+ )
+ );
+ } else {
+ setConversations((prev) =>
+ prev.map((c) => (c._id === activeConvId ? { ...c, unreadCount: 0 } : c))
  );
  }
+ refreshUnreadCount();
  }
  } catch (err) {
  console.error('Error fetching messages:', err);
@@ -291,7 +324,7 @@ export default function ChatPage() {
  socket.emit('stop_typing', { conversationId: activeConvId });
  socket.emit('leave_conversation', { conversationId: activeConvId });
  };
- }, [activeConvId]);
+ }, [activeConvId, refreshUnreadCount]);
 
  // Scroll to bottom whenever messages update
  useEffect(() => {
@@ -359,9 +392,13 @@ export default function ChatPage() {
 
  const text = messageText.trim();
  setMessageText('');
+ if (textareaRef.current) {
+ textareaRef.current.style.height = 'auto';
+ }
  if (socketRef.current && activeConvId) {
  socketRef.current.emit('stop_typing', { conversationId: activeConvId });
  }
+ requestNotificationPermission();
 
  try {
  const res = await API.post(`/chat/conversations/${activeConvId}/messages`, { content: text });
@@ -393,6 +430,11 @@ export default function ChatPage() {
  const handleMessageInputChange = (e) => {
  const val = e.target.value;
  setMessageText(val);
+ // Auto-grow textarea up to ~120px cleanly so Enter starts a new paragraph smoothly
+ if (textareaRef.current) {
+ textareaRef.current.style.height = 'auto';
+ textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+ }
  if (!socketRef.current || !activeConvId) return;
  if (val.trim()) {
  socketRef.current.emit('typing', { conversationId: activeConvId });
@@ -402,6 +444,149 @@ export default function ChatPage() {
  }, 1800);
  } else {
  socketRef.current.emit('stop_typing', { conversationId: activeConvId });
+ }
+ };
+
+ // WhatsApp-Style Voice Recording Handlers
+ const cleanupRecording = () => {
+ if (recordingTimerRef.current) {
+ clearInterval(recordingTimerRef.current);
+ recordingTimerRef.current = null;
+ }
+ if (recordingStreamRef.current) {
+ recordingStreamRef.current.getTracks().forEach((t) => t.stop());
+ recordingStreamRef.current = null;
+ }
+ mediaRecorderRef.current = null;
+ audioChunksRef.current = [];
+ setIsRecording(false);
+ setRecordingSeconds(0);
+ };
+
+ const startVoiceRecording = async () => {
+ if (!activeConvId || !user || isSenderLimitReached || isOtherUserBlocked || uploadingVoice) return;
+ if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+ showToast('Voice recording is not supported in this browser.', 'error');
+ return;
+ }
+
+ try {
+ const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+ recordingStreamRef.current = stream;
+
+ const preferredMimes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+ const supportedMime = preferredMimes.find((m) => MediaRecorder.isTypeSupported?.(m)) || '';
+ const recorder = supportedMime
+ ? new MediaRecorder(stream, { mimeType: supportedMime })
+ : new MediaRecorder(stream);
+
+ audioChunksRef.current = [];
+ shouldSendRecordingRef.current = false;
+ recordingStartRef.current = Date.now();
+
+ recorder.ondataavailable = (ev) => {
+ if (ev.data && ev.data.size > 0) {
+ audioChunksRef.current.push(ev.data);
+ }
+ };
+
+ recorder.onstop = async () => {
+ const shouldSend = shouldSendRecordingRef.current;
+ const chunks = [...audioChunksRef.current];
+ const mimeType = (recorder.mimeType || supportedMime || 'audio/webm').split(';')[0];
+ const elapsedSec = Math.max(1, Math.round((Date.now() - recordingStartRef.current) / 1000));
+ cleanupRecording();
+
+ if (!shouldSend || chunks.length === 0) return;
+
+ const blob = new Blob(chunks, { type: mimeType });
+ if (blob.size < 300) {
+ showToast('Voice note was too short.', 'info');
+ return;
+ }
+
+ setUploadingVoice(true);
+ try {
+ const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+ const formData = new FormData();
+ formData.append('audio', blob, `voice.${ext}`);
+ formData.append('duration', String(elapsedSec));
+
+ const upRes = await API.post('/upload/audio', formData, {
+ headers: { 'Content-Type': 'multipart/form-data' },
+ });
+
+ if (upRes.data?.success && upRes.data.audio?.url) {
+ const msgRes = await API.post(`/chat/conversations/${activeConvId}/messages`, {
+ messageType: 'voice',
+ voice: {
+ url: upRes.data.audio.url,
+ duration: upRes.data.audio.duration || elapsedSec,
+ mimeType: upRes.data.audio.mimeType || mimeType,
+ },
+ });
+ if (msgRes.data?.success && msgRes.data.message) {
+ setMessages((prev) =>
+ prev.some((m) => m._id === msgRes.data.message._id) ? prev : [...prev, msgRes.data.message]
+ );
+ setConversations((prev) =>
+ prev.map((c) =>
+ c._id === activeConvId
+ ? {
+ ...c,
+ status: msgRes.data.conversationStatus || c.status,
+ senderMessageCount: msgRes.data.senderMessageCount ?? (c.senderMessageCount || 0) + 1,
+ lastMessage: msgRes.data.message,
+ lastMessageAt: new Date().toISOString(),
+ }
+ : c
+ )
+ );
+ }
+ } else {
+ showToast('Failed to upload voice note.', 'error');
+ }
+ } catch (err) {
+ showToast(err.response?.data?.message || 'Failed to send voice message.', 'error');
+ } finally {
+ setUploadingVoice(false);
+ }
+ };
+
+ mediaRecorderRef.current = recorder;
+ recorder.start(250);
+ setIsRecording(true);
+ setRecordingSeconds(0);
+ recordingTimerRef.current = setInterval(() => {
+ setRecordingSeconds((prev) => {
+ if (prev >= 180) {
+ stopAndSendRecording();
+ return prev;
+ }
+ return prev + 1;
+ });
+ }, 1000);
+ } catch {
+ cleanupRecording();
+ showToast('Microphone access was denied. Enable mic permission to send voice notes.', 'error');
+ }
+ };
+
+ const cancelVoiceRecording = () => {
+ shouldSendRecordingRef.current = false;
+ if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+ mediaRecorderRef.current.stop();
+ } else {
+ cleanupRecording();
+ }
+ };
+
+ const stopAndSendRecording = () => {
+ shouldSendRecordingRef.current = true;
+ if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+ mediaRecorderRef.current.stop();
+ } else {
+ cleanupRecording();
  }
  };
 
@@ -565,19 +750,28 @@ export default function ChatPage() {
  });
 
  if (res.data?.success) {
- setMessages((prev) =>
- prev.map((m) => (m._id === counterMessageId ? res.data.message : m))
- );
- if (res.data.systemMessage) {
- setMessages((prev) =>
- prev.some((m) => m._id === res.data.systemMessage._id)
- ? prev
- : [...prev, res.data.systemMessage]
+ setMessages((prev) => {
+ const updated = prev.map((m) => (m._id === counterMessageId ? res.data.message : m));
+ const appended = res.data.counterMessage || res.data.systemMessage;
+ if (appended && !updated.some((m) => m._id === appended._id)) {
+ return [...updated, appended];
+ }
+ return updated;
+ });
+ const latestMsg = res.data.counterMessage || res.data.systemMessage;
+ if (latestMsg) {
+ setConversations((prev) =>
+ prev.map((c) =>
+ c._id === activeConvId
+ ? { ...c, lastMessage: latestMsg, lastMessageAt: latestMsg.createdAt || new Date().toISOString() }
+ : c
+ )
  );
  }
  setCounterModalOpen(false);
  setCounterAmount('');
  setCounterMessageId(null);
+ showToast('Counter-offer sent!', 'success');
  }
  } catch (err) {
  showToast(err.response?.data?.message || 'Failed to send counter offer.', 'error');
@@ -645,8 +839,9 @@ export default function ChatPage() {
  const res = await API.patch(`/chat/conversations/${activeConvId}/accept`);
  if (res.data?.success) {
  setConversations((prev) =>
- prev.map((c) => (c._id === activeConvId ? { ...c, status: 'accepted' } : c))
+ prev.map((c) => (c._id === activeConvId ? { ...c, status: 'accepted', unreadCount: 0 } : c))
  );
+ refreshUnreadCount();
  }
  } catch {
  showToast('Failed to accept message request.', 'error');
@@ -726,8 +921,8 @@ export default function ChatPage() {
  activeConversation?.listing?.status !== 'completed';
 
  return (
- <div className="flex-1 h-full w-full md:max-w-7xl md:mx-auto p-0 md:p-4 lg:p-6 overflow-hidden flex flex-col relative">
- <div className="flex-1 bg-white rounded-none md:rounded-2xl border-0 md:border md:border-slate-200 overflow-hidden flex min-h-0">
+ <div className="flex-1 h-full w-full md:max-w-7xl md:mx-auto p-0 overflow-hidden flex flex-col relative">
+ <div className="flex-1 bg-white rounded-none border-0 md:border-x md:border-slate-200 overflow-hidden flex min-h-0">
  {/* Left Sidebar: Conversations List & TikTok-style Tabs */}
  <aside
  className={`w-full md:w-80 border-r border-slate-200 flex flex-col shrink-0 ${
@@ -796,7 +991,10 @@ export default function ChatPage() {
  return (
  <button
  key={conv._id}
- onClick={() => setActiveConvId(conv._id)}
+ onClick={() => {
+ setActiveConvId(conv._id);
+ requestNotificationPermission();
+ }}
  className={`w-full p-4 flex items-start gap-3 text-left transition cursor-pointer ${
  isSelected ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50'
  }`}
@@ -814,9 +1012,9 @@ export default function ChatPage() {
  </div>
 
  <div className="flex-1 min-w-0">
- <div className="flex items-center justify-between">
+ <div className="flex items-center justify-between gap-2">
  <p className="text-xs font-bold text-slate-900 truncate">{partner?.name}</p>
- <span className="text-[10px] text-slate-400">
+ <span className={`text-[10px] shrink-0 ${conv.unreadCount > 0 ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}>
  {conv.lastMessageAt
  ? new Date(conv.lastMessageAt).toLocaleDateString([], {
  month: 'numeric',
@@ -830,15 +1028,19 @@ export default function ChatPage() {
  {conv.listing?.title || 'Listing'}
  </p>
 
- <div className="flex items-center justify-between mt-1">
- <p className="text-[11px] text-slate-500 truncate flex-1 pr-2">
+ <div className="flex items-center justify-between mt-1 gap-2">
+ <p className={`text-[11px] truncate flex-1 ${conv.unreadCount > 0 ? 'text-slate-900 font-semibold' : 'text-slate-500'}`}>
  {conv.lastMessage?.content || 'Started conversation'}
  </p>
- {conv.status === 'pending' && (
- <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
+ {conv.status === 'pending' ? (
+ <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0">
  Request
  </span>
- )}
+ ) : conv.unreadCount > 0 ? (
+ <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">
+ {conv.unreadCount > 99 ? '99+' : conv.unreadCount}
+ </span>
+ ) : null}
  </div>
  </div>
  </button>
@@ -1070,11 +1272,13 @@ export default function ChatPage() {
  );
  }
 
- // 2. Render Interactive In-Chat Offer Message Card
+ // 2. Render Interactive In-Chat Offer / Counter-Offer Message Card (clean high-contrast design)
  if (msg.messageType === 'offer') {
  const offerStatus = msg.offer?.status || 'pending';
  const offerVal = Number(msg.offer?.amount) || 0;
- const counterVal = Number(msg.offer?.counterAmount) || 0;
+ const prevVal = Number(msg.offer?.previousAmount) || 0;
+ const isCounterOffer = Boolean(msg.offer?.isCounter);
+ const canRespondToThisOffer = !isMe && offerStatus === 'pending';
 
  return (
  <div
@@ -1082,80 +1286,81 @@ export default function ChatPage() {
  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
  >
  <div
- className={`max-w-[85%] sm:max-w-[360px] rounded-2xl p-4 space-y-3 border ${
- isMe
- ? 'bg-indigo-900 text-white border-indigo-800'
- : 'bg-white text-slate-900 border-indigo-200'
+ className={`w-full max-w-[88%] sm:max-w-[330px] rounded-2xl overflow-hidden border bg-white text-slate-900 ${
+ isMe ? 'border-indigo-300' : 'border-slate-200'
  }`}
  >
- {/* Offer Card Header */}
- <div className="flex items-center justify-between border-b border-white/20 pb-2">
- <span className="text-xs font-bold flex items-center gap-1.5">
- <Tag className="w-3.5 h-3.5 text-amber-300" />
- <span>In-Chat Price Offer</span>
+ {/* Subtle Header Bar */}
+ <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-50 border-b border-slate-100">
+ <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+ <Tag className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+ <span>{isCounterOffer ? 'Counter-Offer' : 'Price Offer'}</span>
  </span>
  <span
  className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
  offerStatus === 'accepted'
- ? 'bg-emerald-500 text-white'
+ ? 'bg-emerald-100 text-emerald-800'
  : offerStatus === 'declined'
- ? 'bg-rose-500 text-white'
+ ? 'bg-rose-100 text-rose-700'
  : offerStatus === 'countered'
- ? 'bg-amber-500 text-white'
- : 'bg-amber-400 text-slate-900'
+ ? 'bg-slate-200 text-slate-600'
+ : 'bg-amber-100 text-amber-800'
  }`}
  >
  {offerStatus}
  </span>
  </div>
 
- {/* Large Naira Offer Amount */}
+ <div className="p-3.5 space-y-3">
+ {/* Offer Amount */}
  <div>
- <span className="text-[10px] block opacity-80 uppercase tracking-wider font-semibold">
- {isMe ? 'You Offered:' : 'Buyer Offered:'}
+ <span className="text-[10px] block text-slate-500 uppercase tracking-wider font-semibold">
+ {isMe
+ ? isCounterOffer
+ ? 'You Countered'
+ : 'You Offered'
+ : isCounterOffer
+ ? `${otherUser?.name || 'Counterparty'} Countered`
+ : `${otherUser?.name || 'Buyer'} Offered`}
  </span>
- <div className="text-xl sm:text-2xl font-black text-emerald-400">
- ₦{offerVal.toLocaleString()} NGN
+ <div className="flex items-baseline gap-2 mt-0.5">
+ <span className="text-xl font-black text-slate-900">
+ ₦{offerVal.toLocaleString()}
+ </span>
+ <span className="text-[10px] font-bold text-slate-400">NGN</span>
+ {isCounterOffer && prevVal > 0 && (
+ <span className="text-[11px] text-slate-400 line-through">
+ ₦{prevVal.toLocaleString()}
+ </span>
+ )}
  </div>
  {msg.offer?.note && (
- <p className="text-xs italic opacity-90 mt-1">"{msg.offer.note}"</p>
+ <p className="text-xs text-slate-600 mt-1 leading-snug">"{msg.offer.note}"</p>
  )}
  </div>
 
- {/* Counter Offer Info if present */}
- {offerStatus === 'countered' && counterVal > 0 && (
- <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-xs">
- <span className="text-[10px] uppercase font-bold text-amber-300 block">
- Counter Proposal:
- </span>
- <span className="text-base font-black text-amber-300">
- ₦{counterVal.toLocaleString()} NGN
- </span>
- </div>
- )}
-
- {/* AI Negotiation Coach Insight */}
- {offerStatus === 'pending' && (activeConversation?.listing?.price || 0) > 0 && (
- <div className="p-2.5 rounded-xl bg-white/10 border border-white/20 text-xs space-y-1">
- <div className="flex items-center gap-1.5 font-bold text-amber-300">
+ {/* AI Negotiation Coach Insight (shown to recipient on pending offers) */}
+ {canRespondToThisOffer && (activeConversation?.listing?.price || 0) > 0 && (
+ <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs space-y-1">
+ <div className="flex items-center gap-1.5 font-bold text-indigo-700 text-[11px]">
  <Sparkles className="w-3.5 h-3.5" />
- <span>AI Negotiation Coach</span>
+ <span>AI Negotiation Tip</span>
  </div>
- <p className="text-[11px] opacity-90 leading-snug">
- {Math.round((((activeConversation.listing.price - offerVal) / activeConversation.listing.price) * 100)) > 0
- ? `This offer is ${Math.round((((activeConversation.listing.price - offerVal) / activeConversation.listing.price) * 100))}% below the asking price of ₦${activeConversation.listing.price.toLocaleString()}. Recommended counter is around ₦${Math.round(activeConversation.listing.price * 0.92).toLocaleString()}.`
- : `This offer meets or exceeds the asking price! Confirm the safe meeting spot for physical inspection.`}
+ <p className="text-[11px] text-slate-700 leading-snug">
+ {Math.round(((activeConversation.listing.price - offerVal) / activeConversation.listing.price) * 100) > 0
+ ? `This is ${Math.round(((activeConversation.listing.price - offerVal) / activeConversation.listing.price) * 100)}% below the asking price of ₦${activeConversation.listing.price.toLocaleString()}. Suggested counter: ₦${Math.round(activeConversation.listing.price * 0.92).toLocaleString()}.`
+ : `This meets or exceeds the asking price. Confirm a safe public meetup spot for physical inspection.`}
  </p>
  </div>
  )}
 
- {/* Seller Action Buttons for Pending Offer */}
- {isListingSeller && offerStatus === 'pending' && (
+ {/* Action Buttons for ANY Pending Offer Received From the Other User (works for both Initial & Counter-Offers!) */}
+ {canRespondToThisOffer && (
  <div className="flex items-center gap-2 pt-1">
  <button
  type="button"
  onClick={() => handleRespondToOffer(msg._id, 'accept')}
- className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+ className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
  >
  <Check className="w-3.5 h-3.5" />
  <span>Accept</span>
@@ -1167,7 +1372,7 @@ export default function ChatPage() {
  setCounterMessageId(msg._id);
  setCounterModalOpen(true);
  }}
- className="flex-1 py-1.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+ className="flex-1 py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
  >
  <RotateCcw className="w-3.5 h-3.5" />
  <span>Counter</span>
@@ -1176,7 +1381,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => handleRespondToOffer(msg._id, 'decline')}
- className="py-1.5 px-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center justify-center cursor-pointer"
+ className="py-2 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition flex items-center justify-center cursor-pointer"
  title="Decline"
  >
  <X className="w-3.5 h-3.5" />
@@ -1184,47 +1389,32 @@ export default function ChatPage() {
  </div>
  )}
 
- {/* Buyer Action Buttons for Countered Offer */}
- {!isListingSeller && offerStatus === 'countered' && (
- <div className="flex items-center gap-2 pt-1">
- <button
- type="button"
- onClick={() => handleRespondToOffer(msg._id, 'accept')}
- className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
- >
- <Check className="w-3.5 h-3.5" />
- <span>Accept Counter</span>
- </button>
- <button
- type="button"
- onClick={() => handleRespondToOffer(msg._id, 'decline')}
- className="py-1.5 px-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center justify-center cursor-pointer"
- >
- <X className="w-3.5 h-3.5" />
- <span>Decline</span>
- </button>
- </div>
+ {/* Archived Countered Info */}
+ {offerStatus === 'countered' && (
+ <p className="text-[11px] text-slate-500 border-t border-slate-100 pt-2">
+ Superseded by a new counter-offer below.
+ </p>
  )}
 
  {/* Accepted Banner & Deal Actions */}
  {offerStatus === 'accepted' && (
- <div className="space-y-2 pt-1">
- <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-[11px] font-semibold text-emerald-300 flex items-center gap-1.5">
- <Sparkles className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+ <div className="space-y-2 pt-1 border-t border-slate-100">
+ <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-800 flex items-center gap-1.5">
+ <Sparkles className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
  <span>Deal agreed! Pick a safe public meetup spot below.</span>
  </div>
 
  {isListingSeller ? (
  activeConversation?.listing?.status === 'sold' ? (
- <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/30 border border-emerald-400/50 text-[11px] font-bold text-emerald-200">
- <CheckCircle className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
- <span>Listing Marked as Sold (Deal Completed)</span>
+ <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-800">
+ <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+ <span>Listing Marked as Sold</span>
  </div>
  ) : (
  <button
  type="button"
  onClick={() => handleMarkListingSold(activeConversation?.listing?._id)}
- className="w-full py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+ className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
  >
  <CheckCircle className="w-3.5 h-3.5" />
  <span>Mark Listing as Sold</span>
@@ -1234,7 +1424,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setReviewModalOpen(true)}
- className="w-full py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+ className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
  >
  <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
  <span>Leave Seller Feedback</span>
@@ -1243,6 +1433,7 @@ export default function ChatPage() {
  </div>
  )}
  </div>
+ </div>
 
  <span className="text-[10px] text-slate-400 mt-1 px-1">
  {msg.createdAt
@@ -1256,7 +1447,7 @@ export default function ChatPage() {
  );
  }
 
- // 3. Render Safe Meetup Proposal Message Card
+ // 3. Render Safe Meetup Proposal Message Card (clean surface, no Google Maps / landmarks / parking tag)
  if (msg.messageType === 'meetup_proposal') {
  return (
  <div
@@ -1264,74 +1455,36 @@ export default function ChatPage() {
  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
  >
  <div
- className={`max-w-[90%] sm:max-w-[360px] rounded-2xl p-4 space-y-3 border ${
- isMe
- ? 'bg-indigo-600 text-white border-indigo-700'
- : 'bg-white text-slate-800 border-indigo-200'
+ className={`w-full max-w-[88%] sm:max-w-[320px] rounded-2xl overflow-hidden border bg-white text-slate-900 ${
+ isMe ? 'border-indigo-300' : 'border-slate-200'
  }`}
  >
- <div className="flex items-center justify-between text-xs font-bold border-b border-white/20 pb-2">
- <div className="flex items-center gap-1.5">
- <MapPin className="w-4 h-4 text-amber-300" />
+ <div className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-50/80 border-b border-emerald-100 text-xs font-bold text-emerald-900">
+ <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
  <span>Safe Public Exchange Spot</span>
  </div>
- {msg.meetup?.spaceTag && (
- <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
- isMe ? 'bg-indigo-700 text-indigo-100' : 'bg-indigo-50 text-indigo-700'
- }`}>
- {msg.meetup.spaceTag}
- </span>
- )}
- </div>
 
- <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-slate-900 space-y-1">
- <span className="font-black text-sm block">
+ <div className="p-3.5 space-y-2">
+ <div className="space-y-0.5">
+ <span className="font-black text-sm text-slate-900 block">
  {msg.meetup?.spotName || 'Designated Public Location'}
  </span>
  {msg.meetup?.address && (
- <span className="block text-xs text-slate-600 font-medium">
+ <span className="block text-xs text-slate-600">
  {msg.meetup.address}
  </span>
  )}
  {msg.meetup?.distance && (
- <span className="text-[10px] text-indigo-700 font-bold block pt-0.5">
- 📍 {msg.meetup.distance}
+ <span className="text-[11px] text-indigo-600 font-semibold block pt-0.5">
+ {msg.meetup.distance}
  </span>
  )}
  </div>
 
- {/* Plain English Location Description for Users Who Do Not Understand Maps */}
- {msg.meetup?.plainDescription && (
- <div className={`p-2.5 rounded-xl text-xs leading-relaxed ${
- isMe ? 'bg-indigo-700/60 text-indigo-100 border border-indigo-500/50' : 'bg-slate-50 text-slate-700 border border-slate-200'
- }`}>
- <span className="font-bold text-[11px] block uppercase tracking-wider mb-1">
- 📍 Location Guide & Landmarks:
- </span>
- <span>{msg.meetup.plainDescription}</span>
- </div>
- )}
-
- {/* Open in Maps Button */}
- {msg.meetup?.mapUrl && (
- <a
- href={msg.meetup.mapUrl}
- target="_blank"
- rel="noopener noreferrer"
- className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition ${
- isMe
- ? 'bg-white hover:bg-slate-100 text-indigo-700'
- : 'bg-indigo-600 hover:bg-indigo-700 text-white'
- }`}
- >
- <ExternalLink className="w-3.5 h-3.5" />
- <span>Open in Google Maps</span>
- </a>
- )}
-
- <p className="text-[10px] opacity-80 leading-relaxed pt-1">
- Inspect item before hand-delivery or instant bank transfer. Never wire funds upfront.
+ <p className="text-[11px] text-slate-500 leading-relaxed pt-2 border-t border-slate-100">
+ Inspect item in person before making payment. Never wire funds upfront.
  </p>
+ </div>
  </div>
 
  <span className="text-[10px] text-slate-400 mt-1 px-1">
@@ -1346,7 +1499,27 @@ export default function ChatPage() {
  );
  }
 
- // 4. Standard Text Bubble
+ // 4. Render WhatsApp-Style Voice Message Bubble
+ if (msg.messageType === 'voice' && msg.voice?.url) {
+ return (
+ <div
+ key={msg._id || i}
+ className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+ >
+ <VoiceMessageBubble voice={msg.voice} isMe={isMe} />
+ <span className="text-[10px] text-slate-400 mt-1 px-1">
+ {msg.createdAt
+ ? new Date(msg.createdAt).toLocaleTimeString([], {
+ hour: '2-digit',
+ minute: '2-digit',
+ })
+ : ''}
+ </span>
+ </div>
+ );
+ }
+
+ // 5. Standard Text Bubble (preserves multi-paragraph line breaks)
  const isSuspicious =
  !isMe &&
  msg.content &&
@@ -1360,7 +1533,7 @@ export default function ChatPage() {
  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
  >
  <div
- className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
+ className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap break-words ${
  isMe
  ? 'bg-indigo-600 text-white rounded-br-none'
  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
@@ -1480,24 +1653,77 @@ export default function ChatPage() {
  </button>
  </div>
 
- <form onSubmit={handleSendMessage} className="flex items-center gap-2">
- <div className="flex-1 flex items-center gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 border border-slate-200">
- <input
- type="text"
+ {isRecording ? (
+ /* WhatsApp-Style Active Voice Recording Bar */
+ <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-2xl px-3 py-2">
+ <button
+ type="button"
+ onClick={cancelVoiceRecording}
+ aria-label="Cancel voice recording"
+ className="p-2 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer shrink-0"
+ title="Discard recording"
+ >
+ <Trash2 className="w-4 h-4" />
+ </button>
+
+ <div className="flex-1 flex items-center gap-2 min-w-0">
+ <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse shrink-0" />
+ <span className="text-xs font-black text-rose-700 tabular-nums">
+ {Math.floor(recordingSeconds / 60)}:{String(recordingSeconds % 60).padStart(2, '0')}
+ </span>
+ <span className="text-[11px] text-rose-600/80 font-medium truncate">
+ Recording voice note...
+ </span>
+ </div>
+
+ <button
+ type="button"
+ onClick={stopAndSendRecording}
+ aria-label="Send voice message"
+ className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+ >
+ <Send className="w-3.5 h-3.5" />
+ <span>Send</span>
+ </button>
+ </div>
+ ) : (
+ <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+ <div className="flex-1 flex items-end gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 border border-slate-200">
+ <textarea
+ ref={textareaRef}
+ rows={1}
  value={messageText}
  onChange={handleMessageInputChange}
- placeholder={`Message ${otherUser?.name || 'user'} (agree on price, test item, coordinate meetup)...`}
- className="flex-1 bg-transparent border-none text-xs text-slate-800 px-3 py-1.5 focus:outline-none"
+ placeholder={`Message ${otherUser?.name || 'user'}...`}
+ className="flex-1 bg-transparent border-none text-xs text-slate-800 px-3 py-1.5 focus:outline-none resize-none max-h-[120px] leading-relaxed"
  />
+ {messageText.trim() ? (
  <button
  type="submit"
- disabled={!messageText.trim()}
- className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white rounded-xl transition "
+ aria-label="Send message"
+ className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  <Send className="w-4 h-4" />
  </button>
+ ) : (
+ <button
+ type="button"
+ onClick={startVoiceRecording}
+ disabled={uploadingVoice}
+ aria-label="Record voice message"
+ title="Record voice message"
+ className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl transition shrink-0 cursor-pointer"
+ >
+ {uploadingVoice ? (
+ <Loader2 className="w-4 h-4 animate-spin" />
+ ) : (
+ <Mic className="w-4 h-4" />
+ )}
+ </button>
+ )}
  </div>
  </form>
+ )}
  </div>
  )}
  </>
@@ -1704,16 +1930,13 @@ export default function ChatPage() {
  </button>
  </div>
 
- {/* Item & Venue Requirement Notice */}
- <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-xs space-y-1">
- <div className="flex items-center justify-between font-bold text-indigo-950">
- <span className="truncate">Trading: {activeConversation?.listing?.title || 'Marketplace Item'}</span>
- <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-200/80 text-indigo-800 shrink-0">
- Open Space Required
- </span>
+ {/* Item Notice (clean, without parking space tag) */}
+ <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1">
+ <div className="font-bold text-slate-900 truncate">
+ Trading: {activeConversation?.listing?.title || 'Marketplace Item'}
  </div>
  <p className="text-[11px] text-slate-600">
- To keep both parties safe, our smart system suggests open plazas, supermarket loading zones, and bank security areas with vehicle parking. No tight restaurants or food joints.
+ Select a well-known public exchange spot nearby so both parties can inspect safely before payment.
  </p>
  </div>
 
@@ -1781,49 +2004,23 @@ export default function ChatPage() {
  smartSpots.map((spot, idx) => (
  <div
  key={idx}
- className="p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-white space-y-2 transition"
+ className="p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-white space-y-2.5 transition"
  >
  <div className="flex items-start justify-between gap-2">
- <div className="space-y-0.5">
- <span className="text-xs font-black text-slate-900 block flex items-center gap-1.5">
- <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
- <span>{spot.name}</span>
+ <div className="space-y-0.5 min-w-0">
+ <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+ <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+ <span className="truncate">{spot.name}</span>
  </span>
  <span className="text-[11px] text-slate-500 block pl-5">{spot.address}</span>
  </div>
- <div className="flex flex-col items-end gap-1 shrink-0">
- {spot.spaceTag && (
- <span className="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
- {spot.spaceTag}
- </span>
- )}
  {spot.distance && (
- <span className="text-[10px] text-slate-400 font-semibold">{spot.distance}</span>
+ <span className="text-[10px] text-slate-500 font-semibold shrink-0">{spot.distance}</span>
  )}
- </div>
  </div>
 
- {/* Plain English Location Description */}
- {spot.plainDescription && (
- <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 leading-relaxed">
- <span className="font-bold text-slate-800 block mb-0.5">📍 Where to meet & landmarks:</span>
- <span>{spot.plainDescription}</span>
- </div>
- )}
-
- {/* Action buttons */}
- <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
- {spot.mapUrl && (
- <a
- href={spot.mapUrl}
- target="_blank"
- rel="noopener noreferrer"
- className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1 transition"
- >
- <ExternalLink className="w-3.5 h-3.5" />
- <span>Open in Maps</span>
- </a>
- )}
+ {/* Action button */}
+ <div className="flex items-center justify-end pt-2 border-t border-slate-100">
  <button
  type="button"
  onClick={() => handleSendMeetupProposal(spot)}
