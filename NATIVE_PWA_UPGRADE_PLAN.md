@@ -6,7 +6,7 @@
 
 ## Why the Installed PWA Currently Feels Like a Website
 
-Even with `display: "standalone"` and a bottom navigation bar, mobile users subconsciously recognize a website because of 7 specific "browser tells":
+Even with `display: "standalone"` and a bottom navigation bar, mobile users subconsciously recognize a website because of 8 specific "browser tells":
 
 1. **Instant Hard Cuts Between Screens:** Tapping a listing or chat thread jumps instantaneously with no directional push/pop motion.
 2. **Centered Desktop Dialogs on Mobile:** Modals (Auth, Make Offer, Meetup Spots, Filters, AI Co-Pilot) pop into the middle of the screen instead of sliding up as thumb-friendly draggable bottom sheets.
@@ -14,7 +14,8 @@ Even with `display: "standalone"` and a bottom navigation bar, mobile users subc
 4. **Zero Tactile Feedback:** Buttons, likes, tab switches, and voice recording give no micro-haptic pulse.
 5. **Browser Text/Callout Leaks:** Long-pressing images or nav labels can trigger browser menus or blue highlight rings.
 6. **Dead When Closed or Offline:** Closing the PWA stops notifications (no Web Push), the home screen icon never shows an unread count badge, and opening the app on weak Nigerian mobile data shows blank loading states instead of instant cached content.
-7. **White Launch Flash & Keyboard Jumps:** Opening the installed app flashes white before React mounts, and opening the keyboard in Chat can cause viewport jumps without `interactive-widget=resizes-content`.
+7. **Harsh One-Shot Permission Traps:** Firing browser system prompts cold for Microphone, Location, or Notifications causes users to accidentally tap "Block/Deny", locking them out until they clear site data or dig through hidden browser settings.
+8. **White Launch Flash & Keyboard Jumps:** Opening the installed app flashes white before React mounts, and opening the keyboard in Chat can cause viewport jumps without `interactive-widget=resizes-content`.
 
 ---
 
@@ -41,11 +42,12 @@ Keep the bundle lean so oBuy stays fast on mid-range Nigerian Android phones and
 | **Web Share API** (`navigator.share`) | Opens the real phone Share Sheet (WhatsApp, X, Telegram, AirDrop) when tapping Share on `/listing/:id` | Android & iOS Safari/PWA |
 | **Web Share Target** (`manifest.json`) | Lets users select photos in their phone Gallery -> tap Share -> choose **oBuy** to jump straight into Post Listing with photos preloaded | Android installed PWA |
 | **Screen Wake Lock API** (`navigator.wakeLock`) | Keeps the phone screen awake while recording a long voice note or uploading multiple photos | Android & iOS 16.4+ Safari |
+| **Permissions API** (`navigator.permissions.query`) | Tracks live status (`granted` / `prompt` / `denied`) for Microphone, Location, Notifications, and Camera with live `onchange` listeners for smooth in-app recovery | Android Chrome/PWA, iOS 16+ Safari (partial), Desktop Chrome/Edge |
 | **VisualViewport + `interactive-widget`** | Keeps the Chat composer glued smoothly to the top edge of the mobile keyboard like WhatsApp | Android Chrome, iOS Safari |
 
 ---
 
-## 4-Phase Implementation Roadmap
+## 3-Phase Implementation Roadmap
 
 ### Phase 1: Native Chrome, Bottom Sheets & Tactile Feel (Highest Immediate Impact)
 *Estimated effort: 1 to 2 days*
@@ -99,24 +101,18 @@ Keep the bundle lean so oBuy stays fast on mid-range Nigerian Android phones and
    - Once the final oBuy logo & brand palette are locked, render an inline SVG splash screen inside `#root` in `index.html` (vanishes the instant React hydrates) + `apple-touch-startup-image` meta links for iOS PWAs.
 6. **Screen Wake Lock for Voice Notes**:
    - Request `navigator.wakeLock.request('screen')` while `isRecording` is active in `ChatPage.jsx`, releasing it cleanly when recording stops.
-
----
-
-### Phase 4: Real App Store Distribution (Zero Code Rewrite)
-*Optional - when ready for Play Store & Apple App Store presence*
-
-1. **Google Play Store via Bubblewrap (TWA - Trusted Web Activity)** *(Fastest: ~1 day)*:
-   - Packages the live hosted `https://obuy.ng` PWA into a signed Android App Bundle (`.aab`) with verified `assetlinks.json`.
-   - Zero URL bar, real Play Store reviews/discovery, ~1 MB APK download size, and every web push updates the Play Store app immediately without store review delays.
-2. **iOS App Store + Play Store via Capacitor (`@capacitor/core`)** *(When scaling further)*:
-   - Wraps the exact existing Vite `dist/` frontend inside a native iOS/Android shell without rewriting React.
-   - Unlocks full native plugins when needed: `@capacitor/haptics` (works on iPhone Taptic Engine!), `@capacitor/push-notifications` (native APNs/FCM without requiring iOS "Add to Home Screen"), `@capacitor/camera`, and `@capacitor/status-bar`.
+7. **In-App Permission Center & Mistaken-Deny Recovery System** *(Replaces harsh browser permission dead-ends)*:
+   - **Layer 1 - Pre-Permission Soft Prompts ("Warm Ask"):** Never fire raw OS permission popups immediately on load or first tap. Before triggering `getUserMedia` (Microphone for Voice Notes), `geolocation.getCurrentPosition` (Location for Nearby Deals & Safe Meetups), or `Notification.requestPermission()` (New Message Alerts), show a clean in-app bottom sheet explaining clearly what the feature unlocks with `"Allow"` and `"Not Now"`. If a user taps `"Not Now"`, the real OS permission stays untouched (`prompt`), so they can enable it in 1 tap later inside the app without ever getting permanently locked out.
+   - **Layer 2 - Dedicated In-App Permissions Panel (`/settings` & Inline Triggers):** Build a unified **App Permissions** screen (`frontend/src/utils/permissions.js` + `PermissionsSheet.jsx`) using `navigator.permissions.query()` for **Microphone**, **Location**, **Notifications**, and **Camera**, displaying live status badges (`Allowed`, `Not Set`, `Blocked`) with one-tap `"Turn On"` buttons whenever the state is `prompt`.
+   - **Layer 3 - Smart OS-Aware Recovery Sheet (Zero Cache Clearing Needed):** Because mobile OS/browser security forbids web apps from forcibly overriding a `"denied"` permission via JavaScript, detecting `state === 'denied'` immediately opens a tailored recovery bottom sheet with a live status listener (`permissionStatus.onchange`):
+     - **Android Chrome / Installed PWA:** Clear 2-step visual guide (*Tap `⋮` / App Info -> Permissions -> toggle Microphone/Location/Notifications ON -> Return to oBuy*) plus a `"Re-check Permission"` button that immediately resumes the blocked action (voice note, GPS safe spots, or alerts) without refreshing or clearing site cache.
+     - **iPhone (iOS Safari & Home-Screen PWA):** Exact iOS path (*iOS Settings -> Apps -> oBuy / Safari -> Microphone / Location / Notifications -> Allow*) with one-tap `"Verify Access"` button on return.
+     - **Desktop Chrome / Edge / Safari:** Points directly to the address-bar Site Settings lock/sliders icon with live auto-resume via `visibilitychange` + `permissions.onchange`.
 
 ---
 
 ## Suggested Execution Order
 
-1. **First:** Finalize the custom **oBuy Logo & Brand Color Tokens** (from `PRODUCTION_READINESS_PLAN.md`) so bottom sheets, splash screens, and maskable icons all inherit the final brand identity cleanly.
-2. **Next (Phase 1 + Phase 2):** Install `vaul` + `framer-motion` (`LazyMotion`), build mobile bottom sheets, haptics, pull-to-refresh, stack transitions, and pinch-zoom gallery. This alone transforms 80% of the perceived "website vs native app" gap.
-3. **Then (Phase 3):** Add `navigator.setAppBadge`, VAPID Web Push, `idb-keyval` offline cache, native Share/Share Target, and branded launch splash screens.
-4. **Finally (Phase 4):** Publish to Google Play Store via Bubblewrap TWA (and Capacitor when ready for the Apple App Store).
+1. **First:** Finalize the custom **oBuy Logo** (and semantic brand tokens when ready) so bottom sheets, splash screens, and maskable app icons inherit the final identity cleanly.
+2. **Next (Phase 1 + Phase 2):** Install `vaul` + `framer-motion` (`LazyMotion`), build mobile bottom sheets, haptics, pull-to-refresh, stack transitions, and pinch-zoom gallery. This transforms the majority of the perceived "website vs native app" gap.
+3. **Then (Phase 3):** Add the **In-App Permission Center & Recovery System**, `navigator.setAppBadge`, VAPID Web Push, `idb-keyval` offline cache, native Share/Share Target, Screen Wake Lock, and branded launch splash screens.
