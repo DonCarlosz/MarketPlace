@@ -1,6 +1,7 @@
 import React from 'react';
 import { Share, PlusSquare, X } from 'lucide-react';
 import { usePWAInstall } from '../context/PWAInstallContext';
+import BrandLogo from './BrandLogo';
 
 export default function IOSInstallModal() {
   const { showIOSPrompt, setShowIOSPrompt } = usePWAInstall();
@@ -17,10 +18,8 @@ export default function IOSInstallModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs">
-              oB
-            </div>
+          <div className="flex items-center gap-2.5">
+            <BrandLogo variant="badge" size="sm" showWordmark={false} />
             <div>
               <h3 className="text-sm font-bold text-slate-900">Install oBuy</h3>
               <p className="text-[11px] text-slate-500">Add to your Home Screen</p>

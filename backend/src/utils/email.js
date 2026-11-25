@@ -51,10 +51,14 @@ oBuy - Safe, direct neighborhood buying & selling
       <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
         <tr>
           <td style="padding: 28px 28px 16px 28px; text-align: center; border-bottom: 1px solid #f1f5f9;">
-            <div style="display: inline-block; width: 40px; height: 40px; line-height: 40px; border-radius: 10px; background-color: #4f46e5; color: #ffffff; font-weight: 800; font-size: 16px; text-align: center; margin-bottom: 8px;">
-              oB
-            </div>
-            <h1 style="margin: 0; font-size: 18px; font-weight: 700; color: #0f172a;">oBuy</h1>
+            <img
+              src="${process.env.BRAND_ICON_URL || 'https://marketplace-5wy3.onrender.com/brand-icon.png'}"
+              alt="oBuy"
+              width="48"
+              height="48"
+              style="display: block; width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 10px auto; background-color: #4f46e5;"
+            />
+            <h1 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">oBuy</h1>
           </td>
         </tr>
         <tr>

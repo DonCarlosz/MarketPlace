@@ -124,6 +124,12 @@ app.use(
   })
 );
 
+// Serve official oBuy PNG icon for email clients & meta tags
+app.get('/brand-icon.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=604800');
+  res.sendFile(path.join(__dirname, '../public/brand-icon.png'));
+});
+
 // Root & Health Check Endpoints
 app.get('/', (req, res) => {
   res.status(200).json({

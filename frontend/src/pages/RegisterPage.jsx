@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Store, ShieldCheck } from 'lucide-react';
+import BrandLogo from '../components/BrandLogo';
+import { ShieldCheck } from 'lucide-react';
 
 export default function RegisterPage() {
   const { user, openAuthModal } = useAuth();
@@ -18,8 +19,8 @@ export default function RegisterPage() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
       <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-5">
-        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mx-auto">
-          <Store className="w-6 h-6" />
+        <div className="flex justify-center">
+          <BrandLogo variant="badge" size="lg" showWordmark={false} />
         </div>
         <div className="space-y-1.5">
           <h2 className="text-2xl font-bold text-slate-900">Join oBuy</h2>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, ShieldCheck, ChevronDown } from 'lucide-react';
+import { ShieldCheck, ChevronDown } from 'lucide-react';
+import BrandLogo from './BrandLogo';
 
 export default function Footer() {
   const [openSections, setOpenSections] = useState({});
@@ -153,8 +154,7 @@ export default function Footer() {
           </div>
 
           <div className="flex items-center gap-2 text-slate-400">
-            <Store className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-            <span className="font-bold text-slate-700">oBuy</span>
+            <BrandLogo variant="default" size="xs" />
             <span>•</span>
             <span>© {new Date().getFullYear()}</span>
             <span>•</span>

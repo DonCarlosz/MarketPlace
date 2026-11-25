@@ -23,7 +23,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-white text-slate-900 font-sans antialiased">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Instant branded PWA launch splash (replaced automatically when React mounts) -->
+      <div style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#ffffff;">
+        <div style="width:68px;height:68px;border-radius:18px;background:linear-gradient(135deg,#4F46E5,#4338CA);display:flex;align-items:center;justify-content:center;padding:10px;box-sizing:border-box;">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" width="48" height="48" aria-label="oBuy">
+            <g transform="skewX(-9) translate(5.5 0)">
+              <rect x="2.5" y="21" width="11" height="3.6" rx="1.8" fill="#FFFFFF" opacity="0.95"/>
+              <rect x="0.5" y="29.2" width="12.5" height="3.6" rx="1.8" fill="#FFFFFF"/>
+              <rect x="4" y="37.4" width="10" height="3.6" rx="1.8" fill="#FFFFFF" opacity="0.9"/>
+              <ellipse cx="37.5" cy="32" rx="21.2" ry="20.8" stroke="#FFFFFF" stroke-width="5.6"/>
+              <path d="M24.5 23.5H28.3L31.4 37.2C31.7 38.4 32.8 39.2 34 39.2H44.6C45.8 39.2 46.8 38.4 47.1 37.2L49.2 28.4H29.4" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="30.6" y1="33.2" x2="47.8" y2="33.2" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+              <circle cx="34.2" cy="44" r="2.5" fill="#FFFFFF"/>
+              <circle cx="44.2" cy="44" r="2.5" fill="#FFFFFF"/>
+            </g>
+          </svg>
+        </div>
+        <span style="font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-weight:800;font-size:20px;letter-spacing:-0.03em;color:#0F172A;">oBuy</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

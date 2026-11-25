@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import BrandLogo from './BrandLogo';
 import {
  X,
  Store,
@@ -209,9 +210,7 @@ export default function AuthModal() {
  <div className="overflow-y-auto flex-1 px-6 sm:px-8 py-6 overscroll-contain">
  {/* Header */}
  <div className="flex flex-col items-center text-center mb-5 pt-1">
- <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center mb-2.5">
- <Store className="w-5 h-5" />
- </div>
+ <BrandLogo variant="badge" size="lg" showWordmark={false} className="mb-2.5" />
 
  <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 leading-snug">
  {authModalView === 'login' && 'Welcome to oBuy'}

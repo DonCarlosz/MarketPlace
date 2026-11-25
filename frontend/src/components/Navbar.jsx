@@ -7,6 +7,7 @@ import { usePWAInstall } from '../context/PWAInstallContext';
 import { useNotifications } from '../context/NotificationContext';
 import { resolveMediaUrl } from '../services/api';
 import ConfirmModal from './ConfirmModal';
+import BrandLogo from './BrandLogo';
 import {
   Store,
   Home,
@@ -87,13 +88,12 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 gap-3">
           {/* Brand Logo */}
           <div className="flex items-center gap-3 shrink-0">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
-                <Store className="w-5 h-5" />
-              </div>
-              <span className="font-black text-xl tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">
-                oBuy
-              </span>
+            <Link to="/" className="flex items-center group" aria-label="oBuy Home">
+              <BrandLogo
+                variant="default"
+                size="md"
+                className="group-hover:scale-[1.03] transition-transform"
+              />
             </Link>
           </div>
 
@@ -289,12 +289,7 @@ export default function Navbar() {
               <div className="space-y-4">
                 {/* Drawer Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
-                      <Store className="w-5 h-5" />
-                    </div>
-                    <span className="font-black text-lg text-slate-900">oBuy</span>
-                  </div>
+                  <BrandLogo variant="default" size="sm" />
                   <button
                     type="button"
                     onClick={() => setMobileMenuOpen(false)}

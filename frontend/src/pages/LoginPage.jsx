@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Store, Lock, Mail, AlertCircle } from 'lucide-react';
+import BrandLogo from '../components/BrandLogo';
+import { Lock, Mail, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
  const [email, setEmail] = useState('');
@@ -31,8 +32,8 @@ export default function LoginPage() {
  <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 bg-slate-50">
  <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 space-y-6">
  <div className="text-center space-y-2">
- <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white mx-auto ">
- <Store className="w-6 h-6" />
+ <div className="flex justify-center">
+ <BrandLogo variant="badge" size="lg" showWordmark={false} />
  </div>
  <h2 className="text-2xl font-bold text-slate-900">Welcome Back to oBuy</h2>
  <p className="text-xs text-slate-500">Sign in to contact sellers and manage your oBuy listings</p>
