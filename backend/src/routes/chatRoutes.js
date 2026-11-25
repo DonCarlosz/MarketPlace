@@ -7,6 +7,7 @@ import {
   sendMessage,
   acceptConversation,
   declineConversation,
+  deleteConversation,
   blockUser,
   unblockUser,
   getBlockedUsers,
@@ -29,9 +30,10 @@ router.post('/conversations/:id/messages', sendMessage);
 // In-Chat Offer Response
 router.patch('/messages/:id/offer', respondToOffer);
 
-// Message request acceptance & decline
+// Message request acceptance, decline & chat deletion
 router.patch('/conversations/:id/accept', acceptConversation);
 router.patch('/conversations/:id/decline', declineConversation);
+router.delete('/conversations/:id', deleteConversation);
 
 // Discreet Block & Unblock
 router.post('/block/:userId', blockUser);

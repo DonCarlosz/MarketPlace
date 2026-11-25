@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import Media from '../models/Media.js';
 import { protect } from '../middleware/auth.js';
 import { uploadLimiter } from '../middleware/rateLimiter.js';
+import { transcodeVoiceToMp3 } from '../utils/audioTranscode.js';
 
 const router = express.Router();
 
@@ -170,7 +171,7 @@ router.post('/', protect, uploadLimiter, upload.array('images', 6), async (req, 
 });
 
 // @route   POST /api/upload/audio
-// @desc    Persist WhatsApp-style voice note recordings directly to MongoDB Atlas
+// @desc    Transcode voice note to universal iOS/Android MP3 and persist to MongoDB Atlas
 router.post('/audio', protect, uploadLimiter, audioUpload.single('audio'), async (req, res) => {
   try {
     if (!req.file || !req.file.buffer || req.file.buffer.length === 0) {
@@ -178,18 +179,41 @@ router.post('/audio', protect, uploadLimiter, audioUpload.single('audio'), async
     }
 
     const baseMime = (req.file.mimetype || 'audio/webm').split(';')[0].trim().toLowerCase();
-    const contentType = baseMime === 'video/webm' ? 'audio/webm' : baseMime;
-    const ext = audioExtFromMime(contentType);
+    const rawContentType = baseMime === 'video/webm' ? 'audio/webm' : baseMime;
+    const rawExt = audioExtFromMime(rawContentType);
     const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}`;
-    const outputFilename = `voice-${uniqueSuffix}.${ext}`;
     const rawDuration = Number(req.body?.duration);
     const duration = Number.isFinite(rawDuration) ? Math.max(1, Math.min(300, Math.round(rawDuration))) : 1;
 
+    let finalBuffer = req.file.buffer;
+    let finalContentType = rawContentType;
+    let finalExt = rawExt;
+
+    // Transcode to universal MP3 so Android WebM/Opus recordings play natively on iPhone Safari too
+    if (rawContentType !== 'audio/mpeg' && rawContentType !== 'audio/mp3') {
+      try {
+        finalBuffer = await transcodeVoiceToMp3(req.file.buffer, rawExt);
+        finalContentType = 'audio/mpeg';
+        finalExt = 'mp3';
+      } catch (transcodeErr) {
+        console.warn('[Voice Transcode] FFmpeg fallback triggered:', transcodeErr.message);
+        // Reject unplayable webm/ogg on transcode failure only if truly corrupt; allow native mp4/m4a fallback
+        if (!['audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/wav'].includes(rawContentType)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Unable to process voice recording. Please try recording again.',
+          });
+        }
+      }
+    }
+
+    const outputFilename = `voice-${uniqueSuffix}.${finalExt}`;
+
     await Media.create({
       filename: outputFilename,
-      contentType,
-      data: req.file.buffer,
-      size: req.file.buffer.length,
+      contentType: finalContentType,
+      data: finalBuffer,
+      size: finalBuffer.length,
       duration,
       purpose: 'audio',
       uploadedBy: req.user?._id || null,
@@ -199,9 +223,9 @@ router.post('/audio', protect, uploadLimiter, audioUpload.single('audio'), async
       success: true,
       audio: {
         url: `/api/media/${outputFilename}`,
-        mimeType: contentType,
+        mimeType: finalContentType,
         duration,
-        sizeKb: Math.max(1, Math.round(req.file.buffer.length / 1024)),
+        sizeKb: Math.max(1, Math.round(finalBuffer.length / 1024)),
       },
     });
   } catch (err) {

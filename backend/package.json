@@ -10,6 +10,7 @@
     "seed": "node src/utils/seed.js"
   },
   "dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/genai": "^3.6.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",

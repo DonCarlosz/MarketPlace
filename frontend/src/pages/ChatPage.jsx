@@ -43,7 +43,7 @@ import {
 
 export default function ChatPage() {
  const { user } = useAuth();
- const [searchParams] = useSearchParams();
+ const [searchParams, setSearchParams] = useSearchParams();
  const initialConversationId = searchParams.get('conversationId');
  const currentUserId = (user?._id || user?.id)?.toString();
  const cachedInbox = chatInboxCache.get(currentUserId);
@@ -123,6 +123,12 @@ export default function ChatPage() {
  const [recordingSeconds, setRecordingSeconds] = useState(0);
  const [uploadingVoice, setUploadingVoice] = useState(false);
 
+ // WhatsApp-style Long-Press Chat Action Sheet State (Primary & Requests)
+ const [chatActionSheetConv, setChatActionSheetConv] = useState(null);
+ const longPressTimerRef = useRef(null);
+ const longPressOriginRef = useRef({ x: 0, y: 0 });
+ const longPressTriggeredRef = useRef(false);
+
  const { showToast } = useToast();
  const { setActiveConversationId, refreshUnreadCount, requestNotificationPermission } = useNotifications();
 
@@ -139,6 +145,7 @@ export default function ChatPage() {
  return () => {
  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
  if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+ if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
  if (recordingStreamRef.current) {
  recordingStreamRef.current.getTracks().forEach((t) => t.stop());
  }
@@ -563,7 +570,12 @@ export default function ChatPage() {
  };
 
  mediaRecorderRef.current = recorder;
+ // iOS Safari MP4 MediaRecorder works reliably without timeslice chunking
+ if (supportedMime.includes('mp4')) {
+ recorder.start();
+ } else {
  recorder.start(250);
+ }
  setIsRecording(true);
  setRecordingSeconds(0);
  recordingTimerRef.current = setInterval(() => {
@@ -921,6 +933,75 @@ export default function ChatPage() {
  }
  };
 
+ // WhatsApp-Style Long-Press Handlers for Inbox Rows (Primary & Requests)
+ const cancelLongPress = () => {
+ if (longPressTimerRef.current) {
+ clearTimeout(longPressTimerRef.current);
+ longPressTimerRef.current = null;
+ }
+ };
+
+ const startLongPress = (conv, clientX = 0, clientY = 0) => {
+ cancelLongPress();
+ longPressTriggeredRef.current = false;
+ longPressOriginRef.current = { x: clientX, y: clientY };
+ longPressTimerRef.current = setTimeout(() => {
+ longPressTriggeredRef.current = true;
+ if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+ navigator.vibrate(25);
+ }
+ setChatActionSheetConv(conv);
+ }, 480);
+ };
+
+ const handleLongPressMove = (clientX, clientY) => {
+ if (!longPressTimerRef.current) return;
+ const dx = Math.abs(clientX - longPressOriginRef.current.x);
+ const dy = Math.abs(clientY - longPressOriginRef.current.y);
+ if (dx > 10 || dy > 10) {
+ cancelLongPress();
+ }
+ };
+
+ // Delete Chat (Removes thread from current user's inbox; purges fully when both users delete)
+ const promptDeleteConversation = (conv) => {
+ if (!conv?._id) return;
+ const partner = getOtherParticipant(conv);
+ setChatActionSheetConv(null);
+ setMoreMenuOpen(false);
+ setConfirmModalConfig({
+ isOpen: true,
+ title: `Delete chat with ${partner?.name || 'this user'}?`,
+ message:
+ 'This conversation and its previous messages will be removed from your inbox. If they message you again later, a fresh thread will appear.',
+ confirmText: 'Delete Chat',
+ variant: 'danger',
+ icon: Trash2,
+ onConfirm: async () => {
+ try {
+ const res = await API.delete(`/chat/conversations/${conv._id}`);
+ if (res.data?.success) {
+ setConversations((prev) => prev.filter((c) => c._id !== conv._id));
+ chatMessagesCache.delete(conv._id);
+ if (activeConvIdRef.current === conv._id) {
+ setActiveConvId(null);
+ setMessages([]);
+ if (searchParams.get('conversationId') === conv._id) {
+ setSearchParams({}, { replace: true });
+ }
+ }
+ refreshUnreadCount();
+ showToast('Chat deleted.', 'info');
+ }
+ } catch (err) {
+ showToast(err.response?.data?.message || 'Failed to delete chat.', 'error');
+ } finally {
+ setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }));
+ }
+ },
+ });
+ };
+
  const listingPrice = Number(activeConversation?.listing?.price) || 0;
  const canMakeOffer =
  !isListingSeller &&
@@ -1000,13 +1081,40 @@ export default function ChatPage() {
  return (
  <button
  key={conv._id}
+ type="button"
+ onTouchStart={(e) => {
+ const touch = e.touches?.[0];
+ startLongPress(conv, touch?.clientX || 0, touch?.clientY || 0);
+ }}
+ onTouchMove={(e) => {
+ const touch = e.touches?.[0];
+ if (touch) handleLongPressMove(touch.clientX, touch.clientY);
+ }}
+ onTouchEnd={cancelLongPress}
+ onTouchCancel={cancelLongPress}
+ onMouseDown={(e) => {
+ if (e.button === 0) startLongPress(conv, e.clientX, e.clientY);
+ }}
+ onMouseMove={(e) => handleLongPressMove(e.clientX, e.clientY)}
+ onMouseUp={cancelLongPress}
+ onMouseLeave={cancelLongPress}
+ onContextMenu={(e) => {
+ e.preventDefault();
+ cancelLongPress();
+ setChatActionSheetConv(conv);
+ }}
  onClick={() => {
+ if (longPressTriggeredRef.current) {
+ longPressTriggeredRef.current = false;
+ return;
+ }
  setActiveConvId(conv._id);
  requestNotificationPermission();
  }}
- className={`w-full p-4 flex items-start gap-3 text-left transition cursor-pointer ${
- isSelected ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50'
+ className={`w-full p-4 flex items-start gap-3 text-left transition cursor-pointer select-none ${
+ isSelected ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50 active:bg-slate-100'
  }`}
+ style={{ WebkitTouchCallout: 'none' }}
  >
  <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200 overflow-hidden">
  {partner?.avatar ? (
@@ -1073,7 +1181,12 @@ export default function ChatPage() {
  {/* Mobile Back Button */}
  <button
  type="button"
- onClick={() => setActiveConvId(null)}
+ onClick={() => {
+ setActiveConvId(null);
+ if (searchParams.get('conversationId')) {
+ setSearchParams({}, { replace: true });
+ }
+ }}
  className="md:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
  title="Back to Inbox"
  >
@@ -1195,6 +1308,15 @@ export default function ChatPage() {
  Unblock User
  </button>
  )}
+
+ <button
+ type="button"
+ onClick={() => promptDeleteConversation(activeConversation)}
+ className="w-full flex items-center gap-2 px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 font-semibold border-t border-slate-100 cursor-pointer"
+ >
+ <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+ Delete Chat
+ </button>
  </div>
  </>
  )}
@@ -2386,6 +2508,71 @@ export default function ChatPage() {
  </div>
  </div>
  )}
+
+ {/* WhatsApp-Style Long-Press Chat Action Sheet */}
+ {chatActionSheetConv && (() => {
+ const sheetPartner = getOtherParticipant(chatActionSheetConv);
+ return (
+ <div
+ className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4"
+ onClick={() => setChatActionSheetConv(null)}
+ >
+ <div
+ className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl border-t sm:border border-slate-200 overflow-hidden pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
+ onClick={(e) => e.stopPropagation()}
+ >
+ <div className="px-4 py-3.5 border-b border-slate-100 flex items-center gap-3">
+ <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200 overflow-hidden">
+ {sheetPartner?.avatar ? (
+ <img
+ src={resolveMediaUrl(sheetPartner.avatar)}
+ alt={sheetPartner?.name}
+ className="w-full h-full object-cover"
+ />
+ ) : (
+ sheetPartner?.name?.charAt(0).toUpperCase() || 'U'
+ )}
+ </div>
+ <div className="min-w-0 flex-1">
+ <p className="text-sm font-bold text-slate-900 truncate">
+ {sheetPartner?.name || 'Member'}
+ </p>
+ <p className="text-[11px] text-slate-500 truncate">
+ {chatActionSheetConv.listing?.title || 'Listing'}
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={() => setChatActionSheetConv(null)}
+ aria-label="Close options"
+ className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+ >
+ <X className="w-4 h-4" />
+ </button>
+ </div>
+
+ <div className="p-2 space-y-1">
+ <button
+ type="button"
+ onClick={() => promptDeleteConversation(chatActionSheetConv)}
+ className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+ >
+ <Trash2 className="w-4 h-4 text-rose-500 shrink-0" />
+ <span>Delete Chat</span>
+ </button>
+
+ <button
+ type="button"
+ onClick={() => setChatActionSheetConv(null)}
+ className="w-full flex items-center justify-center px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+ >
+ Cancel
+ </button>
+ </div>
+ </div>
+ </div>
+ );
+ })()}
 
  {/* Confirmation Modal */}
  <ConfirmModal

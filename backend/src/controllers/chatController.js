@@ -2,6 +2,7 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import Listing from '../models/Listing.js';
 import User from '../models/User.js';
+import Media from '../models/Media.js';
 import { getSmartSafeMeetupSpots } from '../services/safePlacesService.js';
 import { isSafeImageUrl } from '../utils/sanitize.js';
 
@@ -18,9 +19,10 @@ export const getUnreadSummary = async (req, res, next) => {
     const userId = req.user._id;
     const conversations = await Conversation.find({
       participants: userId,
+      deletedBy: { $ne: userId },
       status: { $ne: 'declined' },
     })
-      .select('_id status receiver')
+      .select('_id status receiver clearedAt')
       .lean();
 
     const convIds = conversations.map((c) => c._id);
@@ -55,6 +57,7 @@ export const getConversations = async (req, res, next) => {
     const userId = req.user._id;
     const conversations = await Conversation.find({
       participants: userId,
+      deletedBy: { $ne: userId },
     })
       .populate('participants', 'name avatar location isVerified')
       .populate('listing', 'title price priceType mode images status location preferredMeetup seller acceptsOffers minimumOfferPrice')
@@ -164,6 +167,15 @@ export const createOrGetConversation = async (req, res, next) => {
         .populate('lastMessage')
         .populate('initiator', 'name avatar')
         .populate('receiver', 'name avatar');
+    } else if (
+      Array.isArray(conversation.deletedBy) &&
+      conversation.deletedBy.some((id) => id.toString() === req.user._id.toString())
+    ) {
+      // Restore conversation in this user's inbox if they reopen it from the listing page
+      await Conversation.updateOne(
+        { _id: conversation._id },
+        { $pull: { deletedBy: req.user._id } }
+      );
     }
 
     res.json({
@@ -198,7 +210,17 @@ export const getMessages = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Unauthorized access to conversation' });
     }
 
-    const messages = await Message.find({ conversation: req.params.id })
+    const userIdStr = req.user._id.toString();
+    const userClearedAt = conversation.clearedAt?.get
+      ? conversation.clearedAt.get(userIdStr)
+      : conversation.clearedAt?.[userIdStr];
+
+    const messageFilter = { conversation: req.params.id };
+    if (userClearedAt) {
+      messageFilter.createdAt = { $gt: new Date(userClearedAt) };
+    }
+
+    const messages = await Message.find(messageFilter)
       .populate('sender', 'name avatar')
       .sort({ createdAt: 1 });
 
@@ -376,6 +398,10 @@ export const sendMessage = async (req, res, next) => {
 
     conversation.lastMessage = message._id;
     conversation.lastMessageAt = new Date();
+    // Re-surface the conversation in both participants' inboxes whenever a fresh message arrives
+    if (Array.isArray(conversation.deletedBy) && conversation.deletedBy.length > 0) {
+      conversation.deletedBy = [];
+    }
     await conversation.save();
 
     const populatedMessage = await Message.findById(message._id).populate('sender', 'name avatar');
@@ -494,6 +520,78 @@ export const declineConversation = async (req, res, next) => {
       success: true,
       message: 'Message request declined',
       conversation,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    WhatsApp-style delete conversation from user's inbox (Primary or Requests)
+// @route   DELETE /api/chat/conversations/:id
+export const deleteConversation = async (req, res, next) => {
+  try {
+    const conversation = await Conversation.findById(req.params.id);
+
+    if (!conversation) {
+      return res.status(404).json({ success: false, message: 'Conversation not found' });
+    }
+
+    const userId = req.user._id;
+    const userIdStr = userId.toString();
+    const isParticipant = conversation.participants.some((p) => p.toString() === userIdStr);
+
+    if (!isParticipant) {
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    }
+
+    // Mark unread messages as read for this user so unread badges update immediately
+    await Message.updateMany(
+      {
+        conversation: conversation._id,
+        sender: { $ne: userId },
+        readBy: { $ne: userId },
+      },
+      { $addToSet: { readBy: userId } }
+    );
+
+    // Record per-user soft deletion + clearedAt timestamp
+    const existingDeleted = new Set((conversation.deletedBy || []).map((id) => id.toString()));
+    existingDeleted.add(userIdStr);
+    conversation.deletedBy = Array.from(existingDeleted);
+    if (!conversation.clearedAt) {
+      conversation.clearedAt = new Map();
+    }
+    conversation.clearedAt.set(userIdStr, new Date());
+
+    // If all participants have deleted the chat, physically purge messages, voice media, and conversation
+    const allDeleted = conversation.participants.every((p) => existingDeleted.has(p.toString()));
+    if (allDeleted) {
+      const voiceMsgs = await Message.find({
+        conversation: conversation._id,
+        messageType: 'voice',
+        'voice.url': { $exists: true },
+      })
+        .select('voice.url')
+        .lean();
+
+      const mediaFilenames = voiceMsgs
+        .map((m) => String(m.voice?.url || '').split('/api/media/')[1]?.split('?')[0])
+        .filter(Boolean);
+
+      await Promise.all([
+        Message.deleteMany({ conversation: conversation._id }),
+        Conversation.deleteOne({ _id: conversation._id }),
+        mediaFilenames.length > 0 ? Media.deleteMany({ filename: { $in: mediaFilenames } }) : Promise.resolve(),
+      ]);
+    } else {
+      await conversation.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Conversation deleted from your inbox.',
+      conversationId: req.params.id,
+      purged: allDeleted,
     });
   } catch (error) {
     next(error);

@@ -40,6 +40,18 @@ const conversationSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Per-user WhatsApp-style chat deletion (hides chat for deleting user & clears old messages for them)
+    deletedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    clearedAt: {
+      type: Map,
+      of: Date,
+      default: {},
+    },
   },
   {
     timestamps: true,
