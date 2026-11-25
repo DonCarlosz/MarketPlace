@@ -57,7 +57,7 @@ export default function LoginPage() {
  onChange={(e) => setEmail(e.target.value)}
  placeholder="you@example.com"
  required
- className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500"
+ className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-brand-500"
  />
  </div>
  </div>
@@ -72,7 +72,7 @@ export default function LoginPage() {
  onChange={(e) => setPassword(e.target.value)}
  placeholder="••••••••"
  required
- className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-500"
+ className="w-full text-xs sm:text-sm pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:border-brand-500"
  />
  </div>
  </div>
@@ -80,7 +80,7 @@ export default function LoginPage() {
  <button
  type="submit"
  disabled={loading}
- className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm rounded-xl transition "
+ className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-semibold text-xs sm:text-sm rounded-xl transition "
  >
  {loading ? 'Signing in...' : 'Sign In'}
  </button>
@@ -88,7 +88,7 @@ export default function LoginPage() {
 
  <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
  Don't have an account?{' '}
- <Link to="/register" className="font-semibold text-indigo-600 hover:underline">
+ <Link to="/register" className="font-semibold text-brand-600 hover:underline">
  Create an account
  </Link>
  </div>

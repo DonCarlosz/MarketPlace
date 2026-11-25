@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { Home, Store, Plus, MessageSquare, User } from 'lucide-react';
+import { hapticTap, hapticMedium } from '../utils/haptics';
 
 export default function BottomNav() {
   const { user, openAuthModal } = useAuth();
@@ -10,6 +11,7 @@ export default function BottomNav() {
   const location = useLocation();
 
   const requireAuth = (e) => {
+    hapticTap();
     if (!user) {
       e.preventDefault();
       openAuthModal('login');
@@ -28,10 +30,11 @@ export default function BottomNav() {
         {/* 1. Home */}
         <NavLink
           to="/"
+          onClick={hapticTap}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 transition-colors ${
+            `flex flex-col items-center justify-center gap-1 active:scale-95 transition ${
               isActive && location.pathname === '/'
-                ? 'text-indigo-600 font-bold'
+                ? 'text-brand-600 font-bold'
                 : 'text-slate-500 font-medium hover:text-slate-900'
             }`
           }
@@ -43,10 +46,11 @@ export default function BottomNav() {
         {/* 2. Market */}
         <NavLink
           to="/market"
+          onClick={hapticTap}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 transition-colors ${
+            `flex flex-col items-center justify-center gap-1 active:scale-95 transition ${
               isActive || location.pathname === '/market'
-                ? 'text-indigo-600 font-bold'
+                ? 'text-brand-600 font-bold'
                 : 'text-slate-500 font-medium hover:text-slate-900'
             }`
           }
@@ -60,8 +64,14 @@ export default function BottomNav() {
           <div className="absolute -top-1 w-16 h-8 bg-white rounded-t-full border-t border-l border-r border-slate-200 pointer-events-none" />
           <NavLink
             to="/create"
-            onClick={requireAuth}
-            className="relative z-10 w-12 h-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center border-2 border-white active:scale-95 transition-transform -mt-2"
+            onClick={(e) => {
+              hapticMedium();
+              if (!user) {
+                e.preventDefault();
+                openAuthModal('login');
+              }
+            }}
+            className="relative z-10 w-12 h-12 rounded-full bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center border-2 border-white active:scale-95 transition-transform -mt-2"
             title="Post a Listing"
             aria-label="Post a Listing"
           >
@@ -77,7 +87,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             `flex flex-col items-center justify-center gap-1 transition-colors ${
               isActive || location.pathname.startsWith('/messages')
-                ? 'text-indigo-600 font-bold'
+                ? 'text-brand-600 font-bold'
                 : 'text-slate-500 font-medium hover:text-slate-900'
             }`
           }
@@ -100,7 +110,7 @@ export default function BottomNav() {
           className={({ isActive }) =>
             `flex flex-col items-center justify-center gap-1 transition-colors ${
               isActive || location.pathname.startsWith('/profile')
-                ? 'text-indigo-600 font-bold'
+                ? 'text-brand-600 font-bold'
                 : 'text-slate-500 font-medium hover:text-slate-900'
             }`
           }

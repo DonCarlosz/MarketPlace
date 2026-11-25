@@ -72,7 +72,7 @@ export default function BrandLogo({
     return (
       <span className={`inline-flex items-center gap-2 select-none ${className}`}>
         <span
-          className={`${s.tile} bg-indigo-600 text-white inline-flex items-center justify-center shrink-0`}
+          className={`${s.tile} bg-brand-600 text-white inline-flex items-center justify-center shrink-0`}
         >
           <BrandMark className="w-full h-full" />
         </span>
@@ -100,7 +100,7 @@ export default function BrandLogo({
 
   return (
     <span className={`inline-flex items-center gap-0.5 select-none ${className}`}>
-      <BrandMark className={`${s.mark} text-indigo-600 shrink-0`} />
+      <BrandMark className={`${s.mark} text-brand-600 shrink-0`} />
       {showWordmark && (
         <span className={`font-black ${s.text} tracking-tight text-slate-900 leading-none`}>
           Buy

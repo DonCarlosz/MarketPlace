@@ -34,9 +34,11 @@ export const profileRouteCache = createBoundedCache(20);
 export const chatInboxCache = createBoundedCache(5);
 export const chatMessagesCache = createBoundedCache(40);
 export const listingDetailCache = createBoundedCache(40);
+export const routeScrollCache = new Map();
 
 export const clearUserRouteCaches = () => {
   profileRouteCache.clear();
   chatInboxCache.clear();
   chatMessagesCache.clear();
+  routeScrollCache.clear();
 };

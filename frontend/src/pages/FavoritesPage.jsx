@@ -37,14 +37,14 @@ export default function FavoritesPage() {
  <div className="pt-2">
  <button
  onClick={() => openAuthModal('login')}
- className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition"
+ className="w-full py-3 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm transition"
  >
  Log In / Register
  </button>
  </div>
  <Link
  to="/market"
- className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:underline font-semibold"
+ className="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:underline font-semibold"
  >
  <Compass className="w-3.5 h-3.5" />
  <span>Continue browsing as guest</span>
@@ -144,7 +144,7 @@ export default function FavoritesPage() {
  <div className="pt-2">
  <Link
  to="/market"
- className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold transition"
+ className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs sm:text-sm font-bold transition"
  >
  <Compass className="w-4 h-4" />
  <span>Browse oBuy</span>

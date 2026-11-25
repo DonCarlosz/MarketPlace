@@ -9,6 +9,8 @@ import { chatInboxCache, chatMessagesCache } from '../utils/routeCache';
 import { formatPrice } from '../utils/format';
 import ConfirmModal from '../components/ConfirmModal';
 import VoiceMessageBubble from '../components/VoiceMessageBubble';
+import ResponsiveSheet from '../components/ResponsiveSheet';
+import { hapticTap, hapticMedium, hapticLongPress, hapticSuccess } from '../utils/haptics';
 import {
  Send,
  ShieldCheck,
@@ -407,6 +409,7 @@ export default function ChatPage() {
  }
 
  const text = messageText.trim();
+ hapticTap();
  setMessageText('');
  if (textareaRef.current) {
  textareaRef.current.style.height = 'auto';
@@ -576,6 +579,7 @@ export default function ChatPage() {
  } else {
  recorder.start(250);
  }
+ hapticMedium();
  setIsRecording(true);
  setRecordingSeconds(0);
  recordingTimerRef.current = setInterval(() => {
@@ -594,6 +598,7 @@ export default function ChatPage() {
  };
 
  const cancelVoiceRecording = () => {
+ hapticTap();
  shouldSendRecordingRef.current = false;
  if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
  mediaRecorderRef.current.stop();
@@ -603,6 +608,7 @@ export default function ChatPage() {
  };
 
  const stopAndSendRecording = () => {
+ hapticSuccess();
  shouldSendRecordingRef.current = true;
  if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
  mediaRecorderRef.current.stop();
@@ -947,9 +953,7 @@ export default function ChatPage() {
  longPressOriginRef.current = { x: clientX, y: clientY };
  longPressTimerRef.current = setTimeout(() => {
  longPressTriggeredRef.current = true;
- if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
- navigator.vibrate(25);
- }
+ hapticLongPress();
  setChatActionSheetConv(conv);
  }, 480);
  };
@@ -1021,7 +1025,7 @@ export default function ChatPage() {
  >
  <div className="p-4 border-b border-slate-200 flex items-center justify-between">
  <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
- <MessageSquare className="w-5 h-5 text-indigo-600" />
+ <MessageSquare className="w-5 h-5 text-brand-600" />
  Inbox
  </h2>
  </div>
@@ -1032,7 +1036,7 @@ export default function ChatPage() {
  onClick={() => setInboxTab('primary')}
  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
  inboxTab === 'primary'
- ? 'bg-white text-indigo-700 '
+ ? 'bg-white text-brand-700 '
  : 'text-slate-600 hover:text-slate-900'
  }`}
  >
@@ -1044,13 +1048,13 @@ export default function ChatPage() {
  onClick={() => setInboxTab('requests')}
  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
  inboxTab === 'requests'
- ? 'bg-white text-indigo-700 '
+ ? 'bg-white text-brand-700 '
  : 'text-slate-600 hover:text-slate-900'
  }`}
  >
  <span>Requests</span>
  {requestsConversations.length > 0 && (
- <span className="w-4 h-4 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center">
+ <span className="w-4 h-4 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
  {requestsConversations.length}
  </span>
  )}
@@ -1112,11 +1116,11 @@ export default function ChatPage() {
  requestNotificationPermission();
  }}
  className={`w-full p-4 flex items-start gap-3 text-left transition cursor-pointer select-none ${
- isSelected ? 'bg-indigo-50/70 border-l-4 border-indigo-600' : 'hover:bg-slate-50 active:bg-slate-100'
+ isSelected ? 'bg-brand-50/70 border-l-4 border-brand-600' : 'hover:bg-slate-50 active:bg-slate-100'
  }`}
  style={{ WebkitTouchCallout: 'none' }}
  >
- <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200 overflow-hidden">
+ <div className="w-10 h-10 rounded-2xl bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center shrink-0 border border-brand-200 overflow-hidden">
  {partner?.avatar ? (
  <img
  src={resolveMediaUrl(partner.avatar)}
@@ -1141,7 +1145,7 @@ export default function ChatPage() {
  </span>
  </div>
 
- <p className="text-[11px] font-semibold text-indigo-600 truncate mt-0.5">
+ <p className="text-[11px] font-semibold text-brand-600 truncate mt-0.5">
  {conv.listing?.title || 'Listing'}
  </p>
 
@@ -1211,14 +1215,14 @@ export default function ChatPage() {
  <div className="flex items-center gap-2">
  <Link
  to={otherUserId ? `/profile/${otherUserId}` : '#'}
- className="text-xs sm:text-sm font-bold text-slate-900 truncate hover:text-indigo-600 transition"
+ className="text-xs sm:text-sm font-bold text-slate-900 truncate hover:text-brand-600 transition"
  >
  {otherUser?.name || 'Member'}
  </Link>
  </div>
  <p className="text-xs text-slate-500 truncate">
  {activeConversation.listing?.title} •{' '}
- <span className="font-extrabold text-indigo-600">
+ <span className="font-extrabold text-brand-600">
  {formatPrice(
  activeConversation.listing?.price,
  activeConversation.listing?.priceType
@@ -1233,7 +1237,7 @@ export default function ChatPage() {
  {canMakeOffer && (
  <button
  onClick={() => setMakeOfferModalOpen(true)}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 transition cursor-pointer"
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200/80 transition cursor-pointer"
  >
  <Tag className="w-3.5 h-3.5" />
  <span className="hidden sm:inline">Make Offer</span>
@@ -1283,7 +1287,7 @@ export default function ChatPage() {
  onClick={() => setMoreMenuOpen(false)}
  className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium"
  >
- <ShieldCheck className="w-3.5 h-3.5 text-indigo-500" />
+ <ShieldCheck className="w-3.5 h-3.5 text-brand-500" />
  View Seller Scorecard
  </Link>
  )}
@@ -1304,7 +1308,7 @@ export default function ChatPage() {
  }}
  className="w-full flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-semibold"
  >
- <UserX className="w-3.5 h-3.5 text-indigo-500" />
+ <UserX className="w-3.5 h-3.5 text-brand-500" />
  Unblock User
  </button>
  )}
@@ -1336,9 +1340,9 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setAiSafetyModalOpen(true)}
- className="font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 cursor-pointer"
+ className="font-bold text-brand-700 hover:text-brand-900 flex items-center gap-1 cursor-pointer"
  >
- <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+ <Sparkles className="w-3.5 h-3.5 text-brand-600" />
  <span>AI Inspection Tips</span>
  </button>
  <button
@@ -1354,9 +1358,9 @@ export default function ChatPage() {
 
  {/* TikTok-style Request Status Alert */}
  {isPending && amIInitiator && (
- <div className="bg-indigo-50/90 border-b border-indigo-100 px-4 py-2 text-xs text-indigo-900 flex items-center justify-between gap-3 shrink-0">
+ <div className="bg-brand-50/90 border-b border-brand-100 px-4 py-2 text-xs text-brand-900 flex items-center justify-between gap-3 shrink-0">
  <div className="flex items-center gap-2">
- <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+ <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse" />
  <span>
  Message request pending acceptance ({senderMessageCount}/5 sent).
  </span>
@@ -1409,13 +1413,13 @@ export default function ChatPage() {
  >
  <div
  className={`w-full max-w-[88%] sm:max-w-[330px] rounded-2xl overflow-hidden border bg-white text-slate-900 ${
- isMe ? 'border-indigo-300' : 'border-slate-200'
+ isMe ? 'border-brand-300' : 'border-slate-200'
  }`}
  >
  {/* Subtle Header Bar */}
  <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-50 border-b border-slate-100">
  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
- <Tag className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+ <Tag className="w-3.5 h-3.5 text-brand-600 shrink-0" />
  <span>{isCounterOffer ? 'Counter-Offer' : 'Price Offer'}</span>
  </span>
  <span
@@ -1463,8 +1467,8 @@ export default function ChatPage() {
 
  {/* AI Negotiation Coach Insight (shown to recipient on pending offers) */}
  {canRespondToThisOffer && (activeConversation?.listing?.price || 0) > 0 && (
- <div className="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs space-y-1">
- <div className="flex items-center gap-1.5 font-bold text-indigo-700 text-[11px]">
+ <div className="p-2.5 rounded-xl bg-brand-50/70 border border-brand-100 text-xs space-y-1">
+ <div className="flex items-center gap-1.5 font-bold text-brand-700 text-[11px]">
  <Sparkles className="w-3.5 h-3.5" />
  <span>AI Negotiation Tip</span>
  </div>
@@ -1546,7 +1550,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setReviewModalOpen(true)}
- className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+ className="w-full py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
  >
  <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
  <span>Leave Seller Feedback</span>
@@ -1578,7 +1582,7 @@ export default function ChatPage() {
  >
  <div
  className={`w-full max-w-[88%] sm:max-w-[320px] rounded-2xl overflow-hidden border bg-white text-slate-900 ${
- isMe ? 'border-indigo-300' : 'border-slate-200'
+ isMe ? 'border-brand-300' : 'border-slate-200'
  }`}
  >
  <div className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-50/80 border-b border-emerald-100 text-xs font-bold text-emerald-900">
@@ -1597,7 +1601,7 @@ export default function ChatPage() {
  </span>
  )}
  {msg.meetup?.distance && (
- <span className="text-[11px] text-indigo-600 font-semibold block pt-0.5">
+ <span className="text-[11px] text-brand-600 font-semibold block pt-0.5">
  {msg.meetup.distance}
  </span>
  )}
@@ -1657,7 +1661,7 @@ export default function ChatPage() {
  <div
  className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap break-words ${
  isMe
- ? 'bg-indigo-600 text-white rounded-br-none'
+ ? 'bg-brand-600 text-white rounded-br-none'
  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
  }`}
  >
@@ -1721,7 +1725,7 @@ export default function ChatPage() {
  <button
  onClick={handleAcceptRequest}
  disabled={actionLoading}
- className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5"
+ className="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition flex items-center gap-1.5"
  >
  <CheckCircle2 className="w-4 h-4" />
  <span>{actionLoading ? 'Accepting...' : 'Accept Request'}</span>
@@ -1759,7 +1763,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setMakeOfferModalOpen(true)}
- className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 text-[11px] shrink-0 transition cursor-pointer"
+ className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold border border-brand-200 text-[11px] shrink-0 transition cursor-pointer"
  >
  <Tag className="w-3 h-3" />
  <span>Make Offer</span>
@@ -1803,7 +1807,7 @@ export default function ChatPage() {
  type="button"
  onClick={stopAndSendRecording}
  aria-label="Send voice message"
- className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+ className="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
  >
  <Send className="w-3.5 h-3.5" />
  <span>Send</span>
@@ -1811,7 +1815,7 @@ export default function ChatPage() {
  </div>
  ) : (
  <form onSubmit={handleSendMessage} className="flex items-end gap-2">
- <div className="flex-1 flex items-end gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-indigo-100 focus-within:border-indigo-500 border border-slate-200">
+ <div className="flex-1 flex items-end gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-brand-100 focus-within:border-brand-500 border border-slate-200">
  <textarea
  ref={textareaRef}
  rows={1}
@@ -1824,7 +1828,7 @@ export default function ChatPage() {
  <button
  type="submit"
  aria-label="Send message"
- className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition shrink-0 cursor-pointer"
+ className="p-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  <Send className="w-4 h-4" />
  </button>
@@ -1835,7 +1839,7 @@ export default function ChatPage() {
  disabled={uploadingVoice}
  aria-label="Record voice message"
  title="Record voice message"
- className="p-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl transition shrink-0 cursor-pointer"
+ className="p-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  {uploadingVoice ? (
  <Loader2 className="w-4 h-4 animate-spin" />
@@ -1859,22 +1863,30 @@ export default function ChatPage() {
  </section>
  </div>
 
- {/* Make In-Chat Offer Modal */}
- {makeOfferModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in">
- <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-5 border border-slate-100 relative">
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ {/* Make In-Chat Offer Sheet / Modal */}
+ <ResponsiveSheet
+ open={makeOfferModalOpen}
+ onClose={() => setMakeOfferModalOpen(false)}
+ title="Make a Price Offer"
+ maxWidth="max-w-md"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2">
- <Tag className="w-5 h-5 text-indigo-600" />
+ <Tag className="w-5 h-5 text-brand-600" />
  <h3 className="text-base font-black text-slate-900">Make a Price Offer</h3>
  </div>
  <button
+ type="button"
  onClick={() => setMakeOfferModalOpen(false)}
- className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+ className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
  >
  <X className="w-4 h-4" />
  </button>
  </div>
+ }
+ bodyClassName="p-5 sm:p-6 space-y-5"
+ >
 
  <form onSubmit={handleMakeOffer} className="space-y-4">
  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
@@ -1884,7 +1896,7 @@ export default function ChatPage() {
  ₦{listingPrice.toLocaleString()} NGN
  </span>
  </div>
- <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+ <span className="text-xs font-bold text-brand-700 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
  Offers Welcome
  </span>
  </div>
@@ -1903,9 +1915,9 @@ export default function ChatPage() {
  key={pct}
  type="button"
  onClick={() => setOfferAmount(discountedVal.toString())}
- className="p-2 rounded-xl border border-slate-200 text-center hover:bg-indigo-50 hover:border-indigo-200 transition cursor-pointer"
+ className="p-2 rounded-xl border border-slate-200 text-center hover:bg-brand-50 hover:border-brand-200 transition cursor-pointer"
  >
- <span className="block text-[10px] font-bold text-indigo-600">{pct}% Off</span>
+ <span className="block text-[10px] font-bold text-brand-600">{pct}% Off</span>
  <span className="text-xs font-black text-slate-900">
  ₦{discountedVal.toLocaleString()}
  </span>
@@ -1930,7 +1942,7 @@ export default function ChatPage() {
  placeholder="e.g. 150000"
  required
  min="1"
- className="w-full text-xs font-bold pl-8 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ className="w-full text-xs font-bold pl-8 pr-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-200"
  />
  </div>
  </div>
@@ -1945,7 +1957,7 @@ export default function ChatPage() {
  value={offerNote}
  onChange={(e) => setOfferNote(e.target.value)}
  placeholder="e.g. Ready to meet today at the mall with cash/transfer."
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-200"
  />
  </div>
 
@@ -1960,33 +1972,39 @@ export default function ChatPage() {
  <button
  type="submit"
  disabled={offerSubmitting || !offerAmount}
- className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer "
+ className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer "
  >
  <Tag className="w-3.5 h-3.5" />
  <span>{offerSubmitting ? 'Sending...' : 'Send Price Offer'}</span>
  </button>
  </div>
  </form>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
 
- {/* Counter Offer Modal */}
- {counterModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in">
- <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-slate-100 relative">
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ {/* Counter Offer Sheet / Modal */}
+ <ResponsiveSheet
+ open={counterModalOpen}
+ onClose={() => setCounterModalOpen(false)}
+ title="Propose Counter Offer"
+ maxWidth="max-w-sm"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2">
  <RotateCcw className="w-5 h-5 text-amber-500" />
  <h3 className="text-base font-black text-slate-900">Propose Counter Offer</h3>
  </div>
  <button
+ type="button"
  onClick={() => setCounterModalOpen(false)}
- className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+ className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
  >
  <X className="w-4 h-4" />
  </button>
  </div>
+ }
+ bodyClassName="p-5 sm:p-6 space-y-4"
+ >
 
  <form onSubmit={handleCounterOfferSubmit} className="space-y-4">
  <div>
@@ -2025,18 +2043,20 @@ export default function ChatPage() {
  </button>
  </div>
  </form>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
 
- {/* Smart Geo-AI Safe Meetup Spot Modal */}
- {meetupModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in overflow-y-auto">
- <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 border border-slate-200 relative my-8 max-h-[90vh] flex flex-col">
- {/* Header */}
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ {/* Smart Geo-AI Safe Meetup Spot Sheet / Modal */}
+ <ResponsiveSheet
+ open={meetupModalOpen}
+ onClose={() => setMeetupModalOpen(false)}
+ title="Smart Safe Meetup Finder"
+ description="AI-powered open-space exchange venues near you"
+ maxWidth="max-w-lg"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2">
- <Compass className="w-5 h-5 text-indigo-600 animate-pulse" />
+ <Compass className="w-5 h-5 text-brand-600 animate-pulse" />
  <div>
  <h3 className="text-base font-black text-slate-900">Smart Safe Meetup Finder</h3>
  <span className="text-[10px] text-slate-400 block font-medium">
@@ -2047,11 +2067,14 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setMeetupModalOpen(false)}
- className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+ className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
  >
  <X className="w-4 h-4" />
  </button>
  </div>
+ }
+ bodyClassName="p-5 sm:p-6 space-y-4"
+ >
 
  {/* Item Notice (clean, without parking space tag) */}
  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1">
@@ -2067,7 +2090,7 @@ export default function ChatPage() {
  <div className="space-y-2">
  <div className="flex items-center justify-between text-xs">
  <span className="text-slate-500 font-semibold flex items-center gap-1.5">
- <MapPin className="w-3.5 h-3.5 text-indigo-600" />
+ <MapPin className="w-3.5 h-3.5 text-brand-600" />
  <span>
  {locationStatus === 'detecting'
  ? 'Detecting GPS location...'
@@ -2080,7 +2103,7 @@ export default function ChatPage() {
  type="button"
  onClick={() => fetchSmartSafeSpots()}
  disabled={loadingSmartSpots}
- className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer"
+ className="text-[11px] font-bold text-brand-600 hover:text-brand-800 transition cursor-pointer"
  >
  Refresh Location
  </button>
@@ -2103,7 +2126,7 @@ export default function ChatPage() {
  value={manualLocationInput}
  onChange={(e) => setManualLocationInput(e.target.value)}
  placeholder="Search junction, landmark, or city (e.g. Ikeja, Wuse 2, Benin City)..."
- className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+ className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
  />
  </div>
  <button
@@ -2120,14 +2143,14 @@ export default function ChatPage() {
  <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[350px]">
  {loadingSmartSpots ? (
  <div className="py-12 flex flex-col items-center justify-center space-y-2 text-slate-500 text-xs">
- <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+ <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
  <span>Analyzing nearby open plazas, CCTV zones, and car parking...</span>
  </div>
  ) : smartSpots.length > 0 ? (
  smartSpots.map((spot, idx) => (
  <div
  key={idx}
- className="p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-white space-y-2.5 transition"
+ className="p-3.5 rounded-2xl border border-slate-200 hover:border-brand-300 bg-white space-y-2.5 transition"
  >
  <div className="flex items-start justify-between gap-2">
  <div className="space-y-0.5 min-w-0">
@@ -2148,7 +2171,7 @@ export default function ChatPage() {
  type="button"
  onClick={() => handleSendMeetupProposal(spot)}
  disabled={meetupSubmitting}
- className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+ className="px-4 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
  >
  <Check className="w-3.5 h-3.5" />
  <span>Suggest This Spot</span>
@@ -2162,7 +2185,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => fetchSmartSafeSpots()}
- className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white text-xs font-bold"
+ className="px-3 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-bold"
  >
  Retry Location
  </button>
@@ -2179,15 +2202,17 @@ export default function ChatPage() {
  Close
  </button>
  </div>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
 
- {/* Leave Seller Feedback Modal */}
- {reviewModalOpen && (
- <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
- <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 my-8">
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ {/* Leave Seller Feedback Sheet / Modal */}
+ <ResponsiveSheet
+ open={reviewModalOpen}
+ onClose={() => setReviewModalOpen(false)}
+ title="Leave Seller Feedback"
+ maxWidth="max-w-md"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2">
  <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
  <h3 className="text-base font-black text-slate-900">Leave Seller Feedback</h3>
@@ -2195,11 +2220,14 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setReviewModalOpen(false)}
- className="p-1 rounded-full text-slate-400 hover:text-slate-700"
+ className="p-1 rounded-full text-slate-400 hover:text-slate-700 cursor-pointer"
  >
  <X className="w-4 h-4" />
  </button>
  </div>
+ }
+ bodyClassName="p-5 sm:p-6 space-y-4"
+ >
 
  <p className="text-xs text-slate-500">
  Share your honest experience with {otherUser?.name || 'the seller'}. This directly updates their public reputation score and 12-month scorecard.
@@ -2307,7 +2335,7 @@ export default function ChatPage() {
  type="button"
  onClick={() => setReviewAccuracy(s)}
  className={`w-5 h-5 rounded text-[10px] font-bold ${
- s <= reviewAccuracy ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+ s <= reviewAccuracy ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'
  }`}
  >
  {s}
@@ -2324,7 +2352,7 @@ export default function ChatPage() {
  type="button"
  onClick={() => setReviewCommunication(s)}
  className={`w-5 h-5 rounded text-[10px] font-bold ${
- s <= reviewCommunication ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+ s <= reviewCommunication ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'
  }`}
  >
  {s}
@@ -2341,7 +2369,7 @@ export default function ChatPage() {
  type="button"
  onClick={() => setReviewPunctuality(s)}
  className={`w-5 h-5 rounded text-[10px] font-bold ${
- s <= reviewPunctuality ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+ s <= reviewPunctuality ? 'bg-brand-600 text-white' : 'bg-slate-200 text-slate-600'
  }`}
  >
  {s}
@@ -2360,7 +2388,7 @@ export default function ChatPage() {
  placeholder="Describe the transaction, punctuality, and item condition..."
  rows={3}
  required
- className="w-full text-xs rounded-2xl border border-slate-200 p-3 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+ className="w-full text-xs rounded-2xl border border-slate-200 p-3 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
  />
  </div>
 
@@ -2376,23 +2404,25 @@ export default function ChatPage() {
  <button
  type="submit"
  disabled={reviewSubmitting || !reviewComment.trim()}
- className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+ className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
  >
  {reviewSubmitting ? 'Submitting...' : 'Submit Feedback'}
  </button>
  </div>
  </form>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
 
- {/* AI Deal Safety Checklist Modal */}
- {aiSafetyModalOpen && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in">
- <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 relative">
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ {/* AI Deal Safety Checklist Sheet / Modal */}
+ <ResponsiveSheet
+ open={aiSafetyModalOpen}
+ onClose={() => setAiSafetyModalOpen(false)}
+ title="AI Deal Safety & Inspection Checklist"
+ maxWidth="max-w-lg"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2.5">
- <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+ <div className="w-8 h-8 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0">
  <Sparkles className="w-4 h-4 text-amber-300" />
  </div>
  <div>
@@ -2410,16 +2440,19 @@ export default function ChatPage() {
  <X className="w-5 h-5" />
  </button>
  </div>
+ }
+ bodyClassName="p-5 sm:p-6 space-y-5"
+ >
 
  <div className="space-y-3.5 text-xs">
- <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-between text-indigo-950">
+ <div className="p-3 bg-brand-50 border border-brand-100 rounded-2xl flex items-center justify-between text-brand-950">
  <div className="truncate">
  <span className="font-bold block truncate">{activeConversation?.listing?.title || 'Item'}</span>
- <span className="text-[11px] text-indigo-700">
+ <span className="text-[11px] text-brand-700">
  Asking Price: {formatPrice(activeConversation?.listing?.price)} • {activeConversation?.listing?.location?.city || 'Nigeria'}
  </span>
  </div>
- <span className="px-2.5 py-1 rounded-full bg-white text-indigo-700 font-bold text-[10px] border border-indigo-200 shrink-0 ml-2">
+ <span className="px-2.5 py-1 rounded-full bg-white text-brand-700 font-bold text-[10px] border border-brand-200 shrink-0 ml-2">
  {activeConversation?.listing?.mode === 'service' ? 'Local Service' : 'Physical Good'}
  </span>
  </div>
@@ -2477,7 +2510,7 @@ export default function ChatPage() {
  )}
 
  <div className="flex items-start gap-2 pt-1 border-t border-slate-200">
- <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+ <ShieldCheck className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
  <span><strong>Bank Payment Safety:</strong> Verify bank transfer balance directly inside your official banking app. Never rely on SMS notifications alone.</span>
  </div>
  </div>
@@ -2491,7 +2524,7 @@ export default function ChatPage() {
  setAiSafetyModalOpen(false);
  setMeetupModalOpen(true);
  }}
- className="text-xs font-bold text-indigo-700 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+ className="text-xs font-bold text-brand-700 hover:text-brand-800 flex items-center gap-1 cursor-pointer"
  >
  <MapPin className="w-3.5 h-3.5" />
  <span>Suggest Safe Spot</span>
@@ -2500,29 +2533,28 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setAiSafetyModalOpen(false)}
- className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer"
+ className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition cursor-pointer"
  >
  Got It
  </button>
  </div>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
 
- {/* WhatsApp-Style Long-Press Chat Action Sheet */}
+ {/* WhatsApp-Style Long-Press Chat Action Sheet (Draggable Vaul Bottom Sheet on Mobile) */}
+ <ResponsiveSheet
+ open={Boolean(chatActionSheetConv)}
+ onClose={() => setChatActionSheetConv(null)}
+ title="Chat Options"
+ maxWidth="max-w-sm"
+ showDefaultHeader={false}
+ bodyClassName="p-0"
+ >
  {chatActionSheetConv && (() => {
  const sheetPartner = getOtherParticipant(chatActionSheetConv);
  return (
- <div
- className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-0 sm:p-4"
- onClick={() => setChatActionSheetConv(null)}
- >
- <div
- className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl border-t sm:border border-slate-200 overflow-hidden pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
- onClick={(e) => e.stopPropagation()}
- >
+ <div>
  <div className="px-4 py-3.5 border-b border-slate-100 flex items-center gap-3">
- <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 border border-indigo-200 overflow-hidden">
+ <div className="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center shrink-0 border border-brand-200 overflow-hidden">
  {sheetPartner?.avatar ? (
  <img
  src={resolveMediaUrl(sheetPartner.avatar)}
@@ -2551,7 +2583,7 @@ export default function ChatPage() {
  </button>
  </div>
 
- <div className="p-2 space-y-1">
+ <div className="p-2 pb-4 sm:pb-2 space-y-1">
  <button
  type="button"
  onClick={() => promptDeleteConversation(chatActionSheetConv)}
@@ -2570,9 +2602,9 @@ export default function ChatPage() {
  </button>
  </div>
  </div>
- </div>
  );
  })()}
+ </ResponsiveSheet>
 
  {/* Confirmation Modal */}
  <ConfirmModal

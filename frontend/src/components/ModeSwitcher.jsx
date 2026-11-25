@@ -8,7 +8,7 @@ const MODES = [
     id: 'second-hand',
     label: 'Second-hand',
     icon: RefreshCw,
-    activeBg: 'bg-indigo-600 text-white',
+    activeBg: 'bg-brand-600 text-white',
   },
   {
     id: 'new',

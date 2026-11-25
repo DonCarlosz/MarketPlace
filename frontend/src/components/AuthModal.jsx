@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
+import ResponsiveSheet from './ResponsiveSheet';
 import {
  X,
  Store,
@@ -43,8 +44,6 @@ export default function AuthModal() {
  const [loading, setLoading] = useState(false);
  const [resending, setResending] = useState(false);
  const [resetSuccess, setResetSuccess] = useState(false);
-
- if (!isAuthModalOpen) return null;
 
  const handleResetState = () => {
  setError('');
@@ -188,26 +187,35 @@ export default function AuthModal() {
  };
 
  return (
-  <div
-  className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 overflow-y-auto"
-  onClick={closeAuthModal}
-  >
- <div
- className="relative w-full max-w-[420px] max-h-[calc(100vh-2rem)] flex flex-col bg-white rounded-3xl border border-slate-100 overflow-hidden text-slate-900 my-auto animate-in zoom-in-95 duration-200"
- onClick={(e) => e.stopPropagation()}
+ <ResponsiveSheet
+ open={Boolean(isAuthModalOpen)}
+ onClose={closeAuthModal}
+ title={
+ authModalView === 'login'
+ ? 'Welcome to oBuy'
+ : authModalView === 'register'
+ ? 'Join oBuy'
+ : authModalView === 'verify-signup'
+ ? 'Verify Your Email'
+ : authModalView === 'forgot'
+ ? 'Reset your password'
+ : 'Enter Verification Code'
+ }
+ showDefaultHeader={false}
+ maxWidth="max-w-[420px]"
+ bodyClassName="px-6 sm:px-8 pt-2 pb-6 sm:py-6 relative"
  >
  {/* Floating Close Button */}
  <button
+ type="button"
  onClick={closeAuthModal}
- className="absolute top-4 right-4 z-20 p-2 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition"
+ className="absolute top-3 right-4 z-20 p-2 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
  title="Close"
  aria-label="Close authentication modal"
  >
  <X className="w-5 h-5" />
  </button>
 
- {/* Scrollable Container */}
- <div className="overflow-y-auto flex-1 px-6 sm:px-8 py-6 overscroll-contain">
  {/* Header */}
  <div className="flex flex-col items-center text-center mb-5 pt-1">
  <BrandLogo variant="badge" size="lg" showWordmark={false} className="mb-2.5" />
@@ -263,7 +271,7 @@ export default function AuthModal() {
  onChange={(e) => setEmail(e.target.value)}
  placeholder="Email"
  required
- className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -274,7 +282,7 @@ export default function AuthModal() {
  <button
  type="button"
  onClick={() => switchView('forgot')}
- className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition"
+ className="text-[11px] font-semibold text-brand-600 hover:text-brand-800 transition"
  >
  Forgot your password?
  </button>
@@ -287,7 +295,7 @@ export default function AuthModal() {
  onChange={(e) => setPassword(e.target.value)}
  placeholder="Password"
  required
- className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -295,7 +303,7 @@ export default function AuthModal() {
  <button
  type="submit"
  disabled={loading}
- className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition mt-1"
+ className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition mt-1"
  >
  {loading ? 'Logging in...' : 'Log In'}
  </button>
@@ -306,7 +314,7 @@ export default function AuthModal() {
  <button
  type="button"
  onClick={() => switchView('register')}
- className="font-bold text-slate-900 hover:text-indigo-600 transition"
+ className="font-bold text-slate-900 hover:text-brand-600 transition"
  >
  Sign up
  </button>
@@ -328,7 +336,7 @@ export default function AuthModal() {
  onChange={(e) => setName(e.target.value)}
  placeholder="Your full name"
  required
- className="w-full text-xs pl-10 pr-3.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -343,7 +351,7 @@ export default function AuthModal() {
  onChange={(e) => setEmail(e.target.value)}
  placeholder="Email"
  required
- className="w-full text-xs pl-10 pr-3.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -359,7 +367,7 @@ export default function AuthModal() {
  placeholder="Minimum 8 characters"
  minLength={8}
  required
- className="w-full text-xs pl-10 pr-3.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -374,7 +382,7 @@ export default function AuthModal() {
  value={city}
  onChange={(e) => setCity(e.target.value)}
  placeholder="e.g. Lagos"
- className="w-full text-xs pl-8 pr-2.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 transition"
+ className="w-full text-xs pl-8 pr-2.5 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 transition"
  />
  </div>
  </div>
@@ -386,7 +394,7 @@ export default function AuthModal() {
  value={neighborhood}
  onChange={(e) => setNeighborhood(e.target.value)}
  placeholder="e.g. Ikeja"
- className="w-full text-xs px-3 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 transition"
+ className="w-full text-xs px-3 py-2 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 transition"
  />
  </div>
  </div>
@@ -409,7 +417,7 @@ export default function AuthModal() {
  <button
  type="button"
  onClick={() => switchView('login')}
- className="font-bold text-slate-900 hover:text-indigo-600 transition"
+ className="font-bold text-slate-900 hover:text-brand-600 transition"
  >
  Log in
  </button>
@@ -434,7 +442,7 @@ export default function AuthModal() {
  placeholder="123456"
  required
  autoFocus
- className="w-48 text-center text-2xl font-mono tracking-widest py-3 rounded-2xl border-2 border-indigo-200 focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition font-bold"
+ className="w-48 text-center text-2xl font-mono tracking-widest py-3 rounded-2xl border-2 border-brand-200 focus:border-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-100 transition font-bold"
  />
  </div>
  <p className="text-[11px] text-slate-400 text-center mt-2">
@@ -445,7 +453,7 @@ export default function AuthModal() {
  <button
  type="submit"
  disabled={loading || otp.length < 6}
- className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition "
+ className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition "
  >
  {loading ? 'Verifying...' : 'Verify & Create Account'}
  </button>
@@ -464,7 +472,7 @@ export default function AuthModal() {
  type="button"
  onClick={() => handleResend('signup')}
  disabled={resending}
- className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-bold disabled:opacity-50 transition"
+ className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-800 font-bold disabled:opacity-50 transition"
  >
  <RotateCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
  {resending ? 'Sending...' : 'Resend Code'}
@@ -488,7 +496,7 @@ export default function AuthModal() {
  onChange={(e) => setEmail(e.target.value)}
  placeholder="you@example.com"
  required
- className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -496,7 +504,7 @@ export default function AuthModal() {
  <button
  type="submit"
  disabled={loading}
- className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition "
+ className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition "
  >
  {loading ? 'Sending Recovery Code...' : 'Send Recovery Code'}
  </button>
@@ -529,7 +537,7 @@ export default function AuthModal() {
  <button
  type="button"
  onClick={() => switchView('login')}
- className="w-full py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-2xl hover:bg-indigo-700 transition"
+ className="w-full py-2.5 bg-brand-600 text-white text-xs font-bold rounded-2xl hover:bg-brand-700 transition"
  >
  Log In Now
  </button>
@@ -549,7 +557,7 @@ export default function AuthModal() {
  placeholder="123456"
  required
  autoFocus
- className="w-48 text-center text-2xl font-mono tracking-widest py-2.5 rounded-2xl border-2 border-indigo-200 focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition font-bold"
+ className="w-48 text-center text-2xl font-mono tracking-widest py-2.5 rounded-2xl border-2 border-brand-200 focus:border-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-100 transition font-bold"
  />
  </div>
  </div>
@@ -567,7 +575,7 @@ export default function AuthModal() {
  placeholder="Minimum 8 characters"
  minLength={8}
  required
- className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs pl-10 pr-3.5 py-2.5 rounded-2xl border border-slate-300 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
  </div>
@@ -575,7 +583,7 @@ export default function AuthModal() {
  <button
  type="submit"
  disabled={loading || otp.length < 6}
- className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition "
+ className="w-full py-3 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold text-xs sm:text-sm rounded-2xl transition "
  >
  {loading ? 'Updating Password...' : 'Reset Password'}
  </button>
@@ -594,7 +602,7 @@ export default function AuthModal() {
  type="button"
  onClick={() => handleResend('forgot_password')}
  disabled={resending}
- className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-bold disabled:opacity-50 transition"
+ className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-800 font-bold disabled:opacity-50 transition"
  >
  <RotateCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
  {resending ? 'Sending...' : 'Resend Code'}
@@ -604,8 +612,6 @@ export default function AuthModal() {
  )}
  </div>
  )}
- </div>
- </div>
- </div>
+ </ResponsiveSheet>
  );
 }

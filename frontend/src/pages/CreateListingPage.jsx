@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
 import { formatPrice } from '../utils/format';
 import { NIGERIAN_CITY_LIST } from '../utils/geo';
+import ResponsiveSheet from '../components/ResponsiveSheet';
 import {
  Upload,
  X,
@@ -425,7 +426,7 @@ export default function CreateListingPage() {
  return (
  <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
  <div className="bg-white p-8 rounded-3xl border border-slate-200 max-w-md w-full text-center space-y-4 ">
- <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
+ <div className="w-12 h-12 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
  <AlertCircle className="w-6 h-6" />
  </div>
  <h2 className="text-xl font-bold text-slate-900">Sign in to Post a Listing</h2>
@@ -435,7 +436,7 @@ export default function CreateListingPage() {
  <div className="flex gap-3 pt-2">
  <button
  onClick={() => openAuthModal('login')}
- className="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition"
+ className="flex-1 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-semibold hover:bg-brand-700 transition"
  >
  Log In
  </button>
@@ -471,7 +472,7 @@ export default function CreateListingPage() {
  onClick={() => step > 1 && setStep(1)}
  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
  step === 1
- ? 'bg-indigo-600 text-white '
+ ? 'bg-brand-600 text-white '
  : step > 1
  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer'
  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -491,7 +492,7 @@ export default function CreateListingPage() {
  onClick={() => step > 2 && setStep(2)}
  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
  step === 2
- ? 'bg-indigo-600 text-white '
+ ? 'bg-brand-600 text-white '
  : step > 2
  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer'
  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
@@ -509,7 +510,7 @@ export default function CreateListingPage() {
  <div
  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
  step === 3
- ? 'bg-indigo-600 text-white '
+ ? 'bg-brand-600 text-white '
  : 'bg-slate-100 text-slate-400'
  }`}
  >
@@ -536,9 +537,9 @@ export default function CreateListingPage() {
  {step === 1 && (
  <div className="space-y-0 sm:space-y-5 animate-in fade-in duration-200">
  {/* AI Listing Wizard Co-Pilot Banner */}
- <div className="px-4 py-4 sm:p-5 sm:rounded-2xl bg-indigo-50/70 border-b sm:border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+ <div className="px-4 py-4 sm:p-5 sm:rounded-2xl bg-brand-50/70 border-b sm:border border-brand-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
  <div className="flex items-center gap-3">
- <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+ <div className="w-10 h-10 rounded-2xl bg-brand-600 text-white flex items-center justify-center shrink-0">
  <Sparkles className="w-5 h-5 text-amber-300" />
  </div>
  <div>
@@ -546,7 +547,7 @@ export default function CreateListingPage() {
  <h3 className="text-xs font-bold text-slate-900">
  Want AI to draft this listing for you?
  </h3>
- <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider">
+ <span className="px-2 py-0.5 rounded-full bg-brand-600 text-white text-[10px] font-black uppercase tracking-wider">
  oBuy AI
  </span>
  </div>
@@ -559,7 +560,7 @@ export default function CreateListingPage() {
  <button
  type="button"
  onClick={() => setAiModalOpen(true)}
- className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shrink-0 cursor-pointer"
+ className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shrink-0 cursor-pointer"
  >
  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
  <span>Launch AI Co-Pilot</span>
@@ -581,11 +582,11 @@ export default function CreateListingPage() {
  onClick={() => handleModeChange('second-hand')}
  className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer relative ${
  mode === 'second-hand'
- ? 'border-indigo-600 bg-indigo-50/50 text-indigo-950 ring-2 ring-indigo-100'
+ ? 'border-brand-600 bg-brand-50/50 text-brand-950 ring-2 ring-brand-100'
  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
  }`}
  >
- <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-2.5">
+ <div className="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center mb-2.5">
  <RefreshCw className="w-4 h-4" />
  </div>
  <h4 className="text-sm font-bold">Second-hand</h4>
@@ -593,7 +594,7 @@ export default function CreateListingPage() {
  Pre-loved graded gadgets, furniture, road bikes, tools
  </p>
  {mode === 'second-hand' && (
- <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+ <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center">
  <Check className="w-3 h-3 stroke-[3]" />
  </div>
  )}
@@ -680,11 +681,11 @@ export default function CreateListingPage() {
  : 'e.g., Apple iPhone 14 Pro Max 256GB Deep Purple Unlocked'
  }
  maxLength={80}
- className="w-full text-sm sm:text-base font-medium border border-slate-300 rounded-2xl p-4 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-sm sm:text-base font-medium border border-slate-300 rounded-2xl p-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
 
  <div className="p-3 bg-slate-50 border border-slate-200/90 rounded-2xl flex items-start gap-2.5 text-xs text-slate-600">
- <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+ <Info className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
  <p className="leading-relaxed">
  <strong>oBuy Title Best Practice:</strong> Include brand, model, key technical specs, and color. Avoid vague titles like "Used phone for sale".
  </p>
@@ -697,7 +698,7 @@ export default function CreateListingPage() {
  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
  Category <span className="text-rose-500">*</span>
  </label>
- <span className="text-[11px] text-indigo-600 font-semibold">
+ <span className="text-[11px] text-brand-600 font-semibold">
  Selected: {category}
  </span>
  </div>
@@ -712,7 +713,7 @@ export default function CreateListingPage() {
  onClick={() => setCategory(catName)}
  className={`px-3 py-2.5 rounded-xl text-xs font-bold transition text-left cursor-pointer border ${
  isSelected
- ? 'bg-indigo-600 text-white border-indigo-600 '
+ ? 'bg-brand-600 text-white border-brand-600 '
  : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border-slate-200/80'
  }`}
  >
@@ -728,7 +729,7 @@ export default function CreateListingPage() {
  <button
  type="button"
  onClick={handleStep1Next}
- className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer active:scale-95"
+ className="px-8 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer active:scale-95"
  >
  <span>Continue to Photos & Specifics</span>
  <ArrowRight className="w-4 h-4" />
@@ -765,14 +766,14 @@ export default function CreateListingPage() {
  <div
  key={index}
  className={`relative aspect-square rounded-2xl overflow-hidden border-2 transition group ${
- isCover ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-slate-300'
+ isCover ? 'border-brand-600 ring-2 ring-brand-100' : 'border-slate-200 hover:border-slate-300'
  }`}
  >
  <img src={resolveMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
 
  {/* Cover Badge or Set-as-Cover Button */}
  {isCover ? (
- <span className="absolute top-1.5 left-1.5 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-1">
+ <span className="absolute top-1.5 left-1.5 bg-brand-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-1">
  <Star className="w-2.5 h-2.5 fill-white" />
  Cover
  </span>
@@ -781,7 +782,7 @@ export default function CreateListingPage() {
  type="button"
  onClick={() => setCoverPhoto(index)}
  title="Make this the Cover Photo"
- className="absolute top-1.5 left-1.5 bg-slate-900/80 hover:bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md transition opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer"
+ className="absolute top-1.5 left-1.5 bg-slate-900/80 hover:bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md transition opacity-0 group-hover:opacity-100 flex items-center gap-1 cursor-pointer"
  >
  <Star className="w-2.5 h-2.5" />
  Set Cover
@@ -803,7 +804,7 @@ export default function CreateListingPage() {
 
  {/* Add More Photos Dropzone */}
  {images.length < 12 && (
- <label className="aspect-square rounded-2xl border-2 border-dashed border-slate-300 hover:border-indigo-500 flex flex-col items-center justify-center cursor-pointer transition bg-slate-50 hover:bg-indigo-50/40 p-2 text-center group">
+ <label className="aspect-square rounded-2xl border-2 border-dashed border-slate-300 hover:border-brand-500 flex flex-col items-center justify-center cursor-pointer transition bg-slate-50 hover:bg-brand-50/40 p-2 text-center group">
  <input
  type="file"
  accept="image/*"
@@ -812,7 +813,7 @@ export default function CreateListingPage() {
  disabled={uploading}
  className="hidden"
  />
- <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 group-hover:border-indigo-300 group-hover:text-indigo-600 text-slate-400 flex items-center justify-center mb-1 transition ">
+ <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 group-hover:border-brand-300 group-hover:text-brand-600 text-slate-400 flex items-center justify-center mb-1 transition ">
  <Upload className="w-4 h-4" />
  </div>
  <span className="text-[10px] text-slate-600 font-bold">
@@ -823,8 +824,8 @@ export default function CreateListingPage() {
  )}
  </div>
 
- <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-2xl text-[11px] text-indigo-900 leading-relaxed flex items-start gap-2">
- <Camera className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+ <div className="p-3 bg-brand-50/60 border border-brand-100 rounded-2xl text-[11px] text-brand-900 leading-relaxed flex items-start gap-2">
+ <Camera className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
  <span>
  <strong>Photo Tip:</strong> Take clear photos in natural daylight. Photograph all sides, ports, labels, and cosmetic flaws to build trust with buyers.
  </span>
@@ -848,13 +849,13 @@ export default function CreateListingPage() {
  onClick={() => setCondition(tier.value)}
  className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
  isSelected
- ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-200'
+ ? 'border-brand-600 bg-brand-50/50 ring-1 ring-brand-200'
  : 'border-slate-200 hover:border-slate-300 bg-white'
  }`}
  >
  <div className="flex items-center justify-between mb-1">
  <span className="font-bold text-xs text-slate-900">{tier.label}</span>
- {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 stroke-[3]" />}
+ {isSelected && <Check className="w-3.5 h-3.5 text-brand-600 stroke-[3]" />}
  </div>
  <p className="text-[11px] text-slate-500 leading-relaxed">
  {tier.description}
@@ -872,7 +873,7 @@ export default function CreateListingPage() {
  id="flawsToggle"
  checked={hasFlaws}
  onChange={(e) => setHasFlaws(e.target.checked)}
- className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+ className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
  />
  <label htmlFor="flawsToggle" className="text-xs font-bold text-slate-800 cursor-pointer">
  This item has cosmetic or functional flaws (scratches, dents, battery wear, missing accessories)
@@ -885,7 +886,7 @@ export default function CreateListingPage() {
  value={flawDescription}
  onChange={(e) => setFlawDescription(e.target.value)}
  placeholder="Describe the flaws honestly (e.g. Minor scratches on back glass, battery health at 84%, comes without original charger)..."
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-indigo-600"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-brand-600"
  />
  )}
  </div>
@@ -910,7 +911,7 @@ export default function CreateListingPage() {
  value={specifics.brand}
  onChange={(e) => handleSpecificChange('brand', e.target.value)}
  placeholder="e.g., Apple, Toyota, Samsung, Nike, IKEA"
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-indigo-600"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-brand-600"
  />
  </div>
 
@@ -922,7 +923,7 @@ export default function CreateListingPage() {
  value={specifics.model}
  onChange={(e) => handleSpecificChange('model', e.target.value)}
  placeholder="e.g., iPhone 14 Pro, Corolla, Galaxy S23, Air Max"
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-indigo-600"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-brand-600"
  />
  </div>
 
@@ -940,7 +941,7 @@ export default function CreateListingPage() {
  ? 'e.g., In-Shop, Mobile / Home Visits, or Remote'
  : 'e.g., 256GB / 8GB RAM, 85,000 km, or V6 Engine'
  }
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-indigo-600"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-brand-600"
  />
  </div>
 
@@ -958,7 +959,7 @@ export default function CreateListingPage() {
  ? 'e.g., All barbering tools provided, client brings hair weave'
  : 'e.g., Space Gray, Genuine Leather, Size 43, 6x6 ft'
  }
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-indigo-600"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-brand-600"
  />
  </div>
  </div>
@@ -978,7 +979,7 @@ export default function CreateListingPage() {
  value={description}
  onChange={(e) => setDescription(e.target.value)}
  placeholder="Describe the item or service in detail. Mention usage duration, reason for selling, inclusions in the box, and terms of service..."
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-2xl p-4 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-2xl p-4 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition"
  />
  </div>
 
@@ -996,7 +997,7 @@ export default function CreateListingPage() {
  <button
  type="button"
  onClick={handleStep2Next}
- className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer active:scale-95"
+ className="px-8 py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer active:scale-95"
  >
  <span>Continue to Pricing & Meetup</span>
  <ArrowRight className="w-4 h-4" />
@@ -1031,7 +1032,7 @@ export default function CreateListingPage() {
  onChange={(e) => setPrice(e.target.value)}
  placeholder="e.g., 45000 (0 for Free)"
  required
- className="w-full pl-8 pr-4 py-3.5 text-base font-bold border border-slate-300 rounded-2xl focus:outline-none focus:border-indigo-600"
+ className="w-full pl-8 pr-4 py-3.5 text-base font-bold border border-slate-300 rounded-2xl focus:outline-none focus:border-brand-600"
  />
  </div>
  {price && !isNaN(Number(price)) && (
@@ -1072,7 +1073,7 @@ export default function CreateListingPage() {
  type="checkbox"
  checked={acceptsOffers}
  onChange={(e) => setAcceptsOffers(e.target.checked)}
- className="w-5 h-5 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+ className="w-5 h-5 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
  />
  </div>
 
@@ -1091,7 +1092,7 @@ export default function CreateListingPage() {
  value={minimumOfferPrice}
  onChange={(e) => setMinimumOfferPrice(e.target.value)}
  placeholder="e.g. 35000 (Auto-decline lower)"
- className="w-full pl-7 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-indigo-600"
+ className="w-full pl-7 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-brand-600"
  />
  </div>
  <span className="text-[10px] text-slate-400 mt-1 block">
@@ -1135,7 +1136,7 @@ export default function CreateListingPage() {
  value={neighborhood}
  onChange={(e) => setNeighborhood(e.target.value)}
  placeholder="e.g. GRA, Ring Road, Campus Gate, Ikeja"
- className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-indigo-600"
+ className="w-full text-xs sm:text-sm border border-slate-300 rounded-xl p-3 focus:outline-none focus:border-brand-600"
  />
  </div>
  </div>
@@ -1156,11 +1157,11 @@ export default function CreateListingPage() {
  onClick={() => setPreferredMeetup(preset.text)}
  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
  isSelected
- ? 'bg-indigo-50 border-indigo-500 text-indigo-700 '
+ ? 'bg-brand-50 border-brand-500 text-brand-700 '
  : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
  }`}
  >
- <IconComponent className="w-3.5 h-3.5 text-indigo-600" />
+ <IconComponent className="w-3.5 h-3.5 text-brand-600" />
  <span>{preset.label}</span>
  </button>
  );
@@ -1183,7 +1184,7 @@ export default function CreateListingPage() {
  id="deliveryToggle"
  checked={allowsDelivery}
  onChange={(e) => setAllowsDelivery(e.target.checked)}
- className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+ className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
  />
  <label htmlFor="deliveryToggle" className="text-xs font-semibold text-slate-700 cursor-pointer flex items-center gap-1.5">
  <Truck className="w-4 h-4 text-slate-500" />
@@ -1200,7 +1201,7 @@ export default function CreateListingPage() {
  id="terms"
  checked={termsAgreed}
  onChange={(e) => setTermsAgreed(e.target.checked)}
- className="mt-1 h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+ className="mt-1 h-4 w-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
  />
  <label htmlFor="terms" className="text-xs text-amber-950 leading-relaxed cursor-pointer">
  <strong>Direct Safe Deal Blueprint:</strong> I agree that all transactions take place in-person with thorough inspection before payment. oBuy charges zero commission and assumes no liability for off-platform funds.
@@ -1222,7 +1223,7 @@ export default function CreateListingPage() {
  <button
  type="submit"
  disabled={submitting}
- className="px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-black text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+ className="px-8 py-3.5 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-black text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
  >
  {submitting ? (
  <span>Publishing Listing...</span>
@@ -1242,7 +1243,7 @@ export default function CreateListingPage() {
  <div className="hidden lg:block lg:col-span-4">
  <div className="sticky top-24 space-y-4">
  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 uppercase tracking-wider">
- <Eye className="w-4 h-4 text-indigo-600" />
+ <Eye className="w-4 h-4 text-brand-600" />
  <span>Live Marketplace Preview</span>
  </div>
 
@@ -1271,7 +1272,7 @@ export default function CreateListingPage() {
  </span>
  )}
  {mode === 'second-hand' && (
- <span className="bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded ">
+ <span className="bg-brand-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded ">
  Used
  </span>
  )}
@@ -1283,7 +1284,7 @@ export default function CreateListingPage() {
  </div>
 
  {acceptsOffers && (
- <div className="absolute bottom-2 right-2 bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
+ <div className="absolute bottom-2 right-2 bg-brand-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
  Accepts Offers
  </div>
  )}
@@ -1310,12 +1311,12 @@ export default function CreateListingPage() {
  </div>
 
  {/* Trust Callout */}
- <div className="p-3.5 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-[11px] text-indigo-900 space-y-1">
- <p className="font-bold flex items-center gap-1 text-indigo-800">
- <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+ <div className="p-3.5 bg-brand-50/70 border border-brand-100 rounded-2xl text-[11px] text-brand-900 space-y-1">
+ <p className="font-bold flex items-center gap-1 text-brand-800">
+ <CheckCircle2 className="w-3.5 h-3.5 text-brand-600" />
  Buyer Inquiries & Offers
  </p>
- <p className="text-indigo-700/80 leading-relaxed">
+ <p className="text-brand-700/80 leading-relaxed">
  Interested buyers will chat with you directly in-app. You can accept or counter offers with one tap.
  </p>
  </div>
@@ -1324,14 +1325,18 @@ export default function CreateListingPage() {
  </div>
  </div>
 
- {/* AI Listing Wizard Co-Pilot Modal */}
- {aiModalOpen && (
- <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-3 sm:p-4">
- <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 max-w-2xl w-full max-h-[85dvh] flex flex-col overflow-hidden relative">
- {/* Sticky Header */}
- <div className="flex items-start justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100 shrink-0">
+ {/* AI Listing Wizard Co-Pilot Sheet / Modal */}
+ <ResponsiveSheet
+ open={aiModalOpen}
+ onClose={() => setAiModalOpen(false)}
+ title="Listing Wizard AI Co-Pilot"
+ description="Auto-generate title, specs, description, and Nigerian market price"
+ maxWidth="max-w-2xl"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-start justify-between gap-3 px-5 py-3.5 sm:px-6 sm:py-5 border-b border-slate-100">
  <div className="flex items-center gap-2.5 min-w-0">
- <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+ <div className="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0">
  <Sparkles className="w-4 h-4 text-amber-300" />
  </div>
  <div className="min-w-0">
@@ -1351,9 +1356,9 @@ export default function CreateListingPage() {
  <X className="w-5 h-5" />
  </button>
  </div>
-
- {/* Scrollable Modal Body */}
- <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain space-y-4 flex-1 min-h-0">
+ }
+ bodyClassName="p-4 sm:p-6 space-y-4"
+ >
 
  {/* Error if any */}
  {aiError && (
@@ -1374,7 +1379,7 @@ export default function CreateListingPage() {
  value={aiPrompt}
  onChange={(e) => setAiPrompt(e.target.value)}
  placeholder="e.g. Clean UK-used HP EliteBook 840 G6 in Uromi. Core i5, 16GB RAM, 512GB SSD, 4 hours battery backup. Minor scratch on bezel, charger included. Looking for 240k."
- className="w-full text-xs border border-slate-300 rounded-2xl p-3.5 focus:outline-none focus:ring-2 focus:ring-indigo-200 text-slate-900 leading-relaxed"
+ className="w-full text-xs border border-slate-300 rounded-2xl p-3.5 focus:outline-none focus:ring-2 focus:ring-brand-200 text-slate-900 leading-relaxed"
  />
  </div>
 
@@ -1398,7 +1403,7 @@ export default function CreateListingPage() {
  handleGenerateAiDraft(sample);
  }}
  disabled={aiLoading}
- className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 text-[11px] font-medium border border-slate-200 transition cursor-pointer text-left"
+ className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 text-[11px] font-medium border border-slate-200 transition cursor-pointer text-left"
  >
  {sample.slice(0, 45)}...
  </button>
@@ -1418,7 +1423,7 @@ export default function CreateListingPage() {
  type="button"
  onClick={() => handleGenerateAiDraft()}
  disabled={!aiPrompt.trim() || aiLoading}
- className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer"
+ className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer"
  >
  {aiLoading ? (
  <>
@@ -1445,7 +1450,7 @@ export default function CreateListingPage() {
  <button
  type="button"
  onClick={() => setAiDraftResult(null)}
- className="text-xs text-indigo-700 font-bold hover:underline cursor-pointer"
+ className="text-xs text-brand-700 font-bold hover:underline cursor-pointer"
  >
  Edit Prompt
  </button>
@@ -1460,7 +1465,7 @@ export default function CreateListingPage() {
  </div>
 
  <div className="flex flex-wrap gap-2 pt-1">
- <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[11px] border border-indigo-200">
+ <span className="px-2.5 py-1 rounded-full bg-brand-100 text-brand-700 font-bold text-[11px] border border-brand-200">
  Category: {aiDraftResult.category}
  </span>
  <span className="px-2.5 py-1 rounded-full bg-slate-200 text-slate-700 font-bold text-[11px]">
@@ -1482,10 +1487,10 @@ export default function CreateListingPage() {
  </span>
  </div>
  <div className="flex items-center justify-between sm:flex-col sm:items-start gap-2 py-2 sm:py-1 sm:border-l sm:border-slate-200 sm:pl-4">
- <span className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700">
+ <span className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-700">
  <span>Recommended</span>
  </span>
- <span className="text-sm sm:text-base font-black text-indigo-900 tabular-nums whitespace-nowrap">
+ <span className="text-sm sm:text-base font-black text-brand-900 tabular-nums whitespace-nowrap">
  {formatPrice(aiDraftResult.priceCorridor.recommended)}
  </span>
  </div>
@@ -1516,7 +1521,7 @@ export default function CreateListingPage() {
  )}
 
  {aiDraftResult.preferredMeetupAdvice && (
- <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-900">
+ <div className="p-2.5 bg-brand-50 border border-brand-100 rounded-xl text-brand-900">
  <span className="font-bold block text-[11px]">Recommended Safe Meetup:</span>
  <span className="text-[11px]">{aiDraftResult.preferredMeetupAdvice}</span>
  </div>
@@ -1534,7 +1539,7 @@ export default function CreateListingPage() {
  <button
  type="button"
  onClick={handleApplyAiDraft}
- className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer"
+ className="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold flex items-center gap-2 transition cursor-pointer"
  >
  <Check className="w-4 h-4" />
  <span>Apply to Listing Wizard</span>
@@ -1542,10 +1547,7 @@ export default function CreateListingPage() {
  </div>
  </div>
  )}
- </div>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
  </div>
  );
 }

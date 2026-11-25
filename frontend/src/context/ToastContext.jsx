@@ -56,7 +56,7 @@ export const ToastProvider = ({ children }) => {
             ) : toast.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             ) : (
-              <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+              <Info className="w-4 h-4 text-brand-400 shrink-0" />
             )}
             <span className="flex-1 leading-snug">{toast.text}</span>
             <button

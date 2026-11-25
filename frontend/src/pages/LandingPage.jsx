@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import API, { resolveMediaUrl } from '../services/api';
 import { formatPrice } from '../utils/format';
 import ListingCard from '../components/ListingCard';
+import PullToRefresh from '../components/PullToRefresh';
 import {
  Store,
  RefreshCw,
@@ -275,7 +276,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover rounded-xl"
  />
  </div>
- <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
+ <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
  Home and Garden <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
@@ -299,7 +300,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover rounded-xl"
  />
  </div>
- <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
+ <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
  Fashion & Wears <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
@@ -323,7 +324,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover rounded-xl"
  />
  </div>
- <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
+ <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
  Tech & Tools <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
@@ -374,14 +375,14 @@ export default function LandingPage() {
 
  if (slideId === 2) {
  return (
- <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white border-b border-indigo-900/40">
+ <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-700 to-purple-700 text-white border-b border-brand-900/40">
  <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-6 lg:gap-10">
  {/* Left Content */}
  <div className="flex-1 max-w-lg space-y-2.5">
  <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
  Neighborhood handwork on demand.
  </h2>
- <p className="text-xs sm:text-sm font-bold text-indigo-100 leading-relaxed max-w-lg">
+ <p className="text-xs sm:text-sm font-bold text-brand-100 leading-relaxed max-w-lg">
  Book trusted local barbers, braiders, mechanics, cleaners, and private tutors directly in your town.
  </p>
  <div className="pt-1">
@@ -462,13 +463,22 @@ export default function LandingPage() {
 
 
  return (
+ <PullToRefresh
+ onRefresh={() =>
+ fetchListingsData(
+ selectedSearchCat !== 'All' ? selectedSearchCat : undefined,
+ localSearch || undefined,
+ true
+ )
+ }
+ >
  <div className="min-h-screen bg-white flex flex-col w-full max-w-full overflow-x-clip">
  {/* 1. Top Search Section */}
  <section className="bg-slate-50 border-b border-slate-200/90 pt-3.5 pb-6 sm:pb-7 px-4 sm:px-6 lg:px-8 w-full max-w-full">
  <div className="max-w-7xl mx-auto space-y-2.5">
  <form
  onSubmit={handleSearchSubmit}
- className="flex items-center gap-2 max-w-4xl mx-auto bg-white p-1.5 rounded-full border border-slate-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition"
+ className="flex items-center gap-2 max-w-4xl mx-auto bg-white p-1.5 rounded-full border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition"
  >
  <div className="flex items-center gap-2 flex-1 pl-3">
  <Search className="w-4 h-4 text-slate-400 shrink-0" />
@@ -513,7 +523,7 @@ export default function LandingPage() {
 
  <button
  type="submit"
- className="px-6 py-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm transition shrink-0"
+ className="px-6 py-2 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm transition shrink-0"
  >
  Search
  </button>
@@ -531,8 +541,8 @@ export default function LandingPage() {
  onClick={() => handlePopularClick(item)}
  className={`transition px-2.5 py-0.5 rounded-full ${
  isSelected
- ? 'bg-indigo-600 text-white font-bold '
- : 'hover:text-indigo-600 hover:bg-slate-200/60 font-medium'
+ ? 'bg-brand-600 text-white font-bold '
+ : 'hover:text-brand-600 hover:bg-slate-200/60 font-medium'
  }`}
  >
  {item.term}
@@ -633,7 +643,7 @@ export default function LandingPage() {
  </div>
  <Link
  to="/market"
- className="text-xs font-bold text-indigo-600 hover:text-indigo-700 hover:underline inline-flex items-center gap-1"
+ className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline inline-flex items-center gap-1"
  >
  <span>See all</span>
  <ArrowRight className="w-3.5 h-3.5" />
@@ -651,8 +661,8 @@ export default function LandingPage() {
  onClick={() => handleCategoryClick(tile)}
  className={`group flex flex-col items-center p-3 rounded-2xl bg-white border transition text-center cursor-pointer ${
  isSelected
- ? 'border-indigo-500 ring-2 ring-indigo-200 '
- : 'border-slate-200/90 hover:border-indigo-400 '
+ ? 'border-brand-500 ring-2 ring-brand-200 '
+ : 'border-slate-200/90 hover:border-brand-400 '
  }`}
  >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2.5 relative">
@@ -665,7 +675,7 @@ export default function LandingPage() {
  />
  </div>
  <span className={`font-bold text-xs transition line-clamp-1 ${
- isSelected ? 'text-indigo-600' : 'text-slate-800 group-hover:text-indigo-600'
+ isSelected ? 'text-brand-600' : 'text-slate-800 group-hover:text-brand-600'
  }`}>
  {tile.name}
  </span>
@@ -688,12 +698,12 @@ export default function LandingPage() {
  <span>Today's Highlights</span>
  </div>
  {activeFilter && (
- <div className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200 mb-1">
+ <div className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-md border border-brand-200 mb-1">
  <span>Filtered: {activeFilter}</span>
  <button
  type="button"
  onClick={handleClearFilter}
- className="hover:text-indigo-900 ml-1 font-extrabold"
+ className="hover:text-brand-900 ml-1 font-extrabold"
  >
  ×
  </button>
@@ -809,7 +819,7 @@ export default function LandingPage() {
  <Link
  key={entry._id}
  to={`/listing/${entry._id}`}
- className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 transition block shrink-0`}
+ className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-brand-400 transition block shrink-0`}
  >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
  <img
@@ -821,7 +831,7 @@ export default function LandingPage() {
  />
  </div>
  <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.title}</div>
- <div className="text-[10px] sm:text-[11px] font-extrabold text-indigo-600">
+ <div className="text-[10px] sm:text-[11px] font-extrabold text-brand-600">
  {formatPrice(entry.price, entry.priceType)}
  </div>
  </Link>
@@ -833,7 +843,7 @@ export default function LandingPage() {
  key={entry.name}
  type="button"
  onClick={() => handleCategoryClick(entry)}
- className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 transition text-left cursor-pointer shrink-0`}
+ className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-brand-400 transition text-left cursor-pointer shrink-0`}
  >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
  <img
@@ -845,7 +855,7 @@ export default function LandingPage() {
  />
  </div>
  <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.name}</div>
- <div className="text-[10px] font-extrabold text-indigo-600 truncate">{entry.tag}</div>
+ <div className="text-[10px] font-extrabold text-brand-600 truncate">{entry.tag}</div>
  </button>
  );
  })}
@@ -868,14 +878,14 @@ export default function LandingPage() {
  {/* Pillar 1: Second-hand */}
  <div
  onClick={() => handleModeNavigate('second-hand')}
- className="group relative bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-indigo-400 transition duration-200 cursor-pointer flex flex-col justify-between"
+ className="group relative bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-brand-400 transition duration-200 cursor-pointer flex flex-col justify-between"
  >
  <div className="space-y-3">
- <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition ">
+ <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition ">
  <RefreshCw className="w-5 h-5" />
  </div>
  <div>
- <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+ <span className="text-[10px] font-bold uppercase tracking-wider text-brand-600">
  Pre-Loved & Graded
  </span>
  <h3 className="text-base font-bold text-slate-900 mt-0.5">Second-Hand Goods</h3>
@@ -897,7 +907,7 @@ export default function LandingPage() {
  </div>
  </div>
 
- <div className="mt-5 pt-3 border-t border-slate-100 flex items-center text-xs font-bold text-indigo-600 group-hover:text-indigo-700">
+ <div className="mt-5 pt-3 border-t border-slate-100 flex items-center text-xs font-bold text-brand-600 group-hover:text-brand-700">
  <span>Browse Second-hand</span>
  <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition" />
  </div>
@@ -1031,7 +1041,7 @@ export default function LandingPage() {
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs ">
  1
  </div>
  <h3 className="text-sm font-bold text-slate-900">Explore Nearby by Radius</h3>
@@ -1041,7 +1051,7 @@ export default function LandingPage() {
  </div>
 
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs ">
  2
  </div>
  <h3 className="text-sm font-bold text-slate-900">Direct In-App Chat</h3>
@@ -1051,7 +1061,7 @@ export default function LandingPage() {
  </div>
 
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs ">
  3
  </div>
  <h3 className="text-sm font-bold text-slate-900">Inspect First, Pay Directly</h3>
@@ -1063,5 +1073,6 @@ export default function LandingPage() {
  </div>
  </section>
  </div>
+ </PullToRefresh>
  );
 }

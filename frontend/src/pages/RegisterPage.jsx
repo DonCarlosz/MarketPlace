@@ -32,7 +32,7 @@ export default function RegisterPage() {
         <button
           type="button"
           onClick={() => openAuthModal('register')}
-          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
         >
           <ShieldCheck className="w-4 h-4" />
           <span>Continue to Verified Sign Up</span>
@@ -40,7 +40,7 @@ export default function RegisterPage() {
 
         <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
           Already have an oBuy account?{' '}
-          <Link to="/login" className="font-semibold text-indigo-600 hover:underline">
+          <Link to="/login" className="font-semibold text-brand-600 hover:underline">
             Sign in
           </Link>
         </div>

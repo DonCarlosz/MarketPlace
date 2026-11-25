@@ -6,6 +6,8 @@ import { useToast } from '../context/ToastContext';
 import { profileRouteCache } from '../utils/routeCache';
 import ListingCard from '../components/ListingCard';
 import ConfirmModal from '../components/ConfirmModal';
+import PullToRefresh from '../components/PullToRefresh';
+import ResponsiveSheet from '../components/ResponsiveSheet';
 import {
  MapPin,
  Mail,
@@ -504,7 +506,30 @@ export default function ProfilePage() {
 
  const showScorecardBody = hasReviews || scorecardExpanded;
 
+ const handlePullRefresh = async () => {
+ if (!targetUserId) return;
+ try {
+ const requests = [
+ API.get(`/users/${targetUserId}/profile`),
+ isOwnProfile ? API.get('/listings/user/my-listings') : API.get(`/users/${targetUserId}/listings`),
+ API.get(`/users/${targetUserId}/reviews`),
+ ];
+ if (isOwnProfile) requests.push(API.get('/listings/user/favorites'));
+ const [profRes, listRes, revRes, favRes] = await Promise.all(requests);
+ if (profRes.data?.success) {
+ setProfileData(profRes.data.user);
+ setReputation(profRes.data.reputation);
+ }
+ if (listRes.data?.success) setListings(listRes.data.listings || []);
+ if (revRes.data?.success) setReviews(revRes.data.reviews || []);
+ if (favRes?.data?.success) setFavorites(favRes.data.listings || favRes.data.favorites || []);
+ } catch {
+ // Ignore transient refresh failure
+ }
+ };
+
  return (
+ <PullToRefresh onRefresh={handlePullRefresh}>
  <div className="min-h-screen bg-slate-50">
  {/* Always-mounted file inputs for direct one-tap Avatar & Cover Background changes */}
  {isOwnProfile && (
@@ -530,7 +555,7 @@ export default function ProfilePage() {
  {/* Full-Bleed Profile Header across all breakpoints */}
  <section className="bg-white border-b border-slate-200 sm:border-x overflow-hidden">
  {/* Changeable Header Cover Banner */}
- <div className="h-32 sm:h-40 bg-gradient-to-r from-indigo-700 via-indigo-800 to-purple-800 relative overflow-hidden">
+ <div className="h-32 sm:h-40 bg-gradient-to-r from-brand-700 via-brand-800 to-purple-800 relative overflow-hidden">
  {resolvedCoverImage && (
  <>
  <img
@@ -557,7 +582,7 @@ export default function ProfilePage() {
  {/* Avatar & Top Desktop Action Row */}
  <div className="flex items-end justify-between -mt-10 sm:-mt-12">
  <div className="relative group">
- <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-indigo-600 text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-white shrink-0 overflow-hidden">
+ <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-brand-600 text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-white shrink-0 overflow-hidden">
  {avatarUploading ? (
  <Loader2 className="w-7 h-7 text-white animate-spin" />
  ) : resolvedProfileAvatar ? (
@@ -599,7 +624,7 @@ export default function ProfilePage() {
  <button
  type="button"
  onClick={handleContactSeller}
- className="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ className="px-4 py-2 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <MessageSquare className="w-3.5 h-3.5" />
  <span>Contact Seller</span>
@@ -639,7 +664,7 @@ export default function ProfilePage() {
 
  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
  <span className="flex items-center gap-1 font-medium">
- <MapPin className="w-3.5 h-3.5 text-indigo-500" />
+ <MapPin className="w-3.5 h-3.5 text-brand-500" />
  {profileData?.location?.city || 'Nigeria'}
  </span>
  <span className="flex items-center gap-1 font-medium">
@@ -687,7 +712,7 @@ export default function ProfilePage() {
  <button
  type="button"
  onClick={handleContactSeller}
- className="flex-1 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ className="flex-1 px-4 py-2.5 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
  <MessageSquare className="w-3.5 h-3.5" />
  <span>Contact Seller</span>
@@ -737,7 +762,7 @@ export default function ProfilePage() {
  <div className="flex items-center justify-between gap-2">
  <div className="min-w-0">
  <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
- <Award className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 shrink-0" />
+ <Award className="w-4 h-4 sm:w-5 sm:h-5 text-brand-600 shrink-0" />
  <span className="truncate">Seller Reputation & Scorecard</span>
  </h2>
  {!showScorecardBody && (
@@ -949,7 +974,7 @@ export default function ProfilePage() {
  ) : tab === 'active' || tab === 'sold' ? (
  (tab === 'active' ? activeListings : pastListings).length === 0 ? (
  <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4 max-w-md mx-auto my-6">
- <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
+ <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
  <Package className="w-7 h-7" />
  </div>
  <div className="space-y-1">
@@ -1060,7 +1085,7 @@ export default function ProfilePage() {
  >
  <div className="flex items-start justify-between gap-3">
  <div className="flex items-center gap-2.5">
- <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-100 shrink-0 overflow-hidden">
+ <div className="w-9 h-9 rounded-xl bg-brand-50 text-brand-700 font-bold text-xs flex items-center justify-center border border-brand-100 shrink-0 overflow-hidden">
  {rev.buyer?.avatar ? (
  <img src={resolveMediaUrl(rev.buyer.avatar)} alt={rev.buyer?.name} className="w-full h-full object-cover" decoding="async" />
  ) : (
@@ -1130,7 +1155,7 @@ export default function ProfilePage() {
  <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 border border-slate-200 relative">
  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
  <div className="flex items-center gap-2">
- <Award className="w-5 h-5 text-indigo-600" />
+ <Award className="w-5 h-5 text-brand-600" />
  <h3 className="text-base font-black text-slate-900">Leave Seller Feedback</h3>
  </div>
  <button
@@ -1317,7 +1342,7 @@ export default function ProfilePage() {
  onChange={(e) => setReviewComment(e.target.value)}
  placeholder="Share details on item condition, responsiveness, and meetup punctuality..."
  required
- className="w-full text-xs border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ className="w-full text-xs border border-slate-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-brand-200"
  />
  </div>
 
@@ -1332,7 +1357,7 @@ export default function ProfilePage() {
  <button
  type="submit"
  disabled={reviewSubmitting || !reviewComment.trim()}
- className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer "
+ className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer "
  >
  <Send className="w-3.5 h-3.5" />
  <span>{reviewSubmitting ? 'Posting...' : 'Submit Feedback'}</span>
@@ -1343,19 +1368,17 @@ export default function ProfilePage() {
  </div>
  )}
 
- {/* Edit Profile Slide-Up Sheet / Modal (zero layout shift on profile page) */}
- {editing && isOwnProfile && (
- <div
- className="fixed inset-0 z-50 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4"
- onClick={toggleEditing}
- >
- <div
- className="bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto p-5 sm:p-6 space-y-5"
- onClick={(e) => e.stopPropagation()}
- >
- <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+ {/* Edit Profile Draggable Bottom Sheet / Modal */}
+ <ResponsiveSheet
+ open={Boolean(editing && isOwnProfile)}
+ onClose={toggleEditing}
+ title="Edit Profile"
+ maxWidth="max-w-lg"
+ showDefaultHeader={false}
+ headerSlot={
+ <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2">
- <Edit3 className="w-4 h-4 text-indigo-600" />
+ <Edit3 className="w-4 h-4 text-brand-600" />
  <h3 className="text-base font-black text-slate-900">Edit Profile</h3>
  </div>
  <button
@@ -1367,13 +1390,16 @@ export default function ProfilePage() {
  <X className="w-4 h-4" />
  </button>
  </div>
+ }
+ bodyClassName="p-5 sm:p-6 space-y-5"
+ >
 
  <form onSubmit={handleSaveProfile} className="space-y-4">
  {/* Avatar & Cover Quick Controls */}
  <div className="divide-y divide-slate-100 border-y border-slate-100">
  <div className="flex items-center justify-between gap-3 py-3">
  <div className="flex items-center gap-3 min-w-0">
- <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-black text-base flex items-center justify-center overflow-hidden shrink-0">
+ <div className="w-11 h-11 rounded-xl bg-brand-600 text-white font-black text-base flex items-center justify-center overflow-hidden shrink-0">
  {avatarUploading ? (
  <Loader2 className="w-4 h-4 animate-spin text-white" />
  ) : avatarUrl ? (
@@ -1410,7 +1436,7 @@ export default function ProfilePage() {
 
  <div className="flex items-center justify-between gap-3 py-3">
  <div className="flex items-center gap-3 min-w-0">
- <div className="w-14 h-10 rounded-lg bg-gradient-to-r from-indigo-700 to-purple-800 text-white flex items-center justify-center overflow-hidden shrink-0">
+ <div className="w-14 h-10 rounded-lg bg-gradient-to-r from-brand-700 to-purple-800 text-white flex items-center justify-center overflow-hidden shrink-0">
  {coverUploading ? (
  <Loader2 className="w-4 h-4 animate-spin text-white" />
  ) : coverUrl ? (
@@ -1455,7 +1481,7 @@ export default function ProfilePage() {
  value={name}
  onChange={(e) => setName(e.target.value)}
  required
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-200"
  />
  </div>
  <div>
@@ -1465,7 +1491,7 @@ export default function ProfilePage() {
  value={city}
  onChange={(e) => setCity(e.target.value)}
  required
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-200"
  />
  </div>
  </div>
@@ -1477,7 +1503,7 @@ export default function ProfilePage() {
  value={bio}
  onChange={(e) => setBio(e.target.value)}
  placeholder="Introduce yourself to neighbors and buyers..."
- className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+ className="w-full text-xs border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-200"
  />
  </div>
 
@@ -1492,15 +1518,13 @@ export default function ProfilePage() {
  <button
  type="submit"
  disabled={saveLoading || avatarUploading || coverUploading}
- className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 cursor-pointer disabled:opacity-50"
+ className="px-5 py-2.5 bg-brand-600 text-white rounded-xl text-xs font-bold hover:bg-brand-700 cursor-pointer disabled:opacity-50"
  >
  {saveLoading ? 'Saving...' : 'Save Changes'}
  </button>
  </div>
  </form>
- </div>
- </div>
- )}
+ </ResponsiveSheet>
 
  {/* Confirmation Modal */}
  <ConfirmModal
@@ -1513,5 +1537,6 @@ export default function ProfilePage() {
  variant={confirmModalConfig.variant}
  />
  </div>
+ </PullToRefresh>
  );
 }

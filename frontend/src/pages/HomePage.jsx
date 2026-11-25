@@ -8,6 +8,8 @@ import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo';
 import ListingCard from '../components/ListingCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SafetyBanner from '../components/SafetyBanner';
+import PullToRefresh from '../components/PullToRefresh';
+import ResponsiveSheet from '../components/ResponsiveSheet';
 import {
  Search,
  SlidersHorizontal,
@@ -366,6 +368,7 @@ export default function HomePage() {
  activeCity !== 'All Locations';
 
  return (
+ <PullToRefresh onRefresh={() => fetchListings(true)}>
  <div className="min-h-screen bg-slate-50 flex flex-col w-full max-w-full overflow-x-clip">
  <SafetyBanner />
 
@@ -382,7 +385,7 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'second-hand'
- ? 'bg-indigo-600 text-white '
+ ? 'bg-brand-600 text-white '
  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
  }`}
  >
@@ -427,7 +430,7 @@ export default function HomePage() {
 
  {/* Integrated Search Bar with Category Dropdown */}
  <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-1">
- <div className="flex items-center bg-white rounded-full border border-slate-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition p-1 sm:p-1.5">
+ <div className="flex items-center bg-white rounded-full border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition p-1 sm:p-1.5">
  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 ml-3 mr-2 shrink-0" />
  <input
  type="text"
@@ -469,7 +472,7 @@ export default function HomePage() {
  </div>
  <button
  type="submit"
- className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-full transition shrink-0 cursor-pointer"
+ className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm rounded-full transition shrink-0 cursor-pointer"
  >
  Search
  </button>
@@ -521,13 +524,13 @@ export default function HomePage() {
  onClick={() => setMobileFilterDrawerOpen(true)}
  className={`lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
  hasActiveFilters
- ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+ ? 'border-brand-500 bg-brand-50 text-brand-700'
  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
  }`}
  >
  <SlidersHorizontal className="w-3.5 h-3.5" />
  <span>Filters</span>
- {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-indigo-600" />}
+ {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-brand-600" />}
  </button>
 
  {/* Sort Dropdown */}
@@ -550,7 +553,7 @@ export default function HomePage() {
  aria-label="Grid View"
  className={`p-1.5 rounded-lg transition ${
  viewMode === 'grid'
- ? 'bg-white text-indigo-600 font-bold'
+ ? 'bg-white text-brand-600 font-bold'
  : 'text-slate-500 hover:text-slate-800'
  }`}
  title="Grid view"
@@ -563,7 +566,7 @@ export default function HomePage() {
  aria-label="List View"
  className={`p-1.5 rounded-lg transition ${
  viewMode === 'list'
- ? 'bg-white text-indigo-600 font-bold'
+ ? 'bg-white text-brand-600 font-bold'
  : 'text-slate-500 hover:text-slate-800'
  }`}
  title="List view"
@@ -581,12 +584,12 @@ export default function HomePage() {
  Active:
  </span>
  {searchQuery && (
- <span className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100 font-medium">
+ <span className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full border border-brand-100 font-medium">
  "{searchQuery}"
  <button
  type="button"
  onClick={() => setSearchQuery('')}
- className="hover:text-indigo-900 ml-0.5 font-bold"
+ className="hover:text-brand-900 ml-0.5 font-bold"
  >
  ×
  </button>
@@ -698,7 +701,7 @@ export default function HomePage() {
  )
  ) : (
  <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4 max-w-md mx-auto my-6">
- <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto">
+ <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">
  <AlertCircle className="w-7 h-7" />
  </div>
  <div className="space-y-1">
@@ -722,15 +725,14 @@ export default function HomePage() {
  </div>
  </main>
 
- {/* Mobile Slide-Over Filter Drawer */}
- {mobileFilterDrawerOpen && (
- <div
- className="fixed inset-0 z-50 bg-black/60 lg:hidden flex justify-end animate-in fade-in duration-200"
- onClick={() => setMobileFilterDrawerOpen(false)}
- >
- <div
- className="w-full max-w-sm bg-white h-full flex flex-col animate-in slide-in-from-right duration-200"
- onClick={(e) => e.stopPropagation()}
+ {/* Mobile Draggable Bottom Sheet Filter Drawer */}
+ <ResponsiveSheet
+ open={mobileFilterDrawerOpen}
+ onClose={() => setMobileFilterDrawerOpen(false)}
+ title="Filters & Facets"
+ showDefaultHeader={false}
+ maxWidth="max-w-md"
+ bodyClassName="p-0"
  >
  <FilterSidebar
  categories={categories}
@@ -749,9 +751,8 @@ export default function HomePage() {
  onClose={() => setMobileFilterDrawerOpen(false)}
  totalResults={displayListings.length}
  />
+ </ResponsiveSheet>
  </div>
- </div>
- )}
- </div>
+ </PullToRefresh>
  );
 }
