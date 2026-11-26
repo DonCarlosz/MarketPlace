@@ -8,19 +8,16 @@ const MODES = [
     id: 'second-hand',
     label: 'Second-hand',
     icon: RefreshCw,
-    activeBg: 'bg-brand-600 text-white',
   },
   {
     id: 'new',
     label: 'New Items',
     icon: Sparkles,
-    activeBg: 'bg-emerald-600 text-white',
   },
   {
     id: 'service',
     label: 'Services',
     icon: Wrench,
-    activeBg: 'bg-amber-700 text-white',
   },
 ];
 
@@ -51,15 +48,15 @@ export default function ModeSwitcher({ compact = false }) {
             key={m.id}
             type="button"
             onClick={() => handleModeClick(m.id)}
-            className={`flex items-center gap-1.5 sm:gap-2 rounded-xl transition-colors font-semibold text-xs sm:text-sm select-none cursor-pointer ${
+            className={`flex items-center gap-1.5 sm:gap-2 rounded-xl transition-colors font-semibold text-xs sm:text-sm select-none cursor-pointer border ${
               compact ? 'px-2.5 sm:px-3 py-1.5' : 'px-3 sm:px-4 py-2'
             } ${
               isActive
-                ? m.activeBg
-                : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                ? 'bg-white text-brand-600 border-brand-200/90'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/70'
             }`}
           >
-            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? '' : 'text-slate-400'}`} />
+            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-brand-500' : 'text-slate-400'}`} />
             <span>{m.label}</span>
           </button>
         );

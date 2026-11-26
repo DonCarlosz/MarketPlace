@@ -570,7 +570,7 @@ export default function ProfilePage() {
  {/* Full-Bleed Profile Header across all breakpoints */}
  <section className="bg-white border-b border-slate-200 sm:border-x overflow-hidden">
  {/* Changeable Header Cover Banner */}
- <div className="h-32 sm:h-40 bg-gradient-to-r from-slate-900 via-brand-950 to-brand-800 relative overflow-hidden">
+ <div className="h-32 sm:h-40 bg-gradient-to-r from-brand-400 via-brand-500 to-amber-400 relative overflow-hidden">
  {resolvedCoverImage && (
  <>
  <img
@@ -597,7 +597,7 @@ export default function ProfilePage() {
  {/* Avatar & Top Desktop Action Row */}
  <div className="flex items-end justify-between -mt-10 sm:-mt-12">
  <div className="relative group">
- <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-slate-900 text-white font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-white shrink-0 overflow-hidden">
+ <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-brand-100 text-brand-700 font-black text-3xl sm:text-4xl flex items-center justify-center border-4 border-white shrink-0 overflow-hidden">
  {avatarUploading ? (
  <Loader2 className="w-7 h-7 text-white animate-spin" />
  ) : resolvedProfileAvatar ? (
@@ -688,7 +688,7 @@ export default function ProfilePage() {
 
  <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
  <span className="flex items-center gap-1 font-medium">
- <MapPin className="w-3.5 h-3.5 text-slate-400" />
+ <MapPin className="w-3.5 h-3.5 text-blue-500" />
  {profileData?.location?.city || 'Nigeria'}
  </span>
  <span className="flex items-center gap-1 font-medium">
@@ -1439,7 +1439,7 @@ export default function ProfilePage() {
  <div className="divide-y divide-slate-100 border-y border-slate-100">
  <div className="flex items-center justify-between gap-3 py-3">
  <div className="flex items-center gap-3 min-w-0">
- <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-black text-base flex items-center justify-center overflow-hidden shrink-0">
+ <div className="w-11 h-11 rounded-xl bg-brand-100 text-brand-700 font-black text-base flex items-center justify-center overflow-hidden shrink-0">
  {avatarUploading ? (
  <Loader2 className="w-4 h-4 animate-spin text-white" />
  ) : avatarUrl ? (
@@ -1476,7 +1476,7 @@ export default function ProfilePage() {
 
  <div className="flex items-center justify-between gap-3 py-3">
  <div className="flex items-center gap-3 min-w-0">
- <div className="w-14 h-10 rounded-lg bg-gradient-to-r from-slate-900 to-brand-800 text-white flex items-center justify-center overflow-hidden shrink-0">
+ <div className="w-14 h-10 rounded-lg bg-gradient-to-r from-brand-400 to-amber-400 text-white flex items-center justify-center overflow-hidden shrink-0">
  {coverUploading ? (
  <Loader2 className="w-4 h-4 animate-spin text-white" />
  ) : coverUrl ? (

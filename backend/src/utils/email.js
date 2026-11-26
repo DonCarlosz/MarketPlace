@@ -56,7 +56,7 @@ oBuy - Safe, direct neighborhood buying & selling
               alt="oBuy"
               width="48"
               height="48"
-              style="display: block; width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 10px auto; background-color: #d94b06;"
+              style="display: block; width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 10px auto; background-color: #f97316;"
             />
             <h1 style="margin: 0; font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">oBuy</h1>
           </td>
@@ -68,7 +68,7 @@ oBuy - Safe, direct neighborhood buying & selling
             <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.5; color: #475569;">${intro}</p>
 
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; text-align: center; margin: 0 0 20px 0;">
-              <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #b83d05; display: inline-block; padding-left: 8px;">${otp}</span>
+              <span style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #ea580c; display: inline-block; padding-left: 8px;">${otp}</span>
               <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">Expires in 10 minutes</p>
             </div>
 

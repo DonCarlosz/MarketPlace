@@ -139,7 +139,7 @@ export default function FilterSidebar({
                   }}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
                     active
-                      ? 'bg-slate-900 text-white border-slate-900'
+                      ? 'bg-brand-50 text-brand-700 border-brand-300'
                       : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
@@ -195,7 +195,7 @@ export default function FilterSidebar({
                       name="condition"
                       checked={checked}
                       onChange={() => onConditionChange(opt.id)}
-                      className="w-3.5 h-3.5 accent-slate-900 rounded-full border-slate-300 cursor-pointer"
+                      className="w-3.5 h-3.5 accent-brand-500 rounded-full border-slate-300 cursor-pointer"
                     />
                     <span className={checked ? 'font-bold text-slate-900' : 'font-medium'}>
                       {opt.label}
@@ -210,7 +210,7 @@ export default function FilterSidebar({
         {/* 3. Location & Nigerian Cities */}
         <div className="border-t border-slate-100 pt-5">
           <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-slate-500" />
+            <MapPin className="w-3.5 h-3.5 text-blue-500" />
             <span>Town / Region</span>
           </h4>
 
@@ -239,7 +239,7 @@ export default function FilterSidebar({
                   onClick={() => onRadiusChange(r.id === 'all' ? 'all' : Number(r.id))}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors cursor-pointer ${
                     active
-                      ? 'bg-slate-900 text-white border-slate-900'
+                      ? 'bg-brand-50 text-brand-700 border-brand-300'
                       : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >

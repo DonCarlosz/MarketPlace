@@ -387,14 +387,14 @@ export default function LandingPage() {
 
  if (slideId === 2) {
  return (
- <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-slate-900 via-brand-950 to-brand-800 text-white border-b border-slate-900/40">
+ <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-brand-500 via-brand-600 to-amber-500 text-white border-b border-brand-600/30">
  <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-6 lg:gap-10">
  {/* Left Content */}
  <div className="flex-1 max-w-lg space-y-2.5">
  <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
  Neighborhood handwork on demand.
  </h2>
- <p className="text-xs sm:text-sm font-bold text-slate-200 leading-relaxed max-w-lg">
+ <p className="text-xs sm:text-sm font-bold text-white/95 leading-relaxed max-w-lg">
  Book trusted local barbers, braiders, mechanics, cleaners, and private tutors directly in your town.
  </p>
  <div className="pt-1">
@@ -433,7 +433,7 @@ export default function LandingPage() {
  </div>
  <div>
  <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Master Barber</div>
- <div className="text-[11px] text-amber-700 font-bold">Fixed Sessions</div>
+ <div className="text-[11px] text-sky-600 font-bold">Fixed Sessions</div>
  <div className="text-[10px] text-slate-500 truncate mt-0.5">Fades, Beard & Styling</div>
  </div>
  </button>
@@ -553,7 +553,7 @@ export default function LandingPage() {
  onClick={() => handlePopularClick(item)}
  className={`transition px-2.5 py-0.5 rounded-full ${
  isSelected
- ? 'bg-slate-900 text-white font-bold '
+ ? 'bg-brand-50 text-brand-700 border border-brand-200 font-bold '
  : 'hover:text-slate-900 hover:bg-slate-200/60 font-medium'
  }`}
  >
@@ -673,7 +673,7 @@ export default function LandingPage() {
  onClick={() => handleCategoryClick(tile)}
  className={`group flex flex-col items-center p-1.5 sm:p-2 rounded-2xl bg-white border transition text-center cursor-pointer ${
  isSelected
- ? 'border-slate-900 ring-2 ring-slate-200 '
+ ? 'border-brand-300 ring-2 ring-brand-100 '
  : 'border-slate-200/90 hover:border-slate-300 '
  }`}
  >
@@ -966,14 +966,14 @@ export default function LandingPage() {
  {/* Pillar 3: Local Services */}
  <div
  onClick={() => handleModeNavigate('service')}
- className="group relative bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-amber-400 transition duration-200 cursor-pointer flex flex-col justify-between"
+ className="group relative bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-sky-400 transition duration-200 cursor-pointer flex flex-col justify-between"
  >
  <div className="space-y-3">
- <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center group-hover:bg-amber-700 group-hover:text-white transition ">
+ <div className="w-11 h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white transition ">
  <Wrench className="w-5 h-5" />
  </div>
  <div>
- <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
+ <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600">
  Local Handwork
  </span>
  <h3 className="text-base font-bold text-slate-900 mt-0.5">Local Handwork & Services</h3>
@@ -995,7 +995,7 @@ export default function LandingPage() {
  </div>
  </div>
 
- <div className="mt-5 pt-3 border-t border-slate-100 flex items-center text-xs font-bold text-amber-700 group-hover:text-amber-800">
+ <div className="mt-5 pt-3 border-t border-slate-100 flex items-center text-xs font-bold text-sky-600 group-hover:text-sky-700">
  <span>Find Skilled Services</span>
  <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition" />
  </div>
@@ -1053,7 +1053,7 @@ export default function LandingPage() {
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs ">
  1
  </div>
  <h3 className="text-sm font-bold text-slate-900">Explore Nearby by Radius</h3>
@@ -1063,7 +1063,7 @@ export default function LandingPage() {
  </div>
 
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs ">
  2
  </div>
  <h3 className="text-sm font-bold text-slate-900">Direct In-App Chat</h3>
@@ -1073,7 +1073,7 @@ export default function LandingPage() {
  </div>
 
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs ">
  3
  </div>
  <h3 className="text-sm font-bold text-slate-900">Inspect First, Pay Directly</h3>

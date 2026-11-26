@@ -393,12 +393,12 @@ export default function ListingDetailPage() {
  </span>
  )}
  {listing.mode === 'service' && (
- <span className="inline-flex items-center gap-1 bg-amber-700 text-white text-xs font-bold px-3 py-1 rounded-full">
+ <span className="inline-flex items-center gap-1 bg-sky-600 text-white text-xs font-bold px-3 py-1 rounded-full">
  <Wrench className="w-3.5 h-3.5" /> Local Handwork
  </span>
  )}
  {listing.mode === 'second-hand' && (
- <span className="inline-flex items-center gap-1 bg-brand-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+ <span className="inline-flex items-center gap-1 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full">
  <RefreshCw className="w-3.5 h-3.5" /> Second-hand
  </span>
  )}
@@ -791,9 +791,9 @@ export default function ListingDetailPage() {
 
  {/* Service Availability Note if present */}
  {listing.availabilityNotes && (
- <div className="pt-4 border-t border-slate-100 text-xs text-amber-900 space-y-1">
+ <div className="pt-4 border-t border-slate-100 text-xs text-sky-900 space-y-1">
  <p className="font-bold flex items-center gap-1.5">
- <Clock className="w-3.5 h-3.5 text-amber-700" />
+ <Clock className="w-3.5 h-3.5 text-sky-600" />
  <span>Availability & Scheduling Notes</span>
  </p>
  <p className="text-slate-700">{listing.availabilityNotes}</p>

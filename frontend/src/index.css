@@ -3,16 +3,16 @@
 @tailwind utilities;
 
 @layer base {
-  /* Centralized oBuy Brand Palette (Calibrated Orange; swap these RGB triplets to retheme the whole app in 1 place) */
+  /* Centralized oBuy Brand Palette (Warm Friendly Orange; swap these RGB triplets to retheme the whole app in 1 place) */
   :root {
-    --brand-50: 255 247 240;
-    --brand-100: 255 237 220;
-    --brand-200: 253 215 182;
-    --brand-300: 251 182 126;
-    --brand-400: 246 135 58;
-    --brand-500: 236 100 18;
-    --brand-600: 217 75 6;
-    --brand-700: 184 61 5;
+    --brand-50: 255 248 241;
+    --brand-100: 255 237 213;
+    --brand-200: 254 215 170;
+    --brand-300: 253 186 116;
+    --brand-400: 251 146 60;
+    --brand-500: 249 115 22;
+    --brand-600: 234 88 12;
+    --brand-700: 194 65 12;
     --brand-800: 154 52 18;
     --brand-900: 124 45 18;
     --brand-950: 67 20 7;

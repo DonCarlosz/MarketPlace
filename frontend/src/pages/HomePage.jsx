@@ -472,7 +472,7 @@ export default function HomePage() {
  <section className="bg-white border-b border-slate-200 pt-4 pb-3.5 sm:pt-5 sm:pb-4 px-4 sm:px-6 lg:px-8">
  <div className="max-w-7xl mx-auto space-y-3">
  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
- {/* Mode Switcher Tabs (Equal 3-column segmented layout with zero wrapping) */}
+ {/* Mode Switcher Tabs (Calm unified light-theme active pill with zero jumpy color flashes) */}
  <div className="w-full md:w-auto md:min-w-[360px] max-w-md mx-auto md:mx-0 p-1 bg-slate-100/90 rounded-2xl sm:rounded-full border border-slate-200/90 grid grid-cols-3 gap-1 shrink-0">
  <button
  type="button"
@@ -482,11 +482,11 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'second-hand'
- ? 'bg-brand-600 text-white'
- : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+ ? 'bg-white text-brand-600 border border-brand-200/90'
+ : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
  }`}
  >
- <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+ <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${mode === 'second-hand' ? 'text-brand-500' : 'text-slate-400'}`} />
  <span>Second-Hand</span>
  </button>
  <button
@@ -497,11 +497,11 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'new'
- ? 'bg-emerald-600 text-white'
- : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+ ? 'bg-white text-brand-600 border border-brand-200/90'
+ : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
  }`}
  >
- <Sparkles className="w-3.5 h-3.5 shrink-0" />
+ <Sparkles className={`w-3.5 h-3.5 shrink-0 ${mode === 'new' ? 'text-brand-500' : 'text-slate-400'}`} />
  <span>Brand-New</span>
  </button>
  <button
@@ -512,11 +512,11 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'service'
- ? 'bg-amber-700 text-white'
- : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+ ? 'bg-white text-brand-600 border border-brand-200/90'
+ : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 border border-transparent'
  }`}
  >
- <Wrench className="w-3.5 h-3.5 shrink-0" />
+ <Wrench className={`w-3.5 h-3.5 shrink-0 ${mode === 'service' ? 'text-brand-500' : 'text-slate-400'}`} />
  <span>Services</span>
  </button>
  </div>
@@ -570,7 +570,7 @@ export default function HomePage() {
  onClick={() => setSelectedCategory(cat)}
  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors shrink-0 cursor-pointer ${
  active
- ? 'bg-slate-900 text-white border-slate-900'
+ ? 'bg-brand-50 text-brand-700 border-brand-300'
  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
  }`}
  >
@@ -626,7 +626,7 @@ export default function HomePage() {
  onClick={() => setMobileFilterDrawerOpen(true)}
  className={`lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
  hasActiveFilters
- ? 'border-slate-900 bg-slate-900 text-white'
+ ? 'border-brand-300 bg-brand-50 text-brand-700'
  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
  }`}
  >

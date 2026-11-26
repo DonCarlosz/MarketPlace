@@ -111,7 +111,7 @@ export default function Navbar() {
                   : 'bg-slate-50 text-slate-700 hover:text-slate-900 hover:bg-slate-100 border-slate-200/80'
               }`}
             >
-              <Compass className="w-4 h-4 text-slate-500 shrink-0" />
+              <Compass className="w-4 h-4 text-blue-500 shrink-0" />
               <span>Explore Market</span>
             </Link>
           </div>
@@ -473,7 +473,7 @@ export default function Navbar() {
                         <Download className="w-5 h-5 text-slate-600 shrink-0" />
                         <span>Install oBuy App</span>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
                         App
                       </span>
                     </button>

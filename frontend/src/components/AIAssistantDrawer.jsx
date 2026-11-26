@@ -334,11 +334,11 @@ export default function AIAssistantDrawer() {
             type="button"
             onClick={handleLauncherClick}
             aria-label="Ask oBuy AI"
-            className="w-12 h-12 rounded-full bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 transition-colors cursor-pointer flex items-center justify-center relative group active:scale-95"
+            className="w-12 h-12 rounded-full bg-white hover:bg-brand-50 text-brand-500 border-2 border-brand-200 transition-colors cursor-pointer flex items-center justify-center relative group active:scale-95"
             title="Ask oBuy AI (drag anywhere to move)"
           >
-            <Sparkles className="w-5 h-5 text-white transition-transform group-hover:scale-110" />
-            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900" />
+            <Sparkles className="w-5 h-5 text-brand-500 transition-transform group-hover:scale-110" />
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
           </button>
         </div>
       )}
@@ -360,15 +360,15 @@ export default function AIAssistantDrawer() {
         {/* Drawer Header */}
         <div className="p-4 sm:px-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
-              <Sparkles className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-brand-500" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-black text-slate-900 text-sm tracking-tight">
                   oBuy AI
                 </h3>
-                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200">
+                <span className="px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold text-[10px] border border-brand-200">
                   Assistant
                 </span>
               </div>
@@ -408,7 +408,7 @@ export default function AIAssistantDrawer() {
                   <div
                     className={`text-xs rounded-2xl p-3.5 ${
                       isUser
-                        ? 'bg-slate-900 text-white rounded-br-sm'
+                        ? 'bg-emerald-50 text-slate-900 border border-emerald-200/90 rounded-br-sm'
                         : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-bl-sm'
                     }`}
                   >
@@ -465,7 +465,7 @@ export default function AIAssistantDrawer() {
 
                               <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-1 flex-wrap">
                                 <span className="flex items-center gap-0.5">
-                                  <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
                                   <span>{l.city}</span>
                                 </span>
                                 <span>•</span>
@@ -548,7 +548,7 @@ export default function AIAssistantDrawer() {
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="p-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white rounded-xl transition cursor-pointer shrink-0"
+              className="p-2.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white rounded-xl transition cursor-pointer shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
