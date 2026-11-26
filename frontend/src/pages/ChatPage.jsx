@@ -5,6 +5,7 @@ import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNotifications } from '../context/NotificationContext';
+import { usePermissions } from '../context/PermissionContext';
 import { chatInboxCache, chatMessagesCache } from '../utils/routeCache';
 import { formatPrice } from '../utils/format';
 import ConfirmModal from '../components/ConfirmModal';
@@ -120,6 +121,7 @@ export default function ChatPage() {
  const recordingTimerRef = useRef(null);
  const recordingStartRef = useRef(0);
  const shouldSendRecordingRef = useRef(false);
+ const wakeLockRef = useRef(null);
 
  const [isRecording, setIsRecording] = useState(false);
  const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -133,6 +135,7 @@ export default function ChatPage() {
 
  const { showToast } = useToast();
  const { setActiveConversationId, refreshUnreadCount, requestNotificationPermission } = useNotifications();
+ const { ensurePermission, openRecoveryGuide } = usePermissions();
 
  useEffect(() => {
  activeConvIdRef.current = activeConvId;
@@ -142,12 +145,16 @@ export default function ChatPage() {
  };
  }, [activeConvId, setActiveConversationId]);
 
- // Cleanup timers and microphone tracks on unmount
+ // Cleanup timers, wake lock, and microphone tracks on unmount
  useEffect(() => {
  return () => {
  if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
  if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
  if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+ if (wakeLockRef.current) {
+ wakeLockRef.current.release().catch(() => {});
+ wakeLockRef.current = null;
+ }
  if (recordingStreamRef.current) {
  recordingStreamRef.current.getTracks().forEach((t) => t.stop());
  }
@@ -466,8 +473,30 @@ export default function ChatPage() {
  }
  };
 
+ // Screen Wake Lock helpers (keeps phone screen awake while recording voice notes)
+ const acquireWakeLock = async () => {
+ try {
+ if (typeof navigator !== 'undefined' && 'wakeLock' in navigator && !wakeLockRef.current) {
+ wakeLockRef.current = await navigator.wakeLock.request('screen');
+ wakeLockRef.current.addEventListener?.('release', () => {
+ wakeLockRef.current = null;
+ });
+ }
+ } catch {
+ // Non-blocking if Wake Lock is unsupported or battery saver blocks it
+ }
+ };
+
+ const releaseWakeLock = () => {
+ if (wakeLockRef.current) {
+ wakeLockRef.current.release().catch(() => {});
+ wakeLockRef.current = null;
+ }
+ };
+
  // WhatsApp-Style Voice Recording Handlers
  const cleanupRecording = () => {
+ releaseWakeLock();
  if (recordingTimerRef.current) {
  clearInterval(recordingTimerRef.current);
  recordingTimerRef.current = null;
@@ -489,9 +518,17 @@ export default function ChatPage() {
  return;
  }
 
+ // 3-Layer Permission Flow: warm ask before raw browser prompt, or OS-aware recovery sheet if previously blocked
+ const micStatus = await ensurePermission('microphone', {
+ customReason:
+ 'Allow microphone access so you can record and send quick voice notes inside this conversation.',
+ });
+ if (micStatus !== 'granted') return;
+
  try {
  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
  recordingStreamRef.current = stream;
+ acquireWakeLock();
 
  const preferredMimes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
  const supportedMime = preferredMimes.find((m) => MediaRecorder.isTypeSupported?.(m)) || '';
@@ -591,9 +628,13 @@ export default function ChatPage() {
  return prev + 1;
  });
  }, 1000);
- } catch {
+ } catch (err) {
  cleanupRecording();
- showToast('Microphone access was denied. Enable mic permission to send voice notes.', 'error');
+ if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+ openRecoveryGuide('microphone');
+ } else {
+ showToast('Could not start voice recording. Check that no other app is using your microphone.', 'error');
+ }
  }
  };
 
@@ -689,8 +730,8 @@ export default function ChatPage() {
  setLocationStatus('gps');
  callApi(pos.coords);
  },
- () => {
- setLocationStatus('fallback');
+ (err) => {
+ setLocationStatus(err?.code === 1 ? 'denied' : 'fallback');
  callApi();
  },
  { timeout: 7000 }
@@ -2088,25 +2129,38 @@ export default function ChatPage() {
 
  {/* Location Status & Fallback Search Bar */}
  <div className="space-y-2">
- <div className="flex items-center justify-between text-xs">
- <span className="text-slate-500 font-semibold flex items-center gap-1.5">
- <MapPin className="w-3.5 h-3.5 text-brand-600" />
- <span>
+ <div className="flex items-center justify-between text-xs gap-2">
+ <span className="text-slate-500 font-semibold flex items-center gap-1.5 min-w-0">
+ <MapPin className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+ <span className="truncate">
  {locationStatus === 'detecting'
  ? 'Detecting GPS location...'
  : locationStatus === 'gps'
  ? 'GPS Active (Vetted spots nearby)'
+ : locationStatus === 'denied'
+ ? `GPS blocked - using ${activeConversation?.listing?.location?.city || user?.location?.city || 'Nigeria'}`
  : `Using city: ${activeConversation?.listing?.location?.city || user?.location?.city || 'Nigeria'}`}
  </span>
  </span>
+ <div className="flex items-center gap-2 shrink-0">
+ {locationStatus === 'denied' && (
+ <button
+ type="button"
+ onClick={() => openRecoveryGuide('geolocation', () => fetchSmartSafeSpots())}
+ className="text-[11px] font-bold text-rose-600 hover:text-rose-800 transition cursor-pointer"
+ >
+ Unlock GPS
+ </button>
+ )}
  <button
  type="button"
  onClick={() => fetchSmartSafeSpots()}
  disabled={loadingSmartSpots}
  className="text-[11px] font-bold text-brand-600 hover:text-brand-800 transition cursor-pointer"
  >
- Refresh Location
+ Refresh
  </button>
+ </div>
  </div>
 
  {/* Manual search input */}

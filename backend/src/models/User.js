@@ -120,6 +120,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // W3C Web Push (VAPID) subscriptions for closed-app PWA notifications
+    pushSubscriptions: [
+      {
+        endpoint: { type: String, required: true },
+        keys: {
+          p256dh: { type: String, required: true },
+          auth: { type: String, required: true },
+        },
+        userAgent: { type: String, default: '' },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,

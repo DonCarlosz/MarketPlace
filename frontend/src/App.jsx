@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,11 +9,13 @@ import {
   Link,
 } from 'react-router-dom';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { WifiOff } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ModeProvider } from './context/ModeContext';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { PWAInstallProvider } from './context/PWAInstallContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastProvider, useToast } from './context/ToastContext';
+import { PermissionProvider } from './context/PermissionContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { routeScrollCache } from './utils/routeCache';
 import Navbar from './components/Navbar';
@@ -158,6 +160,40 @@ function ScrollManager() {
   return null;
 }
 
+function OfflineBanner() {
+  const { showToast } = useToast();
+  const [isOffline, setIsOffline] = useState(
+    () => typeof navigator !== 'undefined' && navigator.onLine === false
+  );
+
+  useEffect(() => {
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      setIsOffline(false);
+      showToast('Back online - syncing latest updates.', 'success');
+      window.dispatchEvent(new CustomEvent('obuy:online'));
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [showToast]);
+
+  if (!isOffline) return null;
+
+  return (
+    <div
+      role="status"
+      className="w-full bg-amber-50 border-b border-amber-200 px-4 py-1.5 text-center text-[11px] font-bold text-amber-900 flex items-center justify-center gap-1.5 shrink-0"
+    >
+      <WifiOff className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+      <span>Offline - showing saved data. Changes will sync when connection returns.</span>
+    </div>
+  );
+}
+
 function AppContent() {
   const location = useLocation();
   const navType = useNavigationType();
@@ -211,6 +247,7 @@ function AppContent() {
       }`}
     >
       <Navbar />
+      <OfflineBanner />
       <AuthModal />
       <div className={`flex-1 ${isChatRoute ? 'overflow-hidden flex flex-col min-h-0' : ''}`}>
         {isDetailRoute ? (
@@ -244,10 +281,12 @@ export default function App() {
             <PWAInstallProvider>
               <ToastProvider>
                 <Router>
-                  <NotificationProvider>
-                    <ScrollManager />
-                    <AppContent />
-                  </NotificationProvider>
+                  <PermissionProvider>
+                    <NotificationProvider>
+                      <ScrollManager />
+                      <AppContent />
+                    </NotificationProvider>
+                  </PermissionProvider>
                 </Router>
               </ToastProvider>
             </PWAInstallProvider>

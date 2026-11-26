@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../utils/format';
@@ -19,14 +19,15 @@ import {
 } from 'lucide-react';
 
 const SUGGESTED_PROMPTS = [
-  'What is Timothy selling in Uromi?',
-  'Find second-hand laptops under ₦300,000',
+  'What items are currently available on oBuy?',
+  'Find electronics under ₦100,000',
   'How does the zero-fee peer-to-peer policy work?',
   'Where is the safest place to meet a buyer for a TV?',
 ];
 
 export default function AIAssistantDrawer() {
   const { user } = useAuth();
+  const routeLocation = useLocation();
 
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -192,7 +193,7 @@ export default function AIAssistantDrawer() {
       const res = await API.post('/ai/chat', {
         messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
         context: {
-          currentRoute: location.pathname,
+          currentRoute: routeLocation.pathname,
           userName: user?.name,
           userCity: user?.location?.city,
         },
@@ -215,7 +216,7 @@ export default function AIAssistantDrawer() {
         ...prev,
         {
           role: 'assistant',
-          content: `oBuy allows you to buy and sell with zero commission. Always meet locally in well-lit public spots such as bank ATM galleries or supermarket plazas to inspect goods before paying in person.`,
+          content: `I could not reach the oBuy AI service right now. Check your internet connection and try sending your message again.`,
           listings: [],
         },
       ]);
@@ -241,9 +242,11 @@ export default function AIAssistantDrawer() {
     return text.split('\n').map((line, idx) => {
       if (!line.trim()) return <div key={idx} className="h-1.5" />;
 
-      // Simple bullet parsing
-      const isBullet = line.trim().startsWith('- ') || line.trim().startsWith('• ');
-      const cleanLine = isBullet ? line.trim().slice(2) : line;
+      // Simple bullet or numbered list parsing
+      const trimmed = line.trim();
+      const isBullet = trimmed.startsWith('- ') || trimmed.startsWith('• ') || trimmed.startsWith('* ');
+      const numberedMatch = !isBullet ? trimmed.match(/^(\d+\.)\s+(.*)$/) : null;
+      const cleanLine = isBullet ? trimmed.slice(2) : numberedMatch ? numberedMatch[2] : line;
 
       // Parse bold **text**
       const parts = cleanLine.split(/(\*\*.*?\*\*)/g);
@@ -263,6 +266,15 @@ export default function AIAssistantDrawer() {
         return (
           <div key={idx} className="flex items-start gap-2 pl-1 my-0.5">
             <span className="text-brand-600 font-bold shrink-0">•</span>
+            <span className="flex-1">{content}</span>
+          </div>
+        );
+      }
+
+      if (numberedMatch) {
+        return (
+          <div key={idx} className="flex items-start gap-2 pl-1 my-0.5">
+            <span className="text-brand-600 font-bold shrink-0">{numberedMatch[1]}</span>
             <span className="flex-1">{content}</span>
           </div>
         );

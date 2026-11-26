@@ -4,12 +4,25 @@ import Listing from '../models/Listing.js';
 import User from '../models/User.js';
 import Media from '../models/Media.js';
 import { getSmartSafeMeetupSpots } from '../services/safePlacesService.js';
+import { sendPushToUser } from '../services/pushService.js';
 import { isSafeImageUrl } from '../utils/sanitize.js';
 
-// Helper to emit real-time WhatsApp-style notification to the recipient's personal user room
+// Helper to emit real-time WhatsApp-style notification + closed-app Web Push to the recipient
 const emitUserNotification = (io, recipientId, payload) => {
-  if (!io || !recipientId) return;
-  io.to(`user_${recipientId.toString()}`).emit('new_message_notification', payload);
+  if (!recipientId) return;
+  if (io) {
+    io.to(`user_${recipientId.toString()}`).emit('new_message_notification', payload);
+  }
+  const title = payload.isRequest
+    ? `New Message Request from ${payload.senderName || 'oBuy Member'}`
+    : payload.senderName || 'New oBuy Message';
+  const listingPrefix = payload.listingTitle ? `${payload.listingTitle}: ` : '';
+  sendPushToUser(recipientId, {
+    title,
+    body: `${listingPrefix}${payload.preview || 'New message on oBuy'}`,
+    url: payload.conversationId ? `/messages?conversationId=${payload.conversationId}` : '/messages',
+    tag: payload.conversationId ? `obuy-chat-${payload.conversationId}` : 'obuy-chat',
+  }).catch(() => {});
 };
 
 // @desc    Get unread messages & pending message requests summary for current user

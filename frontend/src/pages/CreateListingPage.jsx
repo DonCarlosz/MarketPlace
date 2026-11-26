@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
+import { useToast } from '../context/ToastContext';
 import { formatPrice } from '../utils/format';
 import { NIGERIAN_CITY_LIST } from '../utils/geo';
 import ResponsiveSheet from '../components/ResponsiveSheet';
@@ -131,7 +132,9 @@ const NIGERIAN_CITIES = NIGERIAN_CITY_LIST.filter((c) => c !== 'All Locations');
 export default function CreateListingPage() {
  const { user, openAuthModal } = useAuth();
  const { mode: defaultMode, userLocation } = useMode();
+ const { showToast } = useToast();
  const navigate = useNavigate();
+ const [searchParams, setSearchParams] = useSearchParams();
 
  // Wizard Step (1: Classification, 2: Photos & Specifics, 3: Pricing & Meetup)
  const [step, setStep] = useState(1);
@@ -281,6 +284,65 @@ export default function CreateListingPage() {
  useEffect(() => {
  window.scrollTo({ top: 0, behavior: 'smooth' });
  }, [step]);
+
+ // Web Share Target receiver: auto-import photos & text shared directly from phone Gallery into /create?shared=1
+ useEffect(() => {
+ if (searchParams.get('shared') !== '1' || typeof caches === 'undefined') return;
+ let cancelled = false;
+
+ const consumeSharedPayload = async () => {
+ try {
+ const cache = await caches.open('obuy-share-target-v1');
+ const metaRes = await cache.match('/__shared_meta');
+ if (!metaRes) return;
+
+ const meta = await metaRes.json();
+ if (cancelled) return;
+
+ if (meta.title && !title) setTitle(String(meta.title).slice(0, 80));
+ const combinedText = [meta.text, meta.url].filter(Boolean).join('\n').trim();
+ if (combinedText && !description) setDescription(combinedText);
+
+ const fileKeys = Array.isArray(meta.files) ? meta.files : [];
+ if (fileKeys.length > 0 && user) {
+ setUploading(true);
+ const formData = new FormData();
+ let appended = 0;
+ for (const key of fileKeys) {
+ const fileRes = await cache.match(key);
+ if (!fileRes) continue;
+ const blob = await fileRes.blob();
+ const fileName = decodeURIComponent(fileRes.headers.get('X-File-Name') || 'shared-photo.jpg');
+ formData.append('images', new File([blob], fileName, { type: blob.type || 'image/jpeg' }));
+ appended += 1;
+ }
+ if (appended > 0) {
+ const upRes = await API.post('/upload', formData, {
+ headers: { 'Content-Type': 'multipart/form-data' },
+ });
+ if (!cancelled && upRes.data?.success && upRes.data.images?.length > 0) {
+ setImages((prev) => [...prev, ...upRes.data.images].slice(0, 12));
+ showToast(`Imported ${upRes.data.images.length} shared photo${upRes.data.images.length > 1 ? 's' : ''} into your listing.`, 'success');
+ }
+ }
+ }
+
+ await caches.delete('obuy-share-target-v1');
+ } catch {
+ // Non-blocking if share cache was unavailable
+ } finally {
+ if (!cancelled) {
+ setUploading(false);
+ setSearchParams({}, { replace: true });
+ }
+ }
+ };
+
+ consumeSharedPayload();
+ return () => {
+ cancelled = true;
+ };
+ }, [searchParams, user, setSearchParams, showToast]);
 
  // Image Upload Handlers
  const handleImageUpload = async (e) => {

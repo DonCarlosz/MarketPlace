@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from './AuthContext';
+import { usePermissions } from './PermissionContext';
+import { syncAppBadge, subscribeToWebPush } from '../utils/permissions';
 import { MessageSquare, Mic, Tag, MapPin, X } from 'lucide-react';
 
 const NotificationContext = createContext({
@@ -47,6 +49,7 @@ const playNotificationChime = () => {
 
 export const NotificationProvider = ({ children }) => {
   const { user } = useAuth();
+  const { ensurePermission } = usePermissions();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -89,27 +92,57 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [userId]);
 
-  const requestNotificationPermission = useCallback(async () => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
-    if (Notification.permission === 'default') {
-      try {
-        return await Notification.requestPermission();
-      } catch {
-        return 'denied';
-      }
-    }
-    return Notification.permission;
-  }, []);
+  const requestNotificationPermission = useCallback(
+    async ({ passive = true } = {}) => {
+      if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
 
-  // Load unread counts when authenticated
+      if (Notification.permission === 'granted') {
+        if (userId) subscribeToWebPush().catch(() => {});
+        return 'granted';
+      }
+
+      if (passive) {
+        // Never nag repeatedly on passive chat clicks or when user already blocked in OS
+        if (Notification.permission === 'denied') return 'denied';
+        try {
+          if (sessionStorage.getItem('obuy_notif_warm_prompted')) return 'prompt';
+          sessionStorage.setItem('obuy_notif_warm_prompted', '1');
+        } catch {
+          // Ignore storage errors
+        }
+      }
+
+      const result = await ensurePermission('notifications');
+      if (result === 'granted' && userId) {
+        subscribeToWebPush().catch(() => {});
+      }
+      return result;
+    },
+    [ensurePermission, userId]
+  );
+
+  // Sync live unread count to the home-screen PWA App Icon Badge (Android / iOS 16.4+ / Desktop)
+  useEffect(() => {
+    syncAppBadge(userId ? unreadCount : 0);
+  }, [unreadCount, userId]);
+
+  // Load unread counts & silently ensure W3C Web Push subscription when authenticated + permitted
   useEffect(() => {
     if (!userId) {
       setUnreadCount(0);
       setPendingRequests(0);
       setBanner(null);
+      syncAppBadge(0);
       return;
     }
     refreshUnreadCount();
+    if (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'granted'
+    ) {
+      subscribeToWebPush().catch(() => {});
+    }
   }, [userId, refreshUnreadCount]);
 
   // Listen for real-time WhatsApp-style message & request notifications

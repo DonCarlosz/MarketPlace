@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { usePermissions } from '../context/PermissionContext';
 import { profileRouteCache } from '../utils/routeCache';
 import ListingCard from '../components/ListingCard';
 import ConfirmModal from '../components/ConfirmModal';
@@ -31,12 +32,15 @@ import {
  Loader2,
  LogOut,
  ChevronDown,
+ SlidersHorizontal,
 } from 'lucide-react';
 
 export default function ProfilePage() {
  const { userId } = useParams();
  const { user: currentUser, updateUser, logout, openAuthModal } = useAuth();
  const { showToast } = useToast();
+ const { openPermissionsCenter, states: permStates } = usePermissions();
+ const hasBlockedPermission = Object.values(permStates || {}).includes('denied');
  const navigate = useNavigate();
 
  const currentUserId = (currentUser?._id || currentUser?.id)?.toString();
@@ -612,6 +616,15 @@ export default function ProfilePage() {
  </button>
  <button
  type="button"
+ onClick={openPermissionsCenter}
+ className="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ >
+ <SlidersHorizontal className="w-3.5 h-3.5 text-brand-600" />
+ <span>Permissions</span>
+ {hasBlockedPermission && <span className="w-2 h-2 rounded-full bg-rose-500" />}
+ </button>
+ <button
+ type="button"
  onClick={promptLogout}
  className="px-3.5 py-2 text-xs font-bold rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
@@ -689,22 +702,31 @@ export default function ProfilePage() {
  {/* Mobile Action Buttons (includes Log Out directly on Profile for mobile users) */}
  <div className="sm:hidden">
  {isOwnProfile ? (
- <div className="grid grid-cols-2 gap-2">
+ <div className="grid grid-cols-3 gap-2">
  <button
  type="button"
  onClick={toggleEditing}
- className="px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ className="px-3 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
- <Edit3 className="w-3.5 h-3.5" />
- <span>Edit Profile</span>
+ <Edit3 className="w-3.5 h-3.5 shrink-0" />
+ <span className="truncate">Edit</span>
+ </button>
+ <button
+ type="button"
+ onClick={openPermissionsCenter}
+ className="px-3 py-2.5 text-xs font-bold rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ >
+ <SlidersHorizontal className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+ <span className="truncate">Permissions</span>
+ {hasBlockedPermission && <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />}
  </button>
  <button
  type="button"
  onClick={promptLogout}
- className="px-4 py-2.5 text-xs font-bold rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+ className="px-3 py-2.5 text-xs font-bold rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
  >
- <LogOut className="w-3.5 h-3.5" />
- <span>Log Out</span>
+ <LogOut className="w-3.5 h-3.5 shrink-0" />
+ <span className="truncate">Log Out</span>
  </button>
  </div>
  ) : (

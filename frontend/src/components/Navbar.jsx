@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { usePWAInstall } from '../context/PWAInstallContext';
 import { useNotifications } from '../context/NotificationContext';
+import { usePermissions } from '../context/PermissionContext';
 import { resolveMediaUrl } from '../services/api';
 import ConfirmModal from './ConfirmModal';
 import BrandLogo from './BrandLogo';
@@ -22,6 +23,7 @@ import {
   LogIn,
   UserPlus,
   Download,
+  SlidersHorizontal,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -29,6 +31,8 @@ export default function Navbar() {
   const { count: favoritesCount } = useFavorites();
   const { isInstalled, installApp } = usePWAInstall();
   const { unreadCount } = useNotifications();
+  const { openPermissionsCenter, states: permStates } = usePermissions();
+  const hasBlockedPermission = Object.values(permStates || {}).includes('denied');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -201,6 +205,22 @@ export default function Navbar() {
                           <Heart className="w-4 h-4 text-rose-500" />
                           Saved Favorites
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            openPermissionsCenter();
+                          }}
+                          className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <SlidersHorizontal className="w-4 h-4 text-brand-600" />
+                            App Permissions
+                          </span>
+                          {hasBlockedPermission && (
+                            <span className="w-2 h-2 rounded-full bg-rose-500" title="Some permissions blocked" />
+                          )}
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -420,6 +440,25 @@ export default function Navbar() {
                       <span>My Profile & Listings</span>
                     </Link>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      openPermissionsCenter();
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[15px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <SlidersHorizontal className="w-5 h-5 text-brand-600 shrink-0" />
+                      <span>App Permissions</span>
+                    </div>
+                    {hasBlockedPermission && (
+                      <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold">
+                        Action
+                      </span>
+                    )}
+                  </button>
 
                   {!isInstalled && (
                     <button

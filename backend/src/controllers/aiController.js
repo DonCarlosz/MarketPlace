@@ -32,6 +32,10 @@ export const chatWithAssistantController = async (req, res, next) => {
       });
     }
 
+    const rawRoute =
+      typeof context?.currentRoute === 'string' ? context.currentRoute.trim().slice(0, 140) : '/';
+    const listingRouteMatch = rawRoute.match(/^\/listing\/([a-f0-9]{24})/i);
+
     const userContext = {
       name:
         req.user?.name ||
@@ -39,6 +43,8 @@ export const chatWithAssistantController = async (req, res, next) => {
       city:
         req.user?.location?.city ||
         (typeof context?.userCity === 'string' ? context.userCity.trim().slice(0, 60) : 'Nigeria'),
+      currentRoute: rawRoute,
+      currentListingId: listingRouteMatch ? listingRouteMatch[1] : null,
     };
 
     const result = await chatWithAssistant({ messages: sanitizedMessages, userContext });

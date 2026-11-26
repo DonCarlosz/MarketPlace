@@ -4,6 +4,7 @@ import { useMode } from '../context/ModeContext';
 import { useAuth } from '../context/AuthContext';
 import API, { resolveMediaUrl } from '../services/api';
 import { formatPrice } from '../utils/format';
+import { landingRouteCache } from '../utils/routeCache';
 import ListingCard from '../components/ListingCard';
 import PullToRefresh from '../components/PullToRefresh';
 import {
@@ -84,18 +85,16 @@ const POPULAR_SEARCHES = [
 
 const TRACK_SLIDES = [2, 0, 1, 2, 0];
 
-// Global cache for instant landing page return
-let landingFeaturedCache = null;
-
 export default function LandingPage() {
  const { setMode, setSearchQuery, setSelectedCategory } = useMode();
  const { openAuthModal, user } = useAuth();
  const navigate = useNavigate();
 
+ const cachedFeatured = landingRouteCache.get('featured');
  const [localSearch, setLocalSearch] = useState('');
  const [selectedSearchCat, setSelectedSearchCat] = useState('All');
- const [featuredListings, setFeaturedListings] = useState(() => landingFeaturedCache || []);
- const [loading, setLoading] = useState(() => !landingFeaturedCache);
+ const [featuredListings, setFeaturedListings] = useState(() => cachedFeatured || []);
+ const [loading, setLoading] = useState(() => !cachedFeatured);
  const [activeFilter, setActiveFilter] = useState(null);
 
  // 1-direction infinite auto-switching Hero banner track
@@ -159,7 +158,7 @@ export default function LandingPage() {
  if (res.data?.success) {
  const fresh = res.data.listings || [];
  if (!cat && !term) {
- landingFeaturedCache = fresh;
+ landingRouteCache.set('featured', fresh);
  }
  setFeaturedListings(fresh);
  }
@@ -171,7 +170,20 @@ export default function LandingPage() {
  };
 
  useEffect(() => {
- fetchListingsData(null, null, !!landingFeaturedCache);
+ const unsub = landingRouteCache.subscribe(() => {
+ const hydrated = landingRouteCache.get('featured');
+ if (hydrated && hydrated.length > 0) {
+ setFeaturedListings((prev) => (prev.length === 0 ? hydrated : prev));
+ setLoading(false);
+ }
+ });
+ fetchListingsData(null, null, Boolean(landingRouteCache.get('featured')));
+ const onOnline = () => fetchListingsData(null, null, true);
+ window.addEventListener('obuy:online', onOnline);
+ return () => {
+ unsub();
+ window.removeEventListener('obuy:online', onOnline);
+ };
  }, []);
 
  const scrollCarousel = (direction) => {

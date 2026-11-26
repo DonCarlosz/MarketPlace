@@ -98,26 +98,30 @@ export default function ListingDetailPage() {
  };
 
  const handleShareListing = async () => {
+ hapticTap();
  const url = window.location.href;
+ const priceLabel = listing?.price ? ` (${formatPrice(listing.price)})` : '';
  if (navigator.share) {
  try {
  await navigator.share({
  title: listing?.title || 'oBuy Listing',
- text: `Check out "${listing?.title}" on oBuy`,
+ text: `Check out "${listing?.title}"${priceLabel} on oBuy`,
  url,
  });
  return;
- } catch {
- // User cancelled native share sheet
+ } catch (err) {
+ // If the user intentionally dismissed the OS share sheet, stop cleanly without copying
+ if (err?.name === 'AbortError') return;
  }
  }
  if (navigator.clipboard) {
  try {
  await navigator.clipboard.writeText(url);
  setShareFeedback(true);
+ showToast('Listing link copied to clipboard.', 'success');
  setTimeout(() => setShareFeedback(false), 2000);
  } catch {
- // Ignore clipboard error
+ showToast('Could not copy listing link.', 'error');
  }
  }
  };

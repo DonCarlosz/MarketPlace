@@ -1,11 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
 import Listing from '../models/Listing.js';
-
-function getAiClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
-}
+import {
+  getAiClient,
+  generateWithFallback,
+  parseStrictJson,
+  sanitizeAiText,
+} from './geminiClient.js';
 
 // Fallback verified open-space commercial hubs across major Nigerian commercial centers
 const NIGERIAN_SAFE_HUBS = {
@@ -546,83 +545,124 @@ export async function getSmartSafeMeetupSpots({
 
   const combinedCandidates = [...candidatePlaces, ...regionalHubs].slice(0, 10);
 
-  // 2. Use Gemini AI for Spatial & Size-Aware Reasoner
+  // 2. Use Gemini AI for Grounded Spatial & Size-Aware Safe Meetup Selection
   const ai = getAiClient();
-  if (ai) {
+  if (ai && combinedCandidates.length > 0) {
     try {
-    const prompt = `
-You are the oBuy Safe Meetup Reasoner.
+      const safeSpotSystemInstruction = `
+You are the oBuy Safe Meetup Reasoner for Nigeria.
+Select and rank ONLY from the VERIFIED_CANDIDATES list provided.
+STRICT GROUNDING RULES:
+1. NEVER invent venues, street names, or coordinates that are not in VERIFIED_CANDIDATES.
+2. NEVER pick a venue outside the target city "${city}".
+3. NEVER pick cramped indoor restaurants, bars, eateries, or quiet residential side streets.
+4. For bulky items (TVs, generators, furniture, refrigerators, appliances, monitors, bicycles), prioritize venues with wide open customer car parks, vehicle pull-up clearance, or mall/fuel station forecourts.
+5. For compact items (phones, watches, laptops, small fashion), prioritize guarded bank ATM forecourts with CCTV, well-lit supermarket lobbies, or busy mall entrances.
+6. NEVER use em dashes or en dashes. Output ONLY valid JSON.
+`.trim();
+
+      const prompt = `
 Item being traded: "${itemTitle}" (Category: "${itemCategory}")
 Target City: "${city}" (Neighborhood: "${neighborhood || 'Central'}")
 User Location Context: Lat: ${lat || 'unknown'}, Lng: ${lng || 'unknown'}.
 
-CRITICAL CITY CONSTRAINT:
-All recommended venues MUST be located strictly within or immediately around "${city}". NEVER suggest venues in Lagos or other distant states when the target city is "${city}"!
+VERIFIED_CANDIDATES (pick 3 to 4 best venues STRICTLY from this list, preserving exact candidate index):
+${JSON.stringify(
+  combinedCandidates.map((c, idx) => ({
+    candidateIndex: idx,
+    name: c.name,
+    address: c.address,
+    locationType: c.locationType || c.amenity || 'commercial_plaza',
+    lat: c.lat,
+    lng: c.lng,
+  })),
+  null,
+  2
+)}
 
-Raw Venue Candidates:
-${JSON.stringify(combinedCandidates, null, 2)}
-
-Instructions:
-1. Determine if this item is "bulky" (e.g. TVs, generators, furniture, desktop monitors, bicycles, appliances) or "compact/handheld" (e.g. phones, watches, laptops, small fashion).
-2. CRITICAL CONSTRAINT: DO NOT recommend cramped indoor restaurants, food joints, or quiet residential side-streets. We cannot sell televisions or heavy goods inside eateries!
-3. For bulky items, prioritize venues with wide open customer car parks, vehicle pull-up clearance, or mall loading concourses.
-4. For compact items, prioritize bank ATM galleries with 24/7 security, well-lit supermarket lobbies, or active mall atriums.
-5. Select the top 3-4 best venues and provide a helpful, natural-language "plainDescription" explaining exactly where to stand (e.g. "Meet in the open customer parking lot near the security gate. Broad daylight, room for car loading, high visibility.") so users who do not understand map directions can easily recognize where to go.
-
-Output strictly valid JSON with no markdown formatting:
+Return strict JSON array:
 [
   {
-    "name": "string",
-    "address": "string",
+    "candidateIndex": number,
     "locationType": "supermarket_plaza" | "mall_entrance" | "fuel_station_forecourt" | "bank_security_zone" | "commercial_plaza",
     "spaceTag": "Open Space & Vehicle Accessible" | "24/7 Security & CCTV" | "Well-Lit Commercial Hub",
-    "plainDescription": "string (clear landmarks, parking info, and safety advice)",
-    "lat": number,
-    "lng": number
+    "plainDescription": "clear 1-2 sentence landmark & safety guide explaining exactly where to stand and inspect this specific item"
   }
 ]
-`;
+`.trim();
 
-    const aiRes = await ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
-      contents: prompt,
-    });
-
-    let rawText = aiRes.text.trim();
-    // Clean code fences if present
-    if (rawText.startsWith('```json')) {
-      rawText = rawText.replace(/^```json/, '').replace(/```$/, '').trim();
-    } else if (rawText.startsWith('```')) {
-      rawText = rawText.replace(/^```/, '').replace(/```$/, '').trim();
-    }
-
-    const parsedSpots = JSON.parse(rawText);
-
-    if (Array.isArray(parsedSpots) && parsedSpots.length > 0) {
-      return parsedSpots.map((spot) => {
-        const spotLat = Number(spot.lat) || lat;
-        const spotLng = Number(spot.lng) || lng;
-        const dist = lat && lng && spotLat && spotLng ? getDistanceKm(lat, lng, spotLat, spotLng) : null;
-
-        const searchQuery = encodeURIComponent(`${spot.name} ${spot.address || city}`);
-        return {
-          name: spot.name,
-          address: spot.address || `${spot.name}, ${city}`,
-          locationType: spot.locationType || 'commercial_plaza',
-          spaceTag: spot.spaceTag || 'Open Space & Vehicle Accessible',
-          plainDescription: spot.plainDescription,
-          distance: dist ? `${dist} km away` : 'Nearby in your city',
-          distanceKm: dist,
-          mapUrl: `https://www.google.com/maps/search/?api=1&query=${searchQuery}`,
-          lat: spotLat,
-          lng: spotLng,
-        };
+      const { text } = await generateWithFallback({
+        contents: prompt,
+        systemInstruction: safeSpotSystemInstruction,
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+        maxOutputTokens: 700,
+        preferFast: true,
       });
+
+      const parsedSpots = parseStrictJson(text);
+
+      if (Array.isArray(parsedSpots) && parsedSpots.length > 0) {
+        const validLocationTypes = new Set([
+          'supermarket_plaza',
+          'mall_entrance',
+          'fuel_station_forecourt',
+          'bank_security_zone',
+          'commercial_plaza',
+        ]);
+
+        const seenIndices = new Set();
+        const grounded = parsedSpots
+          .map((spot) => {
+            const idx = Number(spot?.candidateIndex);
+            if (
+              !Number.isInteger(idx) ||
+              idx < 0 ||
+              idx >= combinedCandidates.length ||
+              seenIndices.has(idx)
+            ) {
+              return null;
+            }
+            seenIndices.add(idx);
+            const candidate = combinedCandidates[idx];
+            const spotLat = Number(candidate.lat) || lat;
+            const spotLng = Number(candidate.lng) || lng;
+            const dist =
+              lat && lng && spotLat && spotLng ? getDistanceKm(lat, lng, spotLat, spotLng) : null;
+            const safeAddress = candidate.address || `${candidate.name}, ${city}`;
+            const searchQuery = encodeURIComponent(`${candidate.name} ${safeAddress}`);
+
+            return {
+              name: sanitizeAiText(candidate.name),
+              address: sanitizeAiText(safeAddress),
+              locationType: validLocationTypes.has(spot.locationType)
+                ? spot.locationType
+                : candidate.locationType || 'commercial_plaza',
+              spaceTag: sanitizeAiText(
+                spot.spaceTag || candidate.spaceTag || 'Open Space & Vehicle Accessible'
+              ),
+              plainDescription: sanitizeAiText(
+                spot.plainDescription ||
+                  candidate.plainDescription ||
+                  `Meet in daylight at ${candidate.name} in ${city} with public visibility and security nearby.`
+              ),
+              distance: dist ? `${dist} km away` : 'Nearby in your city',
+              distanceKm: dist,
+              mapUrl: `https://www.google.com/maps/search/?api=1&query=${searchQuery}`,
+              lat: spotLat,
+              lng: spotLng,
+            };
+          })
+          .filter(Boolean);
+
+        if (grounded.length > 0) {
+          return grounded;
+        }
+      }
+    } catch (err) {
+      console.error('Gemini safe spot recommendation error, using verified fallbacks:', err.message);
     }
-  } catch (err) {
-    console.error('Gemini safe spot recommendation error, using verified fallbacks:', err.message);
   }
-}
 
   // Fallback: format regional hubs with distance and map URLs
   return regionalHubs.map((hub) => {

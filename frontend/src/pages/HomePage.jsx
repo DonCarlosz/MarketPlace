@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import API from '../services/api';
 import { getSocket } from '../services/socket';
 import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo';
+import { marketListingsCache } from '../utils/routeCache';
 import ListingCard from '../components/ListingCard';
 import FilterSidebar from '../components/FilterSidebar';
 import SafetyBanner from '../components/SafetyBanner';
@@ -60,16 +61,10 @@ const CATEGORIES_BY_MODE = {
  ],
 };
 
-// Bounded in-memory cache for instant return navigation
-const MAX_CACHE_ENTRIES = 30;
-const listingsCache = new Map();
+// Persisted IndexedDB-backed SWR cache for instant return & offline viewing
+const listingsCache = marketListingsCache;
 const setBoundedCache = (key, value) => {
- if (listingsCache.has(key)) listingsCache.delete(key);
  listingsCache.set(key, value);
- if (listingsCache.size > MAX_CACHE_ENTRIES) {
- const oldestKey = listingsCache.keys().next().value;
- listingsCache.delete(oldestKey);
- }
 };
 let lastMarketScrollY = 0;
 
@@ -254,6 +249,24 @@ export default function HomePage() {
  setLoading(false);
  }
  };
+
+ // Hydrate from IndexedDB if offline/cold boot, and re-sync automatically when back online
+ useEffect(() => {
+ const key = getCacheKey();
+ const unsub = listingsCache.subscribe(() => {
+ const hydrated = listingsCache.get(key);
+ if (hydrated && hydrated.length > 0) {
+ setListings((prev) => (prev.length === 0 ? hydrated : prev));
+ setLoading(false);
+ }
+ });
+ const onOnline = () => fetchListings(true);
+ window.addEventListener('obuy:online', onOnline);
+ return () => {
+ unsub();
+ window.removeEventListener('obuy:online', onOnline);
+ };
+ }, [mode, selectedCategory, searchQuery, sortBy, activeCity]);
 
  // Real-time background sync via Socket.io
  useEffect(() => {
