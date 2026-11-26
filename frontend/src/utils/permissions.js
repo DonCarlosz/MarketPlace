@@ -209,55 +209,55 @@ export function getRecoveryGuide(type, platform = detectDevicePlatform()) {
 
   if (platform === 'android-pwa') {
     return {
-      deviceLabel: 'Android Installed App (oBuy PWA)',
+      deviceLabel: 'Android App',
       steps: [
-        `Long-press the oBuy icon on your Home Screen and tap App Info (or tap the menu/lock icon at the top bar -> Site settings).`,
-        `Open Permissions (or Site settings) -> tap ${label} -> choose Allow, then switch back to oBuy.`,
+        `Long-press the oBuy icon on your Home Screen and tap Site settings.`,
+        `Open Site settings -> tap ${label} -> choose Allow, then return to oBuy.`,
       ],
-      tip: 'You do not need to clear cache or reinstall oBuy. Once turned on, return here and oBuy will resume automatically.',
+      tip: 'No need to clear cache or reinstall oBuy.',
     };
   }
 
   if (platform === 'android-browser') {
     return {
-      deviceLabel: 'Android Chrome / Browser',
+      deviceLabel: 'Android Browser',
       steps: [
-        `Tap the tune/lock icon to the left of the address bar at the top of your browser.`,
-        `Tap Permissions -> turn ON ${label} (or choose Allow), then return to this screen.`,
+        `Tap the tune icon on the left side of the address bar.`,
+        `Tap Permissions -> turn on ${label}, then return here.`,
       ],
-      tip: 'No cache clearing needed. Tap "Re-check Permission" once you flip the switch.',
+      tip: 'No need to clear cache.',
     };
   }
 
   if (platform === 'ios-pwa') {
     return {
-      deviceLabel: 'iPhone / iPad Home Screen App',
+      deviceLabel: 'iPhone App',
       steps: [
-        `Open your iPhone Settings app -> scroll down to Safari (or oBuy under Apps) -> select ${label}.`,
-        `Change ${label} from Deny to Allow (or Ask), then switch back to oBuy.`,
+        `Open your iPhone Settings app and tap Safari.`,
+        `Tap ${label} -> choose Allow, then return to oBuy.`,
       ],
-      tip: 'On iOS, notifications require oBuy to be added to your Home Screen via Share -> Add to Home Screen.',
+      tip: 'No need to reinstall oBuy.',
     };
   }
 
   if (platform === 'ios-safari') {
     return {
-      deviceLabel: 'iPhone / iPad Safari',
+      deviceLabel: 'iPhone Safari',
       steps: [
-        `Tap the AA / Page Settings icon inside Safari's address bar -> tap Website Settings.`,
-        `Set ${label} to Allow, then tap Done and return here.`,
+        `Tap the page settings icon in Safari's address bar and tap Website Settings.`,
+        `Set ${label} to Allow, tap Done, and return here.`,
       ],
-      tip: 'For closed-app push notifications on iPhone, tap Share -> Add to Home Screen first.',
+      tip: 'No need to clear cache.',
     };
   }
 
   return {
-    deviceLabel: 'Desktop Browser (Chrome / Edge / Safari)',
+    deviceLabel: 'Desktop Browser',
     steps: [
-      `Click the tune/lock icon on the left side of your browser's address bar.`,
-      `Toggle ${label} to Allow (or click Site Settings -> ${label} -> Allow), then click Re-check below.`,
+      `Click the tune icon on the left side of the address bar.`,
+      `Set ${label} to Allow, then click Re-check below.`,
     ],
-    tip: 'You never need to clear site data or cookies. Changing the site permission takes effect immediately.',
+    tip: 'No need to clear site data or cookies.',
   };
 }
 

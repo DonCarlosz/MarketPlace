@@ -4,7 +4,6 @@ import {
   PERMISSION_META,
   detectDevicePlatform,
   getRecoveryGuide,
-  sendTestPushNotification,
 } from '../utils/permissions';
 import { useToast } from '../context/ToastContext';
 import { hapticTap, hapticSuccess } from '../utils/haptics';
@@ -17,7 +16,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   RefreshCw,
-  Send,
   X,
   ChevronRight,
   SlidersHorizontal,
@@ -76,7 +74,6 @@ export default function PermissionsSheet({
   const { showToast } = useToast();
   const [busyType, setBusyType] = useState(null);
   const [rechecking, setRechecking] = useState(false);
-  const [testingPush, setTestingPush] = useState(false);
 
   const isOpen = Boolean(sheetState);
   const mode = sheetState?.mode;
@@ -115,20 +112,6 @@ export default function PermissionsSheet({
       }
     } finally {
       setRechecking(false);
-    }
-  };
-
-  const handleSendTestPush = async () => {
-    hapticTap();
-    setTestingPush(true);
-    try {
-      await sendTestPushNotification();
-      hapticSuccess();
-      showToast('Test notification dispatched to this device.', 'success');
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Could not send test push alert.', 'error');
-    } finally {
-      setTestingPush(false);
     }
   };
 
@@ -227,19 +210,7 @@ export default function PermissionsSheet({
                       </button>
                     )}
 
-                    {state === 'granted' && type === 'notifications' && isAuthenticated && (
-                      <button
-                        type="button"
-                        disabled={testingPush}
-                        onClick={handleSendTestPush}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        <Send className="w-3 h-3" />
-                        <span>{testingPush ? 'Sending...' : 'Send Test Alert'}</span>
-                      </button>
-                    )}
-
-                    {state === 'granted' && (type !== 'notifications' || !isAuthenticated) && (
+                    {state === 'granted' && (
                       <span className="text-[11px] font-semibold text-emerald-700">
                         Active on this device
                       </span>
@@ -371,7 +342,7 @@ export default function PermissionsSheet({
                 className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${rechecking ? 'animate-spin' : ''}`} />
-                <span>{rechecking ? 'Checking...' : 'I Turned It On - Re-check'}</span>
+                <span>{rechecking ? 'Checking...' : 'Re-check'}</span>
               </button>
             </div>
           </div>
