@@ -60,6 +60,23 @@ const conversationSchema = new mongoose.Schema(
   }
 );
 
+conversationSchema.pre('validate', function () {
+  const uniqueIds = new Set(
+    (this.participants || []).filter(Boolean).map((p) => (p._id || p).toString())
+  );
+  if (uniqueIds.size < 2) {
+    throw new Error('A conversation must have two distinct users.');
+  }
+  if (
+    this.initiator &&
+    this.receiver &&
+    (this.initiator._id || this.initiator).toString() ===
+      (this.receiver._id || this.receiver).toString()
+  ) {
+    throw new Error('Users cannot start a conversation with themselves.');
+  }
+});
+
 conversationSchema.index({ participants: 1, listing: 1 });
 conversationSchema.index({ lastMessageAt: -1 });
 

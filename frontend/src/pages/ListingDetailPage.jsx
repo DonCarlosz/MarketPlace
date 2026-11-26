@@ -228,6 +228,11 @@ export default function ListingDetailPage() {
  const handleSubmitOffer = async (e) => {
  e.preventDefault();
  if (!offerAmount || Number(offerAmount) <= 0) return;
+ if (isOwnListing) {
+ showToast('You cannot make an offer or message yourself on your own listing.', 'info');
+ setOfferModalOpen(false);
+ return;
+ }
 
  setOfferSubmitting(true);
  try {

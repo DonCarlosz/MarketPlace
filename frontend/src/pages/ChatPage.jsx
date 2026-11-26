@@ -356,18 +356,24 @@ export default function ChatPage() {
  window.scrollTo(0, 0);
  }, [activeConvId]);
 
- const activeConversation = conversations.find((c) => c._id === activeConvId);
-
  const getOtherParticipant = (conv) => {
- if (!conv?.participants || !user) return { name: 'Seller' };
+ if (!conv?.participants || !user) return null;
  return (
- conv.participants.find((p) => (p._id || p.id)?.toString() !== currentUserId) ||
- conv.participants[0]
+ conv.participants.find((p) => (p?._id || p?.id || p)?.toString() !== currentUserId) || null
  );
  };
 
- const otherUser = getOtherParticipant(activeConversation);
+ // Strict frontend filter: never surface or allow messaging in any self-conversation
+ const validConversations = conversations.filter((c) => {
+ const partner = getOtherParticipant(c);
+ const pId = (partner?._id || partner?.id || partner)?.toString();
+ return Boolean(pId && currentUserId && pId !== currentUserId);
+ });
+
+ const activeConversation = validConversations.find((c) => c._id === activeConvId);
+ const otherUser = getOtherParticipant(activeConversation) || { name: 'Seller' };
  const otherUserId = (otherUser?._id || otherUser?.id)?.toString();
+ const isSelfConversation = Boolean(!otherUserId || otherUserId === currentUserId);
  const isOtherUserBlocked = blockedUsers.some(
  (b) => (b._id || b.id || b)?.toString() === otherUserId
  );
@@ -394,13 +400,13 @@ export default function ChatPage() {
  ).length;
  const isSenderLimitReached = isPending && amIInitiator && senderMessageCount >= 5;
 
- // Split conversations into Primary vs Requests
- const requestsConversations = conversations.filter((c) => {
+ // Split valid (non-self) conversations into Primary vs Requests
+ const requestsConversations = validConversations.filter((c) => {
  const receiverId = (c.receiver?._id || c.receiver)?.toString();
  return c.status === 'pending' && receiverId === currentUserId;
  });
 
- const primaryConversations = conversations.filter((c) => {
+ const primaryConversations = validConversations.filter((c) => {
  const receiverId = (c.receiver?._id || c.receiver)?.toString();
  return c.status === 'accepted' || receiverId !== currentUserId;
  });
@@ -411,7 +417,14 @@ export default function ChatPage() {
  // Handle Standard Message Send
  const handleSendMessage = async (e) => {
  e.preventDefault();
- if (!messageText.trim() || !activeConvId || !user || isSenderLimitReached || isOtherUserBlocked) {
+ if (
+ !messageText.trim() ||
+ !activeConvId ||
+ !user ||
+ isSelfConversation ||
+ isSenderLimitReached ||
+ isOtherUserBlocked
+ ) {
  return;
  }
 
@@ -512,7 +525,7 @@ export default function ChatPage() {
  };
 
  const startVoiceRecording = async () => {
- if (!activeConvId || !user || isSenderLimitReached || isOtherUserBlocked || uploadingVoice) return;
+ if (!activeConvId || !user || isSelfConversation || isSenderLimitReached || isOtherUserBlocked || uploadingVoice) return;
  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
  showToast('Voice recording is not supported in this browser.', 'error');
  return;
@@ -661,7 +674,7 @@ export default function ChatPage() {
  // Submit In-Chat Price Offer
  const handleMakeOffer = async (e) => {
  e.preventDefault();
- if (!offerAmount || Number(offerAmount) <= 0 || !activeConvId) return;
+ if (!offerAmount || Number(offerAmount) <= 0 || !activeConvId || isSelfConversation) return;
 
  setOfferSubmitting(true);
  try {
@@ -744,7 +757,7 @@ export default function ChatPage() {
 
  // Submit In-Chat Safe Meetup Proposal
  const handleSendMeetupProposal = async (spot) => {
- if (!activeConvId) return;
+ if (!activeConvId || isSelfConversation) return;
 
  setMeetupSubmitting(true);
  try {

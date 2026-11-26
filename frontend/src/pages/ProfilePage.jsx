@@ -392,18 +392,29 @@ export default function ProfilePage() {
  }
  };
 
- // Contact Seller from Public Profile
+ // Contact Seller from Public Profile (strict self-messaging guard)
  const handleContactSeller = async () => {
  if (!currentUser) {
  openAuthModal('login');
+ return;
+ }
+ if (isOwnProfile || (currentUserId && targetUserId && String(targetUserId) === String(currentUserId))) {
+ showToast('You cannot message yourself.', 'info');
  return;
  }
  if (listings.length === 0) {
  showToast('This seller currently has no active listings to message about.', 'info');
  return;
  }
+ const firstListing = listings.find((l) => {
+ const ownerId = (l?.seller?._id || l?.seller?.id || l?.seller)?.toString();
+ return !ownerId || ownerId !== currentUserId;
+ });
+ if (!firstListing) {
+ showToast('You cannot message yourself on your own listing.', 'info');
+ return;
+ }
  try {
- const firstListing = listings[0];
  const res = await API.post('/chat/conversations', { listingId: firstListing._id });
  if (res.data?.success && res.data.conversation?._id) {
  navigate(`/messages?conversationId=${res.data.conversation._id}`);

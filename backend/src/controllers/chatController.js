@@ -5,7 +5,28 @@ import User from '../models/User.js';
 import Media from '../models/Media.js';
 import { getSmartSafeMeetupSpots } from '../services/safePlacesService.js';
 import { sendPushToUser } from '../services/pushService.js';
+import { deleteMediaAssets } from '../services/mediaStorageService.js';
 import { isSafeImageUrl } from '../utils/sanitize.js';
+
+// Strict anti-self-messaging helper: ensures every conversation has two distinct users
+const getDistinctOtherParticipantId = (conversation, currentUserId) => {
+  if (!conversation || !Array.isArray(conversation.participants) || !currentUserId) return null;
+  const selfStr = currentUserId.toString();
+  const uniqueIds = [
+    ...new Set(conversation.participants.filter(Boolean).map((p) => (p._id || p).toString())),
+  ];
+  if (uniqueIds.length < 2) return null;
+  if (
+    conversation.initiator &&
+    conversation.receiver &&
+    (conversation.initiator._id || conversation.initiator).toString() ===
+      (conversation.receiver._id || conversation.receiver).toString()
+  ) {
+    return null;
+  }
+  const other = uniqueIds.find((id) => id !== selfStr);
+  return other && other !== selfStr ? other : null;
+};
 
 // Helper to emit real-time WhatsApp-style notification + closed-app Web Push to the recipient
 const emitUserNotification = (io, recipientId, payload) => {
@@ -80,7 +101,12 @@ export const getConversations = async (req, res, next) => {
       .sort({ lastMessageAt: -1 })
       .lean();
 
-    const convIds = conversations.map((c) => c._id);
+    // Filter out any malformed/legacy self-conversation so a user can never see or message themselves
+    const validConversations = conversations.filter((c) =>
+      Boolean(getDistinctOtherParticipantId(c, userId))
+    );
+
+    const convIds = validConversations.map((c) => c._id);
     const unreadMap = new Map();
     if (convIds.length > 0) {
       const counts = await Message.aggregate([
@@ -101,7 +127,7 @@ export const getConversations = async (req, res, next) => {
       counts.forEach((row) => unreadMap.set(row._id.toString(), row.count));
     }
 
-    const enriched = conversations.map((c) => ({
+    const enriched = validConversations.map((c) => ({
       ...c,
       unreadCount: unreadMap.get(c._id.toString()) || 0,
     }));
@@ -130,6 +156,13 @@ export const createOrGetConversation = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Listing not found' });
     }
 
+    if (!listing.seller) {
+      return res.status(400).json({
+        success: false,
+        message: 'This listing has no active seller account to message.',
+      });
+    }
+
     if (listing.seller.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -141,6 +174,13 @@ export const createOrGetConversation = async (req, res, next) => {
       User.findById(req.user._id),
       User.findById(listing.seller),
     ]);
+
+    if (!sellerUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Seller account is no longer available.',
+      });
+    }
 
     const isBlocked =
       currentUser?.blockedUsers?.some((id) => id.toString() === listing.seller.toString()) ||
@@ -221,6 +261,13 @@ export const getMessages = async (req, res, next) => {
 
     if (!isParticipant) {
       return res.status(403).json({ success: false, message: 'Unauthorized access to conversation' });
+    }
+
+    if (!getDistinctOtherParticipantId(conversation, req.user._id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Self-messaging conversations are not allowed.',
+      });
     }
 
     const userIdStr = req.user._id.toString();
@@ -349,14 +396,25 @@ export const sendMessage = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Message content cannot be empty' });
     }
 
-    const otherParticipantId = conversation.participants.find(
-      (p) => p.toString() !== req.user._id.toString()
-    );
+    const otherParticipantId = getDistinctOtherParticipantId(conversation, req.user._id);
+    if (!otherParticipantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot send messages to yourself.',
+      });
+    }
 
     const [currentUser, otherUser] = await Promise.all([
       User.findById(req.user._id),
       User.findById(otherParticipantId),
     ]);
+
+    if (!otherUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'The other participant in this conversation is no longer available.',
+      });
+    }
 
     const isBlocked =
       currentUser?.blockedUsers?.some((id) => id.toString() === otherParticipantId.toString()) ||
@@ -587,14 +645,12 @@ export const deleteConversation = async (req, res, next) => {
         .select('voice.url')
         .lean();
 
-      const mediaFilenames = voiceMsgs
-        .map((m) => String(m.voice?.url || '').split('/api/media/')[1]?.split('?')[0])
-        .filter(Boolean);
+      const voiceUrls = voiceMsgs.map((m) => m.voice?.url).filter(Boolean);
 
       await Promise.all([
         Message.deleteMany({ conversation: conversation._id }),
         Conversation.deleteOne({ _id: conversation._id }),
-        mediaFilenames.length > 0 ? Media.deleteMany({ filename: { $in: mediaFilenames } }) : Promise.resolve(),
+        voiceUrls.length > 0 ? deleteMediaAssets(voiceUrls) : Promise.resolve(),
       ]);
     } else {
       await conversation.save();
