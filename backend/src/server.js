@@ -38,30 +38,58 @@ app.set('trust proxy', 1);
 // Connect MongoDB
 connectDB();
 
-// Explicit CORS origin validator (prevents arbitrary origin reflection with credentials)
-const extraAllowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+// Strict CORS origin validator (prevents wildcard third-party credentialed requests)
+const isProd = process.env.NODE_ENV === 'production';
+const normalizeOrigin = (val) => String(val || '').trim().replace(/\/+$/, '').toLowerCase();
+
+const extraAllowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(normalizeOrigin)
+    .filter(Boolean)
+);
+
+const strictCorsActive =
+  extraAllowedOrigins.size > 0 || String(process.env.CORS_STRICT_MODE || '').toLowerCase() === 'true';
+
+if (isProd && !strictCorsActive) {
+  console.warn(
+    '[SECURITY] ALLOWED_ORIGINS is not set. Add ALLOWED_ORIGINS=https://<your-exact-frontend-domain> in Render to lock down CORS completely.'
+  );
+}
 
 const isOriginAllowed = (origin) => {
   // Allow same-origin requests, server-to-server health checks, or native mobile clients without Origin
   if (!origin) return true;
-  if (extraAllowedOrigins.includes(origin)) return true;
+  const normalized = normalizeOrigin(origin);
+  if (extraAllowedOrigins.has(normalized)) return true;
+
   try {
     const parsed = new URL(origin);
     const host = parsed.hostname.toLowerCase();
+    const isHttps = parsed.protocol === 'https:';
+
+    // Always allow official oBuy production domains & self-origin Render API
     if (
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      host.endsWith('.vercel.app') ||
-      host.endsWith('.onrender.com') ||
-      host.endsWith('.netlify.app') ||
-      host === 'obuy.ng' ||
-      host.endsWith('.obuy.ng') ||
-      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
-      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)
+      isHttps &&
+      (host === 'obuy.ng' || host.endsWith('.obuy.ng') || host === 'marketplace-5wy3.onrender.com')
     ) {
+      return true;
+    }
+
+    // Allow localhost & LAN IPs ONLY outside production
+    if (
+      !isProd &&
+      (host === 'localhost' ||
+        host === '127.0.0.1' ||
+        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
+        /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host))
+    ) {
+      return true;
+    }
+
+    // Transitional HTTPS-only Vercel preview fallback ONLY when ALLOWED_ORIGINS is not yet set
+    if (!strictCorsActive && isHttps && host.endsWith('.vercel.app')) {
       return true;
     }
   } catch {

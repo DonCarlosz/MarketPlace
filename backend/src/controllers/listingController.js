@@ -5,6 +5,7 @@ import Review from '../models/Review.js';
 import Conversation from '../models/Conversation.js';
 import { resolveCityCoordinates, calculateDistanceKm } from '../utils/geo.js';
 import { escapeRegex, isSafeImageUrl } from '../utils/sanitize.js';
+import { deleteMediaAssets } from '../services/mediaStorageService.js';
 
 // Sanitize images array for create/update listing
 const sanitizeImagesList = (images) => {
@@ -410,6 +411,7 @@ export const updateListing = async (req, res, next) => {
     }
 
     const {
+      mode,
       title,
       description,
       price,
@@ -429,7 +431,12 @@ export const updateListing = async (req, res, next) => {
       preferredMeetup,
     } = req.body;
 
+    const previousImageUrls = (listing.images || []).map((img) => img?.url).filter(Boolean);
+
     const allowedUpdates = {};
+    if (['second-hand', 'new', 'service'].includes(mode)) {
+      allowedUpdates.mode = mode;
+    }
     if (typeof title === 'string' && title.trim()) allowedUpdates.title = title.trim().slice(0, 100);
     if (typeof description === 'string' && description.trim()) {
       allowedUpdates.description = description.trim().slice(0, 2000);
@@ -489,7 +496,21 @@ export const updateListing = async (req, res, next) => {
       req.params.id,
       { $set: allowedUpdates },
       { new: true, runValidators: true }
-    );
+    ).populate('seller', 'name avatar location isVerified createdAt');
+
+    // Orphan cleanup: purge any photos removed during edit from Cloudinary / MongoDB Media
+    if (Array.isArray(images)) {
+      const retainedUrls = new Set((allowedUpdates.images || []).map((img) => img.url));
+      const removedUrls = previousImageUrls.filter((u) => !retainedUrls.has(u));
+      if (removedUrls.length > 0) {
+        deleteMediaAssets(removedUrls).catch(() => {});
+      }
+    }
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('listing_updated', listing);
+    }
 
     res.json({
       success: true,
@@ -521,7 +542,12 @@ export const deleteListing = async (req, res, next) => {
       });
     }
 
+    const orphanImageUrls = (listing.images || []).map((img) => img?.url).filter(Boolean);
     await listing.deleteOne();
+
+    if (orphanImageUrls.length > 0) {
+      deleteMediaAssets(orphanImageUrls).catch(() => {});
+    }
 
     const io = req.app.get('io');
     if (io) {

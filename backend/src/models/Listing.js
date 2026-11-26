@@ -148,5 +148,11 @@ const listingSchema = new mongoose.Schema(
 listingSchema.index({ 'location.coordinates': '2dsphere' });
 listingSchema.index({ title: 'text', description: 'text', category: 'text' });
 
+// Compound indexes for high-speed paginated Market feed, Seller Profile, and Price sorting
+listingSchema.index({ status: 1, mode: 1, category: 1, createdAt: -1 });
+listingSchema.index({ status: 1, seller: 1, createdAt: -1 });
+listingSchema.index({ status: 1, mode: 1, price: 1 });
+listingSchema.index({ status: 1, createdAt: -1 });
+
 const Listing = mongoose.model('Listing', listingSchema);
 export default Listing;

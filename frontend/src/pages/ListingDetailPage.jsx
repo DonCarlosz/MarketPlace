@@ -34,6 +34,7 @@ import {
  ExternalLink,
  AlertTriangle,
  CheckCircle,
+ Edit3,
 } from 'lucide-react';
 
 export default function ListingDetailPage() {
@@ -510,6 +511,13 @@ export default function ListingDetailPage() {
  : 'Reactivate Listing'}
  </span>
  </button>
+ <Link
+ to={`/edit/${listing._id}`}
+ className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-brand-200"
+ >
+ <Edit3 className="w-4 h-4 text-brand-600" />
+ <span>Edit Listing</span>
+ </Link>
  <Link
  to="/profile"
  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-slate-200"

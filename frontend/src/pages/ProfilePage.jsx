@@ -1029,6 +1029,7 @@ export default function ProfilePage() {
  isOwnProfile
  ? {
  isActive: tab === 'active',
+ onEdit: () => navigate(`/edit/${listing._id}`),
  onToggleStatus: () =>
  tab === 'active'
  ? promptToggleStatus(

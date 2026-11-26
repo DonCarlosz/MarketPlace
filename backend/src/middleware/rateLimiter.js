@@ -36,10 +36,26 @@ export const otpLimiter = rateLimit({
   },
 });
 
-// AI endpoint limiter to protect Gemini quota: 30 requests per 15 minutes
+// Strict guest AI limiter (unauthenticated users): 6 requests per hour per IP to protect Gemini quota
+export const guestAiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 6,
+  skip: (req) => Boolean(req.user?._id),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'GUEST_AI_LIMIT',
+    message:
+      'Guest AI preview limit reached (6 questions/hour). Sign in to your free oBuy account for full AI Assistant access.',
+  },
+});
+
+// Authenticated AI endpoint limiter to protect Gemini quota: 30 requests per 15 minutes
 export const aiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
+  skip: (req) => !req.user?._id && req.path === '/chat',
   standardHeaders: true,
   legacyHeaders: false,
   message: {

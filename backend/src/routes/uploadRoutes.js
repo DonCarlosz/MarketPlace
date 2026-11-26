@@ -3,10 +3,10 @@ import multer from 'multer';
 import sharp from 'sharp';
 import path from 'path';
 import crypto from 'crypto';
-import Media from '../models/Media.js';
 import { protect } from '../middleware/auth.js';
 import { uploadLimiter } from '../middleware/rateLimiter.js';
 import { transcodeVoiceToMp3 } from '../utils/audioTranscode.js';
+import { uploadImageAsset, uploadAudioAsset } from '../services/mediaStorageService.js';
 
 const router = express.Router();
 
@@ -128,15 +128,13 @@ router.post('/', protect, uploadLimiter, upload.array('images', 6), async (req, 
         .webp({ quality: purpose === 'listing' ? 80 : 82, effort: 4 })
         .toBuffer({ resolveWithObject: true });
 
-      // Persist in shared MongoDB Atlas so images work across all devices & survive Render restarts
-      await Media.create({
+      // Persist to Cloudinary CDN (with automatic MongoDB fallback if env vars are absent)
+      const stored = await uploadImageAsset({
+        buffer: data,
         filename: outputFilename,
-        contentType: 'image/webp',
-        data,
-        size: info.size,
+        purpose,
         width: info.width,
         height: info.height,
-        purpose,
         uploadedBy: req.user?._id || null,
       });
 
@@ -145,7 +143,8 @@ router.post('/', protect, uploadLimiter, upload.array('images', 6), async (req, 
       const percentSaved = Math.max(0, Math.round((1 - info.size / file.size) * 100));
 
       processedImages.push({
-        url: `/api/media/${outputFilename}`,
+        url: stored.url,
+        storageProvider: stored.provider,
         originalName: path.basename(file.originalname || 'image.webp'),
         format: 'webp',
         width: info.width,
@@ -209,20 +208,19 @@ router.post('/audio', protect, uploadLimiter, audioUpload.single('audio'), async
 
     const outputFilename = `voice-${uniqueSuffix}.${finalExt}`;
 
-    await Media.create({
+    const storedAudio = await uploadAudioAsset({
+      buffer: finalBuffer,
       filename: outputFilename,
       contentType: finalContentType,
-      data: finalBuffer,
-      size: finalBuffer.length,
       duration,
-      purpose: 'audio',
       uploadedBy: req.user?._id || null,
     });
 
     res.status(201).json({
       success: true,
       audio: {
-        url: `/api/media/${outputFilename}`,
+        url: storedAudio.url,
+        storageProvider: storedAudio.provider,
         mimeType: finalContentType,
         duration,
         sizeKb: Math.max(1, Math.round(finalBuffer.length / 1024)),

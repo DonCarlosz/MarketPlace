@@ -4,14 +4,14 @@ import {
   draftListingController,
 } from '../controllers/aiController.js';
 import { protect, optionalAuth } from '../middleware/auth.js';
-import { aiLimiter } from '../middleware/rateLimiter.js';
+import { aiLimiter, guestAiLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// Universal Platform Assistant & Conversational Search
-router.post('/chat', aiLimiter, optionalAuth, chatWithAssistantController);
+// Universal Platform Assistant & Conversational Search (optionalAuth runs FIRST so guests get strict 6/hr cap)
+router.post('/chat', optionalAuth, guestAiLimiter, aiLimiter, chatWithAssistantController);
 
-// Seller Listing Co-Pilot & Price Valuer
-router.post('/draft-listing', aiLimiter, protect, draftListingController);
+// Seller Listing Co-Pilot & Price Valuer (authenticated only)
+router.post('/draft-listing', protect, aiLimiter, draftListingController);
 
 export default router;

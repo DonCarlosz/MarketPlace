@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Trash2,
   RotateCcw,
+  Edit3,
 } from 'lucide-react';
 
 const FALLBACK_IMAGE =
@@ -249,6 +250,21 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
                   }}
                 />
                 <div className="absolute right-0 mt-1.5 w-36 bg-white rounded-xl border border-slate-200 py-1 z-30">
+                  {ownerActions.onEdit && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setOwnerMenuOpen(false);
+                        ownerActions.onEdit?.();
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 text-left whitespace-nowrap transition-colors cursor-pointer border-b border-slate-100"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                      <span>Edit Listing</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {

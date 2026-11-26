@@ -107,6 +107,7 @@ function isDetailStackRoute(pathname) {
   return (
     pathname.startsWith('/listing/') ||
     pathname.startsWith('/create') ||
+    pathname.startsWith('/edit/') ||
     pathname.startsWith('/profile/') ||
     pathname.startsWith('/usr/')
   );
@@ -226,6 +227,7 @@ function AppContent() {
         <Route path="/market" element={<HomePage />} />
         <Route path="/listing/:id" element={<ListingDetailPage />} />
         <Route path="/create" element={<CreateListingPage />} />
+        <Route path="/edit/:id" element={<CreateListingPage />} />
         <Route path="/messages" element={<ChatPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />

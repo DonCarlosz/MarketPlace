@@ -21,6 +21,7 @@ import {
  LayoutGrid,
  List,
  X,
+ Loader2,
 } from 'lucide-react';
 
 const CATEGORIES_BY_MODE = {
@@ -62,9 +63,25 @@ const CATEGORIES_BY_MODE = {
 };
 
 // Persisted IndexedDB-backed SWR cache for instant return & offline viewing
+const PAGE_SIZE = 24;
 const listingsCache = marketListingsCache;
-const setBoundedCache = (key, value) => {
- listingsCache.set(key, value);
+const unpackCachedFeed = (entry) => {
+ if (!entry) return null;
+ if (Array.isArray(entry)) {
+ return { items: entry, total: entry.length, totalPages: 1, currentPage: 1 };
+ }
+ if (Array.isArray(entry.items)) {
+ return {
+ items: entry.items,
+ total: Number(entry.total) || entry.items.length,
+ totalPages: Number(entry.totalPages) || 1,
+ currentPage: Number(entry.currentPage) || 1,
+ };
+ }
+ return null;
+};
+const setBoundedCache = (key, payload) => {
+ listingsCache.set(key, payload);
 };
 let lastMarketScrollY = 0;
 
@@ -141,11 +158,15 @@ export default function HomePage() {
  };
 
  const initialKey = getCacheKey();
- const cachedInitial = listingsCache.get(initialKey);
+ const cachedInitial = unpackCachedFeed(listingsCache.get(initialKey));
 
  // Synchronously initialize state so cached results render instantly with zero delay
- const [listings, setListings] = useState(() => cachedInitial || []);
+ const [listings, setListings] = useState(() => cachedInitial?.items || []);
+ const [currentPage, setCurrentPage] = useState(() => cachedInitial?.currentPage || 1);
+ const [totalPages, setTotalPages] = useState(() => cachedInitial?.totalPages || 1);
+ const [totalCount, setTotalCount] = useState(() => cachedInitial?.total || 0);
  const [loading, setLoading] = useState(() => !cachedInitial);
+ const [loadingMore, setLoadingMore] = useState(false);
  const [error, setError] = useState(null);
 
  // Scroll restoration on return to /market (rAF throttled for 60fps mobile scrolling)
@@ -168,15 +189,22 @@ export default function HomePage() {
  };
  }, []);
 
- const fetchListings = async (silent = false) => {
+ const fetchListings = async (silent = false, targetPage = 1, append = false) => {
  const cacheKey = getCacheKey();
- const cachedData = listingsCache.get(cacheKey);
+ const cachedFeed = !append ? unpackCachedFeed(listingsCache.get(cacheKey)) : null;
 
- if (cachedData && cachedData.length >= 0) {
- setListings(cachedData);
+ if (!append) {
+ if (cachedFeed && cachedFeed.items.length >= 0) {
+ setListings(cachedFeed.items);
+ setTotalCount(cachedFeed.total);
+ setTotalPages(cachedFeed.totalPages);
+ setCurrentPage(cachedFeed.currentPage);
  setLoading(false);
  } else if (!silent) {
  setLoading(true);
+ }
+ } else {
+ setLoadingMore(true);
  }
 
  setError(null);
@@ -185,6 +213,8 @@ export default function HomePage() {
  const params = {
  mode,
  sort: sortBy,
+ page: targetPage,
+ limit: PAGE_SIZE,
  };
 
  if (searchQuery.trim()) params.search = searchQuery.trim();
@@ -237,30 +267,65 @@ export default function HomePage() {
  }
  }
 
- setBoundedCache(cacheKey, freshListings);
+ const nextTotal = Number(res.data.total ?? freshListings.length);
+ const nextTotalPages = Math.max(1, Number(res.data.totalPages ?? 1));
+ const nextPage = Number(res.data.currentPage ?? targetPage);
+
+ setTotalCount(nextTotal);
+ setTotalPages(nextTotalPages);
+ setCurrentPage(nextPage);
+
+ if (append) {
+ setListings((prev) => {
+ const seen = new Set(prev.map((item) => item._id));
+ const merged = [...prev, ...freshListings.filter((item) => !seen.has(item._id))];
+ setBoundedCache(cacheKey, {
+ items: merged,
+ total: nextTotal,
+ totalPages: nextTotalPages,
+ currentPage: nextPage,
+ });
+ return merged;
+ });
+ } else {
+ setBoundedCache(cacheKey, {
+ items: freshListings,
+ total: nextTotal,
+ totalPages: nextTotalPages,
+ currentPage: nextPage,
+ });
  setListings(freshListings);
+ }
  }
  } catch (err) {
  console.error('Failed to fetch listings:', err);
- if (!cachedData) {
+ if (!cachedFeed && !append) {
  setError('Could not load listings. Please check if backend is running.');
  }
  } finally {
  setLoading(false);
+ setLoadingMore(false);
  }
+ };
+
+ const handleLoadMore = () => {
+ if (loadingMore || loading || currentPage >= totalPages) return;
+ fetchListings(true, currentPage + 1, true);
  };
 
  // Hydrate from IndexedDB if offline/cold boot, and re-sync automatically when back online
  useEffect(() => {
  const key = getCacheKey();
  const unsub = listingsCache.subscribe(() => {
- const hydrated = listingsCache.get(key);
- if (hydrated && hydrated.length > 0) {
- setListings((prev) => (prev.length === 0 ? hydrated : prev));
+ const hydrated = unpackCachedFeed(listingsCache.get(key));
+ if (hydrated && hydrated.items.length > 0) {
+ setListings((prev) => (prev.length === 0 ? hydrated.items : prev));
+ setTotalCount((prev) => prev || hydrated.total);
+ setTotalPages((prev) => Math.max(prev, hydrated.totalPages));
  setLoading(false);
  }
  });
- const onOnline = () => fetchListings(true);
+ const onOnline = () => fetchListings(true, 1, false);
  window.addEventListener('obuy:online', onOnline);
  return () => {
  unsub();
@@ -284,7 +349,20 @@ export default function HomePage() {
  setListings((prev) => {
  if (prev.some((item) => item._id === newListing._id)) return prev;
  const updated = [newListing, ...prev];
- setBoundedCache(getCacheKey(), updated);
+ setTotalCount((t) => t + 1);
+ setBoundedCache(getCacheKey(), { items: updated, total: updated.length, totalPages, currentPage });
+ return updated;
+ });
+ };
+
+ const handleListingUpdated = (editedListing) => {
+ if (!editedListing?._id) return;
+ setListings((prev) => {
+ if (!prev.some((item) => item._id === editedListing._id)) return prev;
+ const updated = prev.map((item) =>
+ item._id === editedListing._id ? { ...item, ...editedListing } : item
+ );
+ setBoundedCache(getCacheKey(), { items: updated, total: totalCount || updated.length, totalPages, currentPage });
  return updated;
  });
  };
@@ -297,7 +375,7 @@ export default function HomePage() {
  } else {
  updated = prev.map((item) => (item._id === id ? { ...item, status } : item));
  }
- setBoundedCache(getCacheKey(), updated);
+ setBoundedCache(getCacheKey(), { items: updated, total: updated.length, totalPages, currentPage });
  return updated;
  });
  };
@@ -305,18 +383,20 @@ export default function HomePage() {
  const handleListingDeleted = ({ id }) => {
  setListings((prev) => {
  const updated = prev.filter((item) => item._id !== id);
- setBoundedCache(getCacheKey(), updated);
+ setBoundedCache(getCacheKey(), { items: updated, total: updated.length, totalPages, currentPage });
  return updated;
  });
  };
 
  socketRef.current.on('listing_created', handleListingCreated);
+ socketRef.current.on('listing_updated', handleListingUpdated);
  socketRef.current.on('listing_status_changed', handleListingStatusChanged);
  socketRef.current.on('listing_deleted', handleListingDeleted);
 
  return () => {
  if (socketRef.current) {
  socketRef.current.off('listing_created', handleListingCreated);
+ socketRef.current.off('listing_updated', handleListingUpdated);
  socketRef.current.off('listing_status_changed', handleListingStatusChanged);
  socketRef.current.off('listing_deleted', handleListingDeleted);
  }
@@ -326,15 +406,18 @@ export default function HomePage() {
  // Fetch listings on filter or search change
  useEffect(() => {
  const cacheKey = getCacheKey();
- const cachedData = listingsCache.get(cacheKey);
+ const cachedFeed = unpackCachedFeed(listingsCache.get(cacheKey));
 
- if (cachedData) {
- setListings(cachedData);
+ if (cachedFeed) {
+ setListings(cachedFeed.items);
+ setTotalCount(cachedFeed.total);
+ setTotalPages(cachedFeed.totalPages);
+ setCurrentPage(cachedFeed.currentPage);
  setLoading(false);
  }
 
  const timer = setTimeout(() => {
- fetchListings(!!cachedData);
+ fetchListings(Boolean(cachedFeed), 1, false);
  }, 180);
 
  return () => clearTimeout(timer);
@@ -342,7 +425,7 @@ export default function HomePage() {
 
  const handleSearchSubmit = (e) => {
  e.preventDefault();
- fetchListings(false);
+ fetchListings(false, 1, false);
  };
 
  const handleCityChange = (newCity) => {
@@ -525,7 +608,8 @@ export default function HomePage() {
  {selectedCategory && selectedCategory !== 'All' ? selectedCategory : 'Available Listings'}
  </h2>
  <p className="text-xs text-slate-500 mt-0.5">
- {displayListings.length} {displayListings.length === 1 ? 'result' : 'results'}
+ {Math.max(totalCount, displayListings.length)}{' '}
+ {Math.max(totalCount, displayListings.length) === 1 ? 'result' : 'results'}
  {activeCity !== 'All Locations' ? ` near ${activeCity}` : ' in community'}
  </p>
  </div>
@@ -699,7 +783,8 @@ export default function HomePage() {
  ))}
  </div>
  ) : displayListings.length > 0 ? (
- viewMode === 'grid' ? (
+ <>
+ {viewMode === 'grid' ? (
  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
  {displayListings.map((item) => (
  <ListingCard key={item._id} listing={item} layout="grid" />
@@ -711,7 +796,36 @@ export default function HomePage() {
  <ListingCard key={item._id} listing={item} layout="list" />
  ))}
  </div>
- )
+ )}
+
+ {/* Pagination Footer (Load More past page 1) */}
+ <div className="mt-6 flex flex-col items-center justify-center gap-2">
+ {currentPage < totalPages ? (
+ <button
+ type="button"
+ onClick={handleLoadMore}
+ disabled={loadingMore}
+ className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 text-xs sm:text-sm font-bold transition-colors cursor-pointer disabled:opacity-50"
+ >
+ {loadingMore ? (
+ <>
+ <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
+ <span>Loading more listings...</span>
+ </>
+ ) : (
+ <span>
+ Load More Listings ({displayListings.length} of {Math.max(totalCount, displayListings.length)})
+ </span>
+ )}
+ </button>
+ ) : (
+ <p className="text-[11px] font-medium text-slate-400">
+ Showing all {displayListings.length}{' '}
+ {displayListings.length === 1 ? 'listing' : 'listings'}
+ </p>
+ )}
+ </div>
+ </>
  ) : (
  <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4 max-w-md mx-auto my-6">
  <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto">

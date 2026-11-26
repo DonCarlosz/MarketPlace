@@ -6,6 +6,7 @@ import Otp from '../models/Otp.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/token.js';
 import { sendOtpEmail } from '../utils/email.js';
 import { isSafeImageUrl } from '../utils/sanitize.js';
+import { deleteMediaAsset } from '../services/mediaStorageService.js';
 
 const MAX_OTP_ATTEMPTS = 5;
 
@@ -640,11 +641,22 @@ export const updateProfile = async (req, res, next) => {
       };
     }
 
+    const previousAvatar = req.user?.avatar || '';
+    const previousCover = req.user?.coverImage || '';
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { $set: updateFields },
       { new: true, runValidators: true }
     ).select('-refreshTokens');
+
+    // Orphan cleanup: delete old avatar/cover from Cloudinary or MongoDB Media when replaced or cleared
+    if (avatar !== undefined && previousAvatar && previousAvatar !== updateFields.avatar) {
+      deleteMediaAsset(previousAvatar).catch(() => {});
+    }
+    if (coverImage !== undefined && previousCover && previousCover !== updateFields.coverImage) {
+      deleteMediaAsset(previousCover).catch(() => {});
+    }
 
     res.json({
       success: true,

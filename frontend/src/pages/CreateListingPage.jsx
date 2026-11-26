@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import API, { resolveMediaUrl } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useMode } from '../context/ModeContext';
 import { useToast } from '../context/ToastContext';
+import {
+ listingDetailCache,
+ marketListingsCache,
+ landingRouteCache,
+ profileRouteCache,
+} from '../utils/routeCache';
 import { formatPrice } from '../utils/format';
 import { NIGERIAN_CITY_LIST } from '../utils/geo';
 import ResponsiveSheet from '../components/ResponsiveSheet';
@@ -130,11 +136,14 @@ const SAFE_MEETUP_PRESETS = [
 const NIGERIAN_CITIES = NIGERIAN_CITY_LIST.filter((c) => c !== 'All Locations');
 
 export default function CreateListingPage() {
+ const { id: editListingId } = useParams();
+ const isEditMode = Boolean(editListingId);
  const { user, openAuthModal } = useAuth();
  const { mode: defaultMode, userLocation } = useMode();
  const { showToast } = useToast();
  const navigate = useNavigate();
  const [searchParams, setSearchParams] = useSearchParams();
+ const [loadingEditListing, setLoadingEditListing] = useState(isEditMode);
 
  // Wizard Step (1: Classification, 2: Photos & Specifics, 3: Pricing & Meetup)
  const [step, setStep] = useState(1);
@@ -252,8 +261,93 @@ export default function CreateListingPage() {
  else setCondition('not-applicable');
  };
 
- // Smart Category Keyword Suggestions
+ // Hydrate existing listing when editing (/edit/:id)
  useEffect(() => {
+ if (!isEditMode || !editListingId) {
+ setLoadingEditListing(false);
+ return;
+ }
+ if (!user) return;
+
+ let cancelled = false;
+ const loadExistingListing = async () => {
+ setLoadingEditListing(true);
+ setError(null);
+ try {
+ const res = await API.get(`/listings/${editListingId}`);
+ if (cancelled) return;
+ if (!res.data?.success || !res.data.listing) {
+ setError('Could not find this listing to edit.');
+ return;
+ }
+
+ const existing = res.data.listing;
+ const currentUserId = (user?._id || user?.id)?.toString();
+ const ownerId = (existing.seller?._id || existing.seller?.id || existing.seller)?.toString();
+ if (currentUserId && ownerId && currentUserId !== ownerId && user.role !== 'admin') {
+ showToast('You can only edit your own listings.', 'error');
+ navigate(`/listing/${editListingId}`, { replace: true });
+ return;
+ }
+
+ const resolvedMode = ['second-hand', 'new', 'service'].includes(existing.mode)
+ ? existing.mode
+ : 'second-hand';
+ setMode(resolvedMode);
+ setTitle(existing.title || '');
+ const modeCats = CATEGORIES_BY_MODE[resolvedMode] || CATEGORIES_BY_MODE['second-hand'];
+ setCategory(modeCats.includes(existing.category) ? existing.category : existing.category || modeCats[0]);
+ setImages(Array.isArray(existing.images) ? existing.images : []);
+ setCondition(
+ existing.condition ||
+ (resolvedMode === 'new' ? 'brand-new' : resolvedMode === 'service' ? 'not-applicable' : 'good')
+ );
+ setHasFlaws(Boolean(existing.flawDescription && existing.flawDescription.trim()));
+ setFlawDescription(existing.flawDescription || '');
+ setDescription(existing.description || '');
+
+ const rawSpecs = existing.itemSpecifics || {};
+ setSpecifics({
+ brand: rawSpecs.brand || rawSpecs.Brand || '',
+ model: rawSpecs.model || rawSpecs.Model || '',
+ storageRam: rawSpecs.storageRam || rawSpecs.Storage || rawSpecs.RAM || '',
+ color: rawSpecs.color || rawSpecs.Color || '',
+ yearMileage: rawSpecs.yearMileage || '',
+ materialSize: rawSpecs.materialSize || '',
+ serviceScope: existing.serviceType || rawSpecs.serviceScope || '',
+ });
+
+ setPrice(existing.price !== undefined && existing.price !== null ? String(existing.price) : '');
+ setPriceType(existing.priceType || 'fixed');
+ setAcceptsOffers(existing.acceptsOffers !== false);
+ setMinimumOfferPrice(
+ existing.minimumOfferPrice && Number(existing.minimumOfferPrice) > 0
+ ? String(existing.minimumOfferPrice)
+ : ''
+ );
+ setCity(existing.location?.city || user?.location?.city || 'Benin City');
+ setNeighborhood(existing.location?.neighborhood || '');
+ setPreferredMeetup(existing.preferredMeetup || SAFE_MEETUP_PRESETS[0].text);
+ setAllowsDelivery(Boolean(existing.allowsDelivery));
+ setTermsAgreed(true);
+ } catch (err) {
+ if (!cancelled) {
+ setError(err.response?.data?.message || 'Failed to load listing for editing.');
+ }
+ } finally {
+ if (!cancelled) setLoadingEditListing(false);
+ }
+ };
+
+ loadExistingListing();
+ return () => {
+ cancelled = true;
+ };
+ }, [isEditMode, editListingId, user, navigate, showToast]);
+
+ // Smart Category Keyword Suggestions (Create Mode only so Edit Mode never overwrites saved category)
+ useEffect(() => {
+ if (isEditMode) return;
  const t = title.toLowerCase();
  if (mode === 'service') {
  if (t.includes('hair') || t.includes('barber') || t.includes('braid') || t.includes('fade')) {
@@ -471,18 +565,43 @@ export default function CreateListingPage() {
  preferredMeetup: preferredMeetup.trim(),
  };
 
- const res = await API.post('/listings', payload);
+ const res = isEditMode
+ ? await API.put(`/listings/${editListingId}`, payload)
+ : await API.post('/listings', payload);
 
- if (res.data?.success && res.data.listing?._id) {
- navigate(`/listing/${res.data.listing._id}`);
+ if (res.data?.success && (res.data.listing?._id || editListingId)) {
+ const targetId = res.data.listing?._id || editListingId;
+ listingDetailCache.delete(targetId);
+ marketListingsCache.clear();
+ landingRouteCache.clear();
+ profileRouteCache.clear();
+ showToast(
+ isEditMode ? 'Listing changes saved successfully.' : 'Listing published successfully!',
+ 'success'
+ );
+ navigate(`/listing/${targetId}`);
  }
  } catch (err) {
- console.error('Failed to publish listing:', err);
- setError(err.response?.data?.message || 'Failed to publish listing. Please try again.');
+ console.error(isEditMode ? 'Failed to update listing:' : 'Failed to publish listing:', err);
+ setError(
+ err.response?.data?.message ||
+ (isEditMode
+ ? 'Failed to update listing. Please try again.'
+ : 'Failed to publish listing. Please try again.')
+ );
  } finally {
  setSubmitting(false);
  }
  };
+
+ if (loadingEditListing && user) {
+ return (
+ <div className="min-h-[60vh] bg-slate-50 flex flex-col items-center justify-center p-6 gap-3">
+ <Loader2 className="w-7 h-7 text-brand-600 animate-spin" />
+ <p className="text-xs font-bold text-slate-500">Loading your listing details...</p>
+ </div>
+ );
+ }
 
  if (!user) {
  return (
@@ -520,9 +639,13 @@ export default function CreateListingPage() {
  {/* Wizard Top Header (flat edge-to-edge on mobile) */}
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white sm:bg-transparent px-4 py-4 sm:px-0 sm:pt-0 sm:pb-3 border-b border-slate-200">
  <div>
- <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Create a Listing</h1>
+ <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+ {isEditMode ? 'Edit Listing' : 'Create a Listing'}
+ </h1>
  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
- Publish pre-loved items, factory-sealed goods, or local handwork across Nigeria.
+ {isEditMode
+ ? 'Update your price, photos, specifics, or meetup details anytime without losing your chats or views.'
+ : 'Publish pre-loved items, factory-sealed goods, or local handwork across Nigeria.'}
  </p>
  </div>
 
@@ -531,11 +654,11 @@ export default function CreateListingPage() {
  {/* Step 1 Pill */}
  <button
  type="button"
- onClick={() => step > 1 && setStep(1)}
+ onClick={() => (isEditMode || step > 1) && setStep(1)}
  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
  step === 1
  ? 'bg-brand-600 text-white '
- : step > 1
+ : isEditMode || step > 1
  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer'
  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
  }`}
@@ -551,11 +674,11 @@ export default function CreateListingPage() {
  {/* Step 2 Pill */}
  <button
  type="button"
- onClick={() => step > 2 && setStep(2)}
+ onClick={() => (isEditMode || step > 2) && setStep(2)}
  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
  step === 2
  ? 'bg-brand-600 text-white '
- : step > 2
+ : isEditMode || step > 2
  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer'
  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
  }`}
@@ -569,18 +692,22 @@ export default function CreateListingPage() {
  <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
 
  {/* Step 3 Pill */}
- <div
+ <button
+ type="button"
+ onClick={() => isEditMode && setStep(3)}
  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
  step === 3
  ? 'bg-brand-600 text-white '
- : 'bg-slate-100 text-slate-400'
+ : isEditMode
+ ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-pointer'
+ : 'bg-slate-100 text-slate-400 cursor-default'
  }`}
  >
  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] bg-black/20">
  3
  </span>
  <span>Pricing</span>
- </div>
+ </button>
  </div>
  </div>
 
@@ -1288,10 +1415,10 @@ export default function CreateListingPage() {
  className="px-8 py-3.5 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white font-black text-sm rounded-2xl transition inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
  >
  {submitting ? (
- <span>Publishing Listing...</span>
+ <span>{isEditMode ? 'Saving Changes...' : 'Publishing Listing...'}</span>
  ) : (
  <>
- <span>Publish Listing Now</span>
+ <span>{isEditMode ? 'Save Listing Changes' : 'Publish Listing Now'}</span>
  <Check className="w-4 h-4 stroke-[3]" />
  </>
  )}

@@ -211,12 +211,16 @@ export default function AIAssistantDrawer() {
       } else {
         throw new Error('No reply');
       }
-    } catch {
+    } catch (err) {
+      const apiErrorMsg = err?.response?.data?.message;
+      const isRateLimited = err?.response?.status === 429;
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: `I could not reach the oBuy AI service right now. Check your internet connection and try sending your message again.`,
+          content: isRateLimited && apiErrorMsg
+            ? apiErrorMsg
+            : `I could not reach the oBuy AI service right now. Check your internet connection and try sending your message again.`,
           listings: [],
         },
       ]);
