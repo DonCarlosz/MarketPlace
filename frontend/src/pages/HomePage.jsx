@@ -534,7 +534,7 @@ export default function HomePage() {
  }
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full min-w-0 bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-900 placeholder-slate-400 py-1.5"
+ className="w-full min-w-0 bg-transparent border-none focus:outline-none text-xs sm:text-[13px] text-slate-900 placeholder-slate-400 py-1.5"
  />
  {searchQuery && (
  <button

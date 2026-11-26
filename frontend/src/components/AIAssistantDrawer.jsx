@@ -408,7 +408,7 @@ export default function AIAssistantDrawer() {
                   <div
                     className={`text-xs rounded-2xl p-3.5 ${
                       isUser
-                        ? 'bg-emerald-50 text-slate-900 border border-emerald-200/90 rounded-br-sm'
+                        ? 'bg-brand-50 text-slate-900 border border-brand-200/90 rounded-br-sm'
                         : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-bl-sm'
                     }`}
                   >

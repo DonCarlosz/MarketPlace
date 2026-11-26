@@ -40,15 +40,6 @@
     touch-action: manipulation;
   }
 
-  /* Native mobile app behavior: prevent iOS Safari & PWA auto-zoom when focusing inputs */
-  @media (max-width: 767px) {
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-    textarea,
-    select {
-      font-size: 16px !important;
-    }
-  }
-
   button,
   a,
   [role="button"] {

@@ -1013,8 +1013,8 @@ export default function CreateListingPage() {
  )}
  </div>
 
- <div className="p-3 bg-brand-50/60 border border-brand-100 rounded-2xl text-[11px] text-brand-900 leading-relaxed flex items-start gap-2">
- <Camera className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+ <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl text-[11px] text-emerald-900 leading-relaxed flex items-start gap-2">
+ <Camera className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
  <span>
  <strong>Photo Tip:</strong> Take clear photos in natural daylight. Photograph all sides, ports, labels, and cosmetic flaws to build trust with buyers.
  </span>
@@ -1383,16 +1383,16 @@ export default function CreateListingPage() {
  </div>
 
  {/* 3.4 Safety & Terms Agreement */}
- <div className="bg-amber-50/80 border-b sm:border border-amber-200/90 sm:rounded-2xl px-4 py-4 sm:p-5 space-y-2">
+ <div className="bg-emerald-50/80 border-b sm:border border-emerald-200/80 sm:rounded-2xl px-4 py-4 sm:p-5 space-y-2">
  <div className="flex items-start gap-3">
  <input
  type="checkbox"
  id="terms"
  checked={termsAgreed}
  onChange={(e) => setTermsAgreed(e.target.checked)}
- className="mt-1 h-4 w-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500 cursor-pointer"
+ className="mt-1 h-4 w-4 accent-emerald-600 rounded border-emerald-300 cursor-pointer"
  />
- <label htmlFor="terms" className="text-xs text-amber-950 leading-relaxed cursor-pointer">
+ <label htmlFor="terms" className="text-xs text-emerald-950 leading-relaxed cursor-pointer">
  <strong>Direct Safe Deal Blueprint:</strong> I agree that all transactions take place in-person with thorough inspection before payment. oBuy charges zero commission and assumes no liability for off-platform funds.
  </label>
  </div>
@@ -1500,12 +1500,12 @@ export default function CreateListingPage() {
  </div>
 
  {/* Trust Callout */}
- <div className="p-3.5 bg-brand-50/70 border border-brand-100 rounded-2xl text-[11px] text-brand-900 space-y-1">
- <p className="font-bold flex items-center gap-1 text-brand-800">
- <CheckCircle2 className="w-3.5 h-3.5 text-brand-600" />
+ <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl text-[11px] text-emerald-900 space-y-1">
+ <p className="font-bold flex items-center gap-1 text-emerald-900">
+ <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
  Buyer Inquiries & Offers
  </p>
- <p className="text-brand-700/80 leading-relaxed">
+ <p className="text-emerald-800/90 leading-relaxed">
  Interested buyers will chat with you directly in-app. You can accept or counter offers with one tap.
  </p>
  </div>
@@ -1710,7 +1710,7 @@ export default function CreateListingPage() {
  )}
 
  {aiDraftResult.preferredMeetupAdvice && (
- <div className="p-2.5 bg-brand-50 border border-brand-100 rounded-xl text-brand-900">
+ <div className="p-2.5 bg-emerald-50 border border-emerald-200/80 rounded-xl text-emerald-900">
  <span className="font-bold block text-[11px]">Recommended Safe Meetup:</span>
  <span className="text-[11px]">{aiDraftResult.preferredMeetupAdvice}</span>
  </div>

@@ -131,7 +131,7 @@ export default function VoiceMessageBubble({ voice, isMe }) {
     <div
       className={`w-[225px] sm:w-[250px] rounded-2xl px-3 py-2.5 flex items-center gap-2.5 border select-none ${
         isMe
-          ? 'bg-emerald-50 text-slate-900 border-emerald-200/90 rounded-br-none'
+          ? 'bg-brand-50 text-slate-900 border-brand-200/90 rounded-br-none'
           : 'bg-white text-slate-900 border-slate-200 rounded-bl-none'
       }`}
     >
@@ -149,7 +149,7 @@ export default function VoiceMessageBubble({ voice, isMe }) {
         aria-label={playing ? 'Pause voice message' : 'Play voice message'}
         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition cursor-pointer ${
           isMe
-            ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+            ? 'bg-brand-600 text-white hover:bg-brand-700'
             : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
         }`}
       >
@@ -171,12 +171,12 @@ export default function VoiceMessageBubble({ voice, isMe }) {
           aria-valuenow={Math.round(currentTime)}
           tabIndex={0}
           className={`h-2 rounded-full cursor-pointer overflow-hidden flex items-center ${
-            isMe ? 'bg-emerald-200/80' : 'bg-slate-200'
+            isMe ? 'bg-brand-200/80' : 'bg-slate-200'
           }`}
         >
           <div
             className={`h-full rounded-full transition-all duration-100 ${
-              isMe ? 'bg-emerald-600' : 'bg-slate-500'
+              isMe ? 'bg-brand-600' : 'bg-slate-500'
             }`}
             style={{ width: `${progress}%` }}
           />
@@ -185,7 +185,7 @@ export default function VoiceMessageBubble({ voice, isMe }) {
         {/* Single Dynamic Timer */}
         <div
           className={`flex items-center justify-between text-[10px] font-semibold tabular-nums ${
-            isMe ? 'text-emerald-800' : 'text-slate-500'
+            isMe ? 'text-brand-800' : 'text-slate-500'
           }`}
         >
           <span className="inline-flex items-center gap-1">

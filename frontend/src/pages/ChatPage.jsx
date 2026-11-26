@@ -1415,9 +1415,9 @@ export default function ChatPage() {
  </div>
 
  {/* Safety notice banner */}
- <div className="bg-amber-50 px-4 py-2 border-b border-amber-200/60 flex items-center justify-between text-[11px] text-amber-900 shrink-0 flex-wrap gap-2">
+ <div className="bg-emerald-50 px-4 py-2 border-b border-emerald-200/80 flex items-center justify-between text-[11px] text-emerald-900 shrink-0 flex-wrap gap-2">
  <div className="flex items-center gap-2">
- <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+ <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
  <span>
  <strong>Safety Rule:</strong> Inspect item in person at a busy public spot before making payment.
  </span>
@@ -1426,17 +1426,17 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setAiSafetyModalOpen(true)}
- className="font-bold text-slate-900 bg-white border border-amber-200/90 hover:border-brand-400 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition"
+ className="font-bold text-slate-900 bg-white border border-emerald-200/90 hover:border-emerald-400 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition"
  >
- <Sparkles className="w-3.5 h-3.5 text-brand-600" />
+ <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
  <span>AI Inspection Tips</span>
  </button>
  <button
  type="button"
  onClick={() => setMeetupModalOpen(true)}
- className="font-bold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
+ className="font-bold text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer"
  >
- <MapPin className="w-3.5 h-3.5 text-amber-600" />
+ <MapPin className="w-3.5 h-3.5 text-emerald-600" />
  <span>Pick Safe Spot</span>
  </button>
  </div>
@@ -1747,7 +1747,7 @@ export default function ChatPage() {
  <div
  className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap break-words ${
  isMe
- ? 'bg-emerald-50 text-slate-900 border border-emerald-200/90 rounded-br-none'
+ ? 'bg-brand-50 text-slate-900 border border-brand-200/90 rounded-br-none'
  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
  }`}
  >
@@ -1893,7 +1893,7 @@ export default function ChatPage() {
  type="button"
  onClick={stopAndSendRecording}
  aria-label="Send voice message"
- className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+ className="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
  >
  <Send className="w-3.5 h-3.5" />
  <span>Send</span>
@@ -1914,7 +1914,7 @@ export default function ChatPage() {
  <button
  type="submit"
  aria-label="Send message"
- className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition shrink-0 cursor-pointer"
+ className="p-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  <Send className="w-4 h-4" />
  </button>
@@ -1925,7 +1925,7 @@ export default function ChatPage() {
  disabled={uploadingVoice}
  aria-label="Record voice message"
  title="Record voice message"
- className="p-2 bg-slate-200 hover:bg-slate-300 disabled:opacity-50 text-slate-700 rounded-xl transition shrink-0 cursor-pointer"
+ className="p-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  {uploadingVoice ? (
  <Loader2 className="w-4 h-4 animate-spin" />

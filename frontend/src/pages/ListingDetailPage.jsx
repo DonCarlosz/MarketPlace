@@ -691,12 +691,12 @@ export default function ListingDetailPage() {
  </section>
 
  {/* oBuy Inspection Guarantee Band */}
- <section className="bg-slate-50 border-y border-slate-200 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-5 py-4 space-y-2">
- <div className="flex items-center gap-2 text-slate-900 font-bold text-xs uppercase tracking-wider">
- <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
+ <section className="bg-emerald-50/80 border-y border-emerald-200/80 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-5 py-4 space-y-2">
+ <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs uppercase tracking-wider">
+ <Shield className="w-4 h-4 text-emerald-700 shrink-0" />
  <span>oBuy Inspection Guarantee</span>
  </div>
- <p className="text-xs text-slate-700 leading-relaxed">
+ <p className="text-xs text-emerald-900/90 leading-relaxed">
  Meet in an open public space and inspect physically before paying. Zero upfront card charges or wire transfer risks.
  </p>
  </section>

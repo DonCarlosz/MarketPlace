@@ -499,7 +499,7 @@ export default function LandingPage() {
  value={localSearch}
  onChange={(e) => setLocalSearch(e.target.value)}
  placeholder="Search for anything (phones, bikes, tools, barbers, tutors...)"
- className="w-full bg-transparent border-none text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none py-1.5"
+ className="w-full bg-transparent border-none text-xs sm:text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none py-1.5"
  />
  {localSearch && (
  <button

@@ -164,10 +164,10 @@ export default function FavoritesPage() {
  )}
 
  {/* Safety Note */}
- <div className="pt-4 border-t border-slate-200 flex items-center gap-2.5 text-xs text-slate-500">
- <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+ <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 flex items-center gap-2.5 text-xs text-emerald-900">
+ <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
  <span>
- <strong className="text-slate-700">Safe Meetup Reminder:</strong> Always inspect items in person at a public spot before paying the seller.
+ <strong className="text-emerald-950">Safe Meetup Reminder:</strong> Always inspect items in person at a public spot before paying the seller.
  </span>
  </div>
  </div>
