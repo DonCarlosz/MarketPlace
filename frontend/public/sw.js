@@ -1,6 +1,6 @@
-// oBuy Progressive Web App Service Worker (v6: Offline Shell + Web Push + Web Share Target)
-const STATIC_CACHE = 'obuy-static-v6';
-const RUNTIME_CACHE = 'obuy-runtime-v6';
+// oBuy Progressive Web App Service Worker (v7: Offline Shell + Web Push + Web Share Target + Orange Theme)
+const STATIC_CACHE = 'obuy-static-v7';
+const RUNTIME_CACHE = 'obuy-runtime-v7';
 const SHARE_TARGET_CACHE = 'obuy-share-target-v1';
 
 const PRECACHE_ASSETS = [

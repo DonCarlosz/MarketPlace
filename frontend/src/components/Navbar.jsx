@@ -107,11 +107,11 @@ export default function Navbar() {
               to="/market"
               className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-xl transition-colors border ${
                 isMarketRoute
-                  ? 'bg-brand-50 text-brand-700 border-brand-200'
-                  : 'bg-slate-50 text-slate-700 hover:text-brand-600 hover:bg-slate-100 border-slate-200/80'
+                  ? 'bg-slate-100 text-slate-900 border-slate-300'
+                  : 'bg-slate-50 text-slate-700 hover:text-slate-900 hover:bg-slate-100 border-slate-200/80'
               }`}
             >
-              <Compass className="w-4 h-4 text-brand-600 shrink-0" />
+              <Compass className="w-4 h-4 text-slate-500 shrink-0" />
               <span>Explore Market</span>
             </Link>
           </div>
@@ -131,10 +131,10 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={installApp}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200/80 transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer shrink-0"
                 title="Install oBuy as a standalone app"
               >
-                <Download className="w-3.5 h-3.5 text-brand-600" />
+                <Download className="w-3.5 h-3.5 text-slate-600" />
                 <span>Install App</span>
               </button>
             )}
@@ -143,7 +143,7 @@ export default function Navbar() {
               <div className="flex items-center gap-2 shrink-0">
                 <Link
                   to="/messages"
-                  className="p-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-xl transition-colors relative shrink-0"
+                  className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors relative shrink-0"
                   title="Messages"
                 >
                   <MessageSquare className="w-5 h-5" />
@@ -159,11 +159,11 @@ export default function Navbar() {
                   <button
                     type="button"
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="flex items-center p-0.5 rounded-full hover:ring-2 hover:ring-brand-300 transition cursor-pointer"
+                    className="flex items-center p-0.5 rounded-full hover:ring-2 hover:ring-slate-300 transition cursor-pointer"
                     title={user.name}
                     aria-label="Account menu"
                   >
-                    <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center border border-brand-200 overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200 overflow-hidden">
                       {userAvatarSrc ? (
                         <img
                           src={userAvatarSrc}
@@ -214,7 +214,7 @@ export default function Navbar() {
                           className="w-full flex items-center justify-between px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
                         >
                           <span className="flex items-center gap-2">
-                            <SlidersHorizontal className="w-4 h-4 text-brand-600" />
+                            <SlidersHorizontal className="w-4 h-4 text-slate-500" />
                             App Permissions
                           </span>
                           {hasBlockedPermission && (
@@ -263,10 +263,10 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={installApp}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-brand-700 bg-brand-50 border border-brand-100 hover:bg-brand-100 transition-colors whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-colors whitespace-nowrap cursor-pointer"
                 title="Install oBuy App"
               >
-                <Download className="w-3.5 h-3.5 text-brand-600" />
+                <Download className="w-3.5 h-3.5 text-slate-600" />
                 <span>Install</span>
               </button>
             )}
@@ -275,7 +275,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => openAuthModal('login')}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold text-brand-600 bg-brand-50 border border-brand-100 hover:bg-brand-100 transition-colors whitespace-nowrap cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 bg-slate-100 border border-slate-200 hover:bg-slate-200 transition-colors whitespace-nowrap cursor-pointer"
               >
                 Log In
               </button>
@@ -325,9 +325,9 @@ export default function Navbar() {
                   <Link
                     to="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-brand-300 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-slate-300 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-bold text-sm flex items-center justify-center border border-brand-200 overflow-hidden shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 text-slate-700 font-bold text-sm flex items-center justify-center border border-slate-300 overflow-hidden shrink-0">
                       {userAvatarSrc ? (
                         <img
                           src={userAvatarSrc}
@@ -357,7 +357,7 @@ export default function Navbar() {
                         : 'text-slate-700 hover:bg-slate-50 font-semibold'
                     }`}
                   >
-                    <Home className="w-5 h-5 text-brand-600 shrink-0" />
+                    <Home className="w-5 h-5 text-slate-500 shrink-0" />
                     <span>Home</span>
                   </Link>
 
@@ -370,7 +370,7 @@ export default function Navbar() {
                         : 'text-slate-700 hover:bg-slate-50 font-semibold'
                     }`}
                   >
-                    <Store className="w-5 h-5 text-brand-600 shrink-0" />
+                    <Store className="w-5 h-5 text-slate-500 shrink-0" />
                     <span>Explore oBuy</span>
                   </Link>
 
@@ -450,7 +450,7 @@ export default function Navbar() {
                     className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[15px] font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer text-left"
                   >
                     <div className="flex items-center gap-3.5">
-                      <SlidersHorizontal className="w-5 h-5 text-brand-600 shrink-0" />
+                      <SlidersHorizontal className="w-5 h-5 text-slate-500 shrink-0" />
                       <span>App Permissions</span>
                     </div>
                     {hasBlockedPermission && (
@@ -467,13 +467,13 @@ export default function Navbar() {
                         setMobileMenuOpen(false);
                         installApp();
                       }}
-                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[15px] font-semibold text-brand-700 bg-brand-50/70 hover:bg-brand-100/70 border border-brand-200/70 transition-colors cursor-pointer text-left mt-1"
+                      className="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-[15px] font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer text-left mt-1"
                     >
                       <div className="flex items-center gap-3.5">
-                        <Download className="w-5 h-5 text-brand-600 shrink-0" />
+                        <Download className="w-5 h-5 text-slate-600 shrink-0" />
                         <span>Install oBuy App</span>
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-brand-600 text-white px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-white px-2 py-0.5 rounded-full">
                         App
                       </span>
                     </button>

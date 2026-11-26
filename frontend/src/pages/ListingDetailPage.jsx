@@ -393,7 +393,7 @@ export default function ListingDetailPage() {
  </span>
  )}
  {listing.mode === 'service' && (
- <span className="inline-flex items-center gap-1 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full">
+ <span className="inline-flex items-center gap-1 bg-amber-700 text-white text-xs font-bold px-3 py-1 rounded-full">
  <Wrench className="w-3.5 h-3.5" /> Local Handwork
  </span>
  )}
@@ -518,9 +518,9 @@ export default function ListingDetailPage() {
  </button>
  <Link
  to={`/edit/${listing._id}`}
- className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-brand-200"
+ className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-slate-200"
  >
- <Edit3 className="w-4 h-4 text-brand-600" />
+ <Edit3 className="w-4 h-4 text-slate-600" />
  <span>Edit Listing</span>
  </Link>
  <Link
@@ -528,7 +528,7 @@ export default function ListingDetailPage() {
  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-slate-200"
  >
  <span>Manage All My Listings</span>
- <ExternalLink className="w-4 h-4 text-brand-600" />
+ <ExternalLink className="w-4 h-4 text-slate-500" />
  </Link>
  </>
  ) : listing.status !== 'active' ? (
@@ -559,7 +559,7 @@ export default function ListingDetailPage() {
  onClick={handleOpenOfferModal}
  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm rounded-xl transition-colors border border-slate-200 cursor-pointer"
  >
- <Tag className="w-4 h-4 text-brand-600" />
+ <Tag className="w-4 h-4 text-slate-600" />
  <span>Make an Offer</span>
  </button>
  )}
@@ -578,13 +578,13 @@ export default function ListingDetailPage() {
  <span>Report</span>
  </button>
  ) : (
- <span className="text-[11px] font-semibold text-brand-600">Your Listing</span>
+ <span className="text-[11px] font-semibold text-slate-500">Your Listing</span>
  )}
 
  <button
  type="button"
  onClick={handleShareListing}
- className="inline-flex items-center gap-1 hover:text-brand-600 transition-colors cursor-pointer font-medium"
+ className="inline-flex items-center gap-1 hover:text-slate-900 transition-colors cursor-pointer font-medium"
  >
  <Share2 className="w-3.5 h-3.5" />
  <span>{shareFeedback ? 'Link Copied!' : 'Share'}</span>
@@ -613,7 +613,7 @@ export default function ListingDetailPage() {
  <div className="flex items-center gap-3">
  <Link
  to={sellerId ? `/profile/${sellerId}` : '#'}
- className="w-11 h-11 rounded-xl bg-brand-100 text-brand-700 font-bold text-base flex items-center justify-center border border-brand-200 shrink-0 overflow-hidden hover:opacity-90 transition-opacity"
+ className="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 font-bold text-base flex items-center justify-center border border-slate-200 shrink-0 overflow-hidden hover:opacity-90 transition-opacity"
  >
  {listing.seller?.avatar ? (
  <img
@@ -631,7 +631,7 @@ export default function ListingDetailPage() {
  <div className="flex items-center gap-1.5">
  <Link
  to={sellerId ? `/profile/${sellerId}` : '#'}
- className="font-bold text-slate-900 text-sm truncate hover:text-brand-600 transition-colors"
+ className="font-bold text-slate-900 text-sm truncate hover:underline transition-colors"
  >
  {listing.seller?.name || 'oBuy Seller'}
  </Link>
@@ -649,7 +649,7 @@ export default function ListingDetailPage() {
  {sellerId && (
  <Link
  to={`/profile/${sellerId}`}
- className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 transition-colors shrink-0"
+ className="px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors shrink-0"
  >
  Profile
  </Link>
@@ -677,7 +677,7 @@ export default function ListingDetailPage() {
  </div>
  <div className="border-l border-slate-100">
  <span className="text-[10px] text-slate-400 block font-medium">Activity</span>
- <span className="text-xs font-bold text-brand-700 truncate block px-1">
+ <span className="text-xs font-bold text-slate-800 truncate block px-1">
  {sellerStats?.responseBadge || 'New Seller'}
  </span>
  </div>
@@ -691,9 +691,9 @@ export default function ListingDetailPage() {
  </section>
 
  {/* oBuy Inspection Guarantee Band */}
- <section className="bg-brand-50/60 border-y border-brand-100 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-5 py-4 space-y-2">
- <div className="flex items-center gap-2 text-brand-900 font-bold text-xs uppercase tracking-wider">
- <Shield className="w-4 h-4 text-brand-600 shrink-0" />
+ <section className="bg-slate-50 border-y border-slate-200 lg:border lg:rounded-2xl mt-2 lg:mt-0 px-4 sm:px-5 py-4 space-y-2">
+ <div className="flex items-center gap-2 text-slate-900 font-bold text-xs uppercase tracking-wider">
+ <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
  <span>oBuy Inspection Guarantee</span>
  </div>
  <p className="text-xs text-slate-700 leading-relaxed">
@@ -791,9 +791,9 @@ export default function ListingDetailPage() {
 
  {/* Service Availability Note if present */}
  {listing.availabilityNotes && (
- <div className="pt-4 border-t border-slate-100 text-xs text-purple-900 space-y-1">
+ <div className="pt-4 border-t border-slate-100 text-xs text-amber-900 space-y-1">
  <p className="font-bold flex items-center gap-1.5">
- <Clock className="w-3.5 h-3.5 text-purple-600" />
+ <Clock className="w-3.5 h-3.5 text-amber-700" />
  <span>Availability & Scheduling Notes</span>
  </p>
  <p className="text-slate-700">{listing.availabilityNotes}</p>

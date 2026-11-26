@@ -135,7 +135,7 @@ export default function PermissionsSheet({
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
                 <SlidersHorizontal className="w-5 h-5" />
               </div>
               <div>
@@ -170,7 +170,7 @@ export default function PermissionsSheet({
                   <div className="flex items-start justify-between gap-2.5">
                     <div className="flex items-start gap-2.5 min-w-0">
                       <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4 text-brand-600" />
+                        <Icon className="w-4 h-4 text-slate-600" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -231,7 +231,7 @@ export default function PermissionsSheet({
       {mode === 'warm' && meta && (
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-brand-50 border border-brand-200 text-brand-600 flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
               <ActiveIcon className="w-6 h-6" />
             </div>
             <button

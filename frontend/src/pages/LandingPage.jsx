@@ -288,7 +288,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover rounded-xl"
  />
  </div>
- <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
+ <span className="text-xs sm:text-sm font-bold text-slate-900 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
  Home and Garden <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
@@ -312,7 +312,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover rounded-xl"
  />
  </div>
- <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
+ <span className="text-xs sm:text-sm font-bold text-slate-900 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
  Fashion & Wears <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
@@ -336,7 +336,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover rounded-xl"
  />
  </div>
- <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
+ <span className="text-xs sm:text-sm font-bold text-slate-900 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
  Tech & Tools <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
@@ -387,14 +387,14 @@ export default function LandingPage() {
 
  if (slideId === 2) {
  return (
- <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-700 to-purple-700 text-white border-b border-brand-900/40">
+ <div className="w-full h-full relative overflow-hidden bg-gradient-to-r from-slate-900 via-brand-950 to-brand-800 text-white border-b border-slate-900/40">
  <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 h-full flex items-center justify-between gap-6 lg:gap-10">
  {/* Left Content */}
  <div className="flex-1 max-w-lg space-y-2.5">
  <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
  Neighborhood handwork on demand.
  </h2>
- <p className="text-xs sm:text-sm font-bold text-brand-100 leading-relaxed max-w-lg">
+ <p className="text-xs sm:text-sm font-bold text-slate-200 leading-relaxed max-w-lg">
  Book trusted local barbers, braiders, mechanics, cleaners, and private tutors directly in your town.
  </p>
  <div className="pt-1">
@@ -433,7 +433,7 @@ export default function LandingPage() {
  </div>
  <div>
  <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Master Barber</div>
- <div className="text-[11px] text-purple-600 font-bold">Fixed Sessions</div>
+ <div className="text-[11px] text-amber-700 font-bold">Fixed Sessions</div>
  <div className="text-[10px] text-slate-500 truncate mt-0.5">Fades, Beard & Styling</div>
  </div>
  </button>
@@ -553,8 +553,8 @@ export default function LandingPage() {
  onClick={() => handlePopularClick(item)}
  className={`transition px-2.5 py-0.5 rounded-full ${
  isSelected
- ? 'bg-brand-600 text-white font-bold '
- : 'hover:text-brand-600 hover:bg-slate-200/60 font-medium'
+ ? 'bg-slate-900 text-white font-bold '
+ : 'hover:text-slate-900 hover:bg-slate-200/60 font-medium'
  }`}
  >
  {item.term}
@@ -655,7 +655,7 @@ export default function LandingPage() {
  </div>
  <Link
  to="/market"
- className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline inline-flex items-center gap-1"
+ className="text-xs font-bold text-slate-700 hover:text-slate-900 hover:underline inline-flex items-center gap-1"
  >
  <span>See all</span>
  <ArrowRight className="w-3.5 h-3.5" />
@@ -673,8 +673,8 @@ export default function LandingPage() {
  onClick={() => handleCategoryClick(tile)}
  className={`group flex flex-col items-center p-1.5 sm:p-2 rounded-2xl bg-white border transition text-center cursor-pointer ${
  isSelected
- ? 'border-brand-500 ring-2 ring-brand-200 '
- : 'border-slate-200/90 hover:border-brand-400 '
+ ? 'border-slate-900 ring-2 ring-slate-200 '
+ : 'border-slate-200/90 hover:border-slate-300 '
  }`}
  >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-1.5 relative">
@@ -687,7 +687,7 @@ export default function LandingPage() {
  />
  </div>
  <span className={`font-bold text-xs transition line-clamp-1 ${
- isSelected ? 'text-brand-600' : 'text-slate-800 group-hover:text-brand-600'
+ isSelected ? 'text-slate-900' : 'text-slate-800 group-hover:text-slate-950'
  }`}>
  {tile.name}
  </span>
@@ -831,7 +831,7 @@ export default function LandingPage() {
  <Link
  key={entry._id}
  to={`/listing/${entry._id}`}
- className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-brand-400 transition block shrink-0`}
+ className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-slate-300 transition block shrink-0`}
  >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
  <img
@@ -843,7 +843,7 @@ export default function LandingPage() {
  />
  </div>
  <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.title}</div>
- <div className="text-[10px] sm:text-[11px] font-extrabold text-brand-600">
+ <div className="text-[10px] sm:text-[11px] font-extrabold text-slate-900">
  {formatPrice(entry.price, entry.priceType)}
  </div>
  </Link>
@@ -855,7 +855,7 @@ export default function LandingPage() {
  key={entry.name}
  type="button"
  onClick={() => handleCategoryClick(entry)}
- className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-brand-400 transition text-left cursor-pointer shrink-0`}
+ className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-slate-300 transition text-left cursor-pointer shrink-0`}
  >
  <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
  <img
@@ -867,7 +867,7 @@ export default function LandingPage() {
  />
  </div>
  <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.name}</div>
- <div className="text-[10px] font-extrabold text-brand-600 truncate">{entry.tag}</div>
+ <div className="text-[10px] font-semibold text-slate-500 truncate">{entry.tag}</div>
  </button>
  );
  })}
@@ -966,14 +966,14 @@ export default function LandingPage() {
  {/* Pillar 3: Local Services */}
  <div
  onClick={() => handleModeNavigate('service')}
- className="group relative bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-purple-400 transition duration-200 cursor-pointer flex flex-col justify-between"
+ className="group relative bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-amber-400 transition duration-200 cursor-pointer flex flex-col justify-between"
  >
  <div className="space-y-3">
- <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition ">
+ <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center group-hover:bg-amber-700 group-hover:text-white transition ">
  <Wrench className="w-5 h-5" />
  </div>
  <div>
- <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600">
+ <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">
  Local Handwork
  </span>
  <h3 className="text-base font-bold text-slate-900 mt-0.5">Local Handwork & Services</h3>
@@ -995,7 +995,7 @@ export default function LandingPage() {
  </div>
  </div>
 
- <div className="mt-5 pt-3 border-t border-slate-100 flex items-center text-xs font-bold text-purple-600 group-hover:text-purple-700">
+ <div className="mt-5 pt-3 border-t border-slate-100 flex items-center text-xs font-bold text-amber-700 group-hover:text-amber-800">
  <span>Find Skilled Services</span>
  <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition" />
  </div>
@@ -1053,7 +1053,7 @@ export default function LandingPage() {
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs ">
  1
  </div>
  <h3 className="text-sm font-bold text-slate-900">Explore Nearby by Radius</h3>
@@ -1063,7 +1063,7 @@ export default function LandingPage() {
  </div>
 
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs ">
  2
  </div>
  <h3 className="text-sm font-bold text-slate-900">Direct In-App Chat</h3>
@@ -1073,7 +1073,7 @@ export default function LandingPage() {
  </div>
 
  <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-2">
- <div className="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs ">
+ <div className="w-7 h-7 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs ">
  3
  </div>
  <h3 className="text-sm font-bold text-slate-900">Inspect First, Pay Directly</h3>

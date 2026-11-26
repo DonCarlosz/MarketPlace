@@ -131,7 +131,7 @@ export default function VoiceMessageBubble({ voice, isMe }) {
     <div
       className={`w-[225px] sm:w-[250px] rounded-2xl px-3 py-2.5 flex items-center gap-2.5 border select-none ${
         isMe
-          ? 'bg-brand-600 text-white border-brand-600 rounded-br-none'
+          ? 'bg-slate-900 text-white border-slate-900 rounded-br-none'
           : 'bg-white text-slate-900 border-slate-200 rounded-bl-none'
       }`}
     >
@@ -149,8 +149,8 @@ export default function VoiceMessageBubble({ voice, isMe }) {
         aria-label={playing ? 'Pause voice message' : 'Play voice message'}
         className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition cursor-pointer ${
           isMe
-            ? 'bg-white text-brand-600 hover:bg-brand-50'
-            : 'bg-brand-600 text-white hover:bg-brand-700'
+            ? 'bg-white text-slate-900 hover:bg-slate-100'
+            : 'bg-slate-900 text-white hover:bg-slate-800'
         }`}
       >
         {playing ? (
@@ -176,7 +176,7 @@ export default function VoiceMessageBubble({ voice, isMe }) {
         >
           <div
             className={`h-full rounded-full transition-all duration-100 ${
-              isMe ? 'bg-white' : 'bg-brand-600'
+              isMe ? 'bg-white' : 'bg-slate-900'
             }`}
             style={{ width: `${progress}%` }}
           />
@@ -185,7 +185,7 @@ export default function VoiceMessageBubble({ voice, isMe }) {
         {/* Single Dynamic Timer */}
         <div
           className={`flex items-center justify-between text-[10px] font-semibold tabular-nums ${
-            isMe ? 'text-brand-100' : 'text-slate-500'
+            isMe ? 'text-slate-300' : 'text-slate-500'
           }`}
         >
           <span className="inline-flex items-center gap-1">

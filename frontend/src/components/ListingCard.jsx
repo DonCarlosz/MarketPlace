@@ -68,7 +68,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
     }
     if (mode === 'service') {
       return (
-        <span className="inline-flex items-center gap-0.5 bg-purple-600 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded">
+        <span className="inline-flex items-center gap-0.5 bg-amber-700 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded">
           <Wrench className="w-2.5 h-2.5" /> Service
         </span>
       );
@@ -85,7 +85,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
     return (
       <Link
         to={`/listing/${_id}`}
-        className="listing-card-item group flex flex-col sm:flex-row sm:h-44 bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-brand-400 transition-colors duration-150 relative select-none"
+        className="listing-card-item group flex flex-col sm:flex-row sm:h-44 bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-slate-300 transition-colors duration-150 relative select-none"
       >
         <div className="relative w-full sm:w-48 h-44 bg-slate-100 overflow-hidden shrink-0">
           <img
@@ -138,7 +138,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
               )}
             </div>
 
-            <h3 className="font-bold text-slate-900 text-sm sm:text-base group-hover:text-brand-600 transition-colors leading-snug mt-1 line-clamp-2">
+            <h3 className="font-bold text-slate-900 text-sm sm:text-base transition-colors leading-snug mt-1 line-clamp-2">
               {title}
             </h3>
 
@@ -156,13 +156,13 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
 
           <div className="flex items-center gap-3 text-xs text-slate-500 pt-2 border-t border-slate-100">
             <div className="flex items-center gap-1 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="truncate">{location?.city || 'Local Area'}</span>
             </div>
 
             {distanceKm !== undefined && distanceKm !== null && (
               <div className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
-                <Navigation className="w-2.5 h-2.5 text-brand-500" />
+                <Navigation className="w-2.5 h-2.5 text-slate-500" />
                 <span>{distanceKm === 0 ? 'Same town' : `${distanceKm} km away`}</span>
               </div>
             )}
@@ -182,7 +182,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
             </span>
           </div>
 
-          <span className="inline-flex items-center gap-1 text-xs font-bold text-brand-600 group-hover:translate-x-0.5 transition-transform">
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 group-hover:text-slate-900 group-hover:translate-x-0.5 transition-transform">
             <span>View</span>
             <ChevronRight className="w-4 h-4" />
           </span>
@@ -197,7 +197,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
       to={`/listing/${_id}`}
       className={`${ownerActions ? '' : 'listing-card-item '}group flex flex-col w-full h-[268px] sm:h-[304px] bg-white rounded-xl sm:rounded-2xl ${
         ownerActions ? 'overflow-visible' : 'overflow-hidden'
-      } ${ownerMenuOpen ? 'z-30' : ''} border border-slate-200/90 hover:border-brand-400 transition-colors duration-150 relative select-none`}
+      } ${ownerMenuOpen ? 'z-30' : ''} border border-slate-200/90 hover:border-slate-300 transition-colors duration-150 relative select-none`}
     >
       <div className="relative w-full h-[154px] sm:h-[182px] shrink-0 bg-slate-100 rounded-t-xl sm:rounded-t-2xl">
         <div className="absolute inset-0 rounded-t-xl sm:rounded-t-2xl overflow-hidden">
@@ -261,7 +261,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
                       }}
                       className="w-full flex items-center gap-2 px-2.5 py-2 text-[11px] font-bold text-slate-700 hover:bg-slate-50 text-left whitespace-nowrap transition-colors cursor-pointer border-b border-slate-100"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                      <Edit3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <span>Edit Listing</span>
                     </button>
                   )}
@@ -276,7 +276,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-[11px] font-bold text-left whitespace-nowrap transition-colors cursor-pointer ${
                       ownerActions.isActive
                         ? 'text-emerald-700 hover:bg-emerald-50'
-                        : 'text-brand-700 hover:bg-brand-50'
+                        : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     {ownerActions.isActive ? (
@@ -336,13 +336,13 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
             {formatPrice(price, priceType)}
           </div>
 
-          <h3 className="font-semibold text-slate-800 text-xs sm:text-[13px] line-clamp-2 mt-0.5 group-hover:text-brand-600 transition-colors leading-snug">
+          <h3 className="font-semibold text-slate-800 text-xs sm:text-[13px] line-clamp-2 mt-0.5 group-hover:text-slate-950 transition-colors leading-snug">
             {title}
           </h3>
 
           <div className="text-[10.5px] sm:text-[11px] text-slate-400 truncate mt-0.5">
             {mode === 'service' && serviceType ? (
-              <span className="text-purple-600 font-medium">{serviceType}</span>
+              <span className="text-amber-700 font-medium">{serviceType}</span>
             ) : (
               category || 'Community Listing'
             )}
@@ -351,13 +351,13 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
 
         <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 gap-1.5 shrink-0">
           <div className="flex items-center gap-1 min-w-0 truncate">
-            <MapPin className="w-3 h-3 text-brand-500 shrink-0" />
+            <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
             <span className="truncate font-medium">{location?.city || 'Local'}</span>
           </div>
 
           {distanceKm !== undefined && distanceKm !== null && (
             <div className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0">
-              <Navigation className="w-2.5 h-2.5 text-brand-500" />
+              <Navigation className="w-2.5 h-2.5 text-slate-400" />
               <span>{distanceKm === 0 ? 'Same town' : `${distanceKm} km`}</span>
             </div>
           )}

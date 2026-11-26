@@ -73,13 +73,13 @@ export default function Footer() {
                 <button
                   type="button"
                   onClick={() => toggleSection(sec.id)}
-                  className="w-full py-3 flex items-center justify-between text-left font-bold text-slate-800 hover:text-brand-600 transition-colors cursor-pointer select-none"
+                  className="w-full py-3 flex items-center justify-between text-left font-bold text-slate-800 hover:text-slate-950 transition-colors cursor-pointer select-none"
                   aria-expanded={isOpen}
                 >
                   <span className="text-xs uppercase tracking-wider">{sec.title}</span>
                   <ChevronDown
                     className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180 text-brand-600' : ''
+                      isOpen ? 'rotate-180 text-slate-700' : ''
                     }`}
                   />
                 </button>
@@ -97,7 +97,7 @@ export default function Footer() {
                           {link.to ? (
                             <Link
                               to={link.to}
-                              className="text-slate-600 hover:text-brand-600 transition-colors block py-0.5"
+                              className="text-slate-600 hover:text-slate-900 transition-colors block py-0.5"
                             >
                               {link.label}
                             </Link>
@@ -132,7 +132,7 @@ export default function Footer() {
                     {link.to ? (
                       <Link
                         to={link.to}
-                        className="hover:text-brand-600 transition-colors block"
+                        className="hover:text-slate-900 transition-colors block"
                       >
                         {link.label}
                       </Link>

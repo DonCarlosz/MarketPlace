@@ -20,7 +20,7 @@ const MODES = [
     id: 'service',
     label: 'Services',
     icon: Wrench,
-    activeBg: 'bg-purple-600 text-white',
+    activeBg: 'bg-amber-700 text-white',
   },
 ];
 

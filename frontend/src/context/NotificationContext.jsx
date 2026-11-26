@@ -223,7 +223,7 @@ export const NotificationProvider = ({ children }) => {
 
   const renderPreviewIcon = (type) => {
     if (type === 'voice') return <Mic className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
-    if (type === 'offer') return <Tag className="w-3.5 h-3.5 text-brand-600 shrink-0" />;
+    if (type === 'offer') return <Tag className="w-3.5 h-3.5 text-slate-500 shrink-0" />;
     if (type === 'meetup_proposal') return <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
     return <MessageSquare className="w-3.5 h-3.5 text-slate-400 shrink-0" />;
   };
@@ -257,7 +257,7 @@ export const NotificationProvider = ({ children }) => {
           >
             {/* Sender Avatar with Online/Incoming Dot */}
             <div className="relative shrink-0">
-              <div className="w-11 h-11 rounded-full bg-brand-100 text-brand-700 font-black text-sm flex items-center justify-center border border-brand-200 overflow-hidden">
+              <div className="w-11 h-11 rounded-full bg-slate-100 text-slate-700 font-black text-sm flex items-center justify-center border border-slate-200 overflow-hidden">
                 {banner.senderAvatar ? (
                   <img
                     src={resolveMediaUrl(banner.senderAvatar)}
@@ -286,7 +286,7 @@ export const NotificationProvider = ({ children }) => {
               </div>
 
               {banner.listingTitle && (
-                <p className="text-[10px] font-semibold text-brand-600 truncate">
+                <p className="text-[10px] font-semibold text-slate-600 truncate">
                   {banner.listingTitle}
                 </p>
               )}

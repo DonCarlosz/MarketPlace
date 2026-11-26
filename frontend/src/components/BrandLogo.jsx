@@ -50,8 +50,8 @@ export function BrandMark({ className = 'w-9 h-9', title = 'oBuy logo' }) {
 /**
  * Full oBuy Logo Lockup or Standalone App Tile Badge.
  * Variants:
- * - "default": Indigo O-cart mark + bold dark "Buy" wordmark (Navbar, Footer, Modals)
- * - "badge": White O-cart mark inside solid Indigo rounded tile + "oBuy" or icon-only
+ * - "default": Brand orange O-cart mark + bold dark "Buy" wordmark (Navbar, Footer, Modals)
+ * - "badge": White O-cart mark inside solid brand orange rounded tile + "oBuy" or icon-only
  * - "inverse": White O-cart mark + white "Buy" wordmark for dark/brand backgrounds
  */
 export default function BrandLogo({

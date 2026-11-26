@@ -512,7 +512,7 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'service'
- ? 'bg-purple-600 text-white'
+ ? 'bg-amber-700 text-white'
  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
  }`}
  >
@@ -626,13 +626,13 @@ export default function HomePage() {
  onClick={() => setMobileFilterDrawerOpen(true)}
  className={`lg:hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
  hasActiveFilters
- ? 'border-brand-500 bg-brand-50 text-brand-700'
+ ? 'border-slate-900 bg-slate-900 text-white'
  : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
  }`}
  >
  <SlidersHorizontal className="w-3.5 h-3.5" />
  <span>Filters</span>
- {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-brand-600" />}
+ {hasActiveFilters && <span className="w-2 h-2 rounded-full bg-brand-500" />}
  </button>
 
  {/* Sort Dropdown */}
@@ -655,7 +655,7 @@ export default function HomePage() {
  aria-label="Grid View"
  className={`p-1.5 rounded-lg transition ${
  viewMode === 'grid'
- ? 'bg-white text-brand-600 font-bold'
+ ? 'bg-white text-slate-900 font-bold'
  : 'text-slate-500 hover:text-slate-800'
  }`}
  title="Grid view"
@@ -668,7 +668,7 @@ export default function HomePage() {
  aria-label="List View"
  className={`p-1.5 rounded-lg transition ${
  viewMode === 'list'
- ? 'bg-white text-brand-600 font-bold'
+ ? 'bg-white text-slate-900 font-bold'
  : 'text-slate-500 hover:text-slate-800'
  }`}
  title="List view"
@@ -686,12 +686,12 @@ export default function HomePage() {
  Active:
  </span>
  {searchQuery && (
- <span className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 px-2.5 py-1 rounded-full border border-brand-100 font-medium">
+ <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-800 px-2.5 py-1 rounded-full border border-slate-200 font-medium">
  "{searchQuery}"
  <button
  type="button"
  onClick={() => setSearchQuery('')}
- className="hover:text-brand-900 ml-0.5 font-bold"
+ className="hover:text-slate-950 ml-0.5 font-bold"
  >
  ×
  </button>

@@ -1111,7 +1111,7 @@ export default function ChatPage() {
  >
  <div className="p-4 border-b border-slate-200 flex items-center justify-between">
  <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
- <MessageSquare className="w-5 h-5 text-brand-600" />
+ <MessageSquare className="w-5 h-5 text-slate-700" />
  Inbox
  </h2>
  </div>
@@ -1122,7 +1122,7 @@ export default function ChatPage() {
  onClick={() => setInboxTab('primary')}
  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
  inboxTab === 'primary'
- ? 'bg-white text-brand-700 '
+ ? 'bg-white text-slate-900 border border-slate-200/80'
  : 'text-slate-600 hover:text-slate-900'
  }`}
  >
@@ -1134,13 +1134,13 @@ export default function ChatPage() {
  onClick={() => setInboxTab('requests')}
  className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
  inboxTab === 'requests'
- ? 'bg-white text-brand-700 '
+ ? 'bg-white text-slate-900 border border-slate-200/80'
  : 'text-slate-600 hover:text-slate-900'
  }`}
  >
  <span>Requests</span>
  {requestsConversations.length > 0 && (
- <span className="w-4 h-4 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
+ <span className="w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] font-bold flex items-center justify-center">
  {requestsConversations.length}
  </span>
  )}
@@ -1202,11 +1202,11 @@ export default function ChatPage() {
  requestNotificationPermission();
  }}
  className={`w-full p-4 flex items-start gap-3 text-left transition cursor-pointer select-none ${
- isSelected ? 'bg-brand-50/70 border-l-4 border-brand-600' : 'hover:bg-slate-50 active:bg-slate-100'
+ isSelected ? 'bg-slate-100/90 border-l-4 border-slate-900' : 'hover:bg-slate-50 active:bg-slate-100'
  }`}
  style={{ WebkitTouchCallout: 'none' }}
  >
- <div className="w-10 h-10 rounded-2xl bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center shrink-0 border border-brand-200 overflow-hidden">
+ <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
  {partner?.avatar ? (
  <img
  src={resolveMediaUrl(partner.avatar)}
@@ -1231,7 +1231,7 @@ export default function ChatPage() {
  </span>
  </div>
 
- <p className="text-[11px] font-semibold text-brand-600 truncate mt-0.5">
+ <p className="text-[11px] font-semibold text-slate-700 truncate mt-0.5">
  {conv.listing?.title || 'Listing'}
  </p>
 
@@ -1301,14 +1301,14 @@ export default function ChatPage() {
  <div className="flex items-center gap-2">
  <Link
  to={otherUserId ? `/profile/${otherUserId}` : '#'}
- className="text-xs sm:text-sm font-bold text-slate-900 truncate hover:text-brand-600 transition"
+ className="text-xs sm:text-sm font-bold text-slate-900 truncate hover:underline transition"
  >
  {otherUser?.name || 'Member'}
  </Link>
  </div>
  <p className="text-xs text-slate-500 truncate">
  {activeConversation.listing?.title} •{' '}
- <span className="font-extrabold text-brand-600">
+ <span className="font-extrabold text-slate-900">
  {formatPrice(
  activeConversation.listing?.price,
  activeConversation.listing?.priceType
@@ -1323,9 +1323,9 @@ export default function ChatPage() {
  {canMakeOffer && (
  <button
  onClick={() => setMakeOfferModalOpen(true)}
- className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200/80 transition cursor-pointer"
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 transition cursor-pointer"
  >
- <Tag className="w-3.5 h-3.5" />
+ <Tag className="w-3.5 h-3.5 text-slate-600" />
  <span className="hidden sm:inline">Make Offer</span>
  <span className="sm:hidden">Offer</span>
  </button>
@@ -1426,7 +1426,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setAiSafetyModalOpen(true)}
- className="font-bold text-brand-700 hover:text-brand-900 flex items-center gap-1 cursor-pointer"
+ className="font-bold text-slate-900 bg-white border border-amber-200/90 hover:border-brand-400 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition"
  >
  <Sparkles className="w-3.5 h-3.5 text-brand-600" />
  <span>AI Inspection Tips</span>
@@ -1444,9 +1444,9 @@ export default function ChatPage() {
 
  {/* TikTok-style Request Status Alert */}
  {isPending && amIInitiator && (
- <div className="bg-brand-50/90 border-b border-brand-100 px-4 py-2 text-xs text-brand-900 flex items-center justify-between gap-3 shrink-0">
+ <div className="bg-slate-100 border-b border-slate-200 px-4 py-2 text-xs text-slate-800 flex items-center justify-between gap-3 shrink-0">
  <div className="flex items-center gap-2">
- <span className="w-2 h-2 rounded-full bg-brand-600 animate-pulse" />
+ <span className="w-2 h-2 rounded-full bg-slate-600 animate-pulse" />
  <span>
  Message request pending acceptance ({senderMessageCount}/5 sent).
  </span>
@@ -1499,13 +1499,13 @@ export default function ChatPage() {
  >
  <div
  className={`w-full max-w-[88%] sm:max-w-[330px] rounded-2xl overflow-hidden border bg-white text-slate-900 ${
- isMe ? 'border-brand-300' : 'border-slate-200'
+ isMe ? 'border-slate-300' : 'border-slate-200'
  }`}
  >
  {/* Subtle Header Bar */}
  <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-50 border-b border-slate-100">
  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
- <Tag className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+ <Tag className="w-3.5 h-3.5 text-slate-500 shrink-0" />
  <span>{isCounterOffer ? 'Counter-Offer' : 'Price Offer'}</span>
  </span>
  <span
@@ -1553,9 +1553,9 @@ export default function ChatPage() {
 
  {/* AI Negotiation Coach Insight (shown to recipient on pending offers) */}
  {canRespondToThisOffer && (activeConversation?.listing?.price || 0) > 0 && (
- <div className="p-2.5 rounded-xl bg-brand-50/70 border border-brand-100 text-xs space-y-1">
- <div className="flex items-center gap-1.5 font-bold text-brand-700 text-[11px]">
- <Sparkles className="w-3.5 h-3.5" />
+ <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+ <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[11px]">
+ <Sparkles className="w-3.5 h-3.5 text-slate-600" />
  <span>AI Negotiation Tip</span>
  </div>
  <p className="text-[11px] text-slate-700 leading-snug">
@@ -1636,7 +1636,7 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setReviewModalOpen(true)}
- className="w-full py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+ className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
  >
  <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
  <span>Leave Seller Feedback</span>
@@ -1668,7 +1668,7 @@ export default function ChatPage() {
  >
  <div
  className={`w-full max-w-[88%] sm:max-w-[320px] rounded-2xl overflow-hidden border bg-white text-slate-900 ${
- isMe ? 'border-brand-300' : 'border-slate-200'
+ isMe ? 'border-slate-300' : 'border-slate-200'
  }`}
  >
  <div className="flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-50/80 border-b border-emerald-100 text-xs font-bold text-emerald-900">
@@ -1687,7 +1687,7 @@ export default function ChatPage() {
  </span>
  )}
  {msg.meetup?.distance && (
- <span className="text-[11px] text-brand-600 font-semibold block pt-0.5">
+ <span className="text-[11px] text-slate-500 font-semibold block pt-0.5">
  {msg.meetup.distance}
  </span>
  )}
@@ -1747,7 +1747,7 @@ export default function ChatPage() {
  <div
  className={`max-w-[78%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed whitespace-pre-wrap break-words ${
  isMe
- ? 'bg-brand-600 text-white rounded-br-none'
+ ? 'bg-slate-900 text-white rounded-br-none'
  : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none'
  }`}
  >
@@ -1849,9 +1849,9 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setMakeOfferModalOpen(true)}
- className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold border border-brand-200 text-[11px] shrink-0 transition cursor-pointer"
+ className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-[11px] shrink-0 transition cursor-pointer"
  >
- <Tag className="w-3 h-3" />
+ <Tag className="w-3 h-3 text-slate-600" />
  <span>Make Offer</span>
  </button>
  )}
@@ -1859,21 +1859,21 @@ export default function ChatPage() {
  <button
  type="button"
  onClick={() => setMeetupModalOpen(true)}
- className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold border border-amber-200 text-[11px] shrink-0 transition cursor-pointer"
+ className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 text-[11px] shrink-0 transition cursor-pointer"
  >
- <MapPin className="w-3 h-3 text-amber-600" />
+ <MapPin className="w-3 h-3 text-slate-500" />
  <span>Suggest Meetup Spot</span>
  </button>
  </div>
 
  {isRecording ? (
- /* WhatsApp-Style Active Voice Recording Bar */
- <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-2xl px-3 py-2">
+ /* WhatsApp-Style Active Voice Recording Bar (Zero Orange Background/Controls) */
+ <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-2xl px-3 py-2">
  <button
  type="button"
  onClick={cancelVoiceRecording}
  aria-label="Cancel voice recording"
- className="p-2 text-rose-600 hover:bg-rose-100 rounded-xl transition cursor-pointer shrink-0"
+ className="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer shrink-0"
  title="Discard recording"
  >
  <Trash2 className="w-4 h-4" />
@@ -1881,10 +1881,10 @@ export default function ChatPage() {
 
  <div className="flex-1 flex items-center gap-2 min-w-0">
  <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse shrink-0" />
- <span className="text-xs font-black text-rose-700 tabular-nums">
+ <span className="text-xs font-black text-slate-900 tabular-nums">
  {Math.floor(recordingSeconds / 60)}:{String(recordingSeconds % 60).padStart(2, '0')}
  </span>
- <span className="text-[11px] text-rose-600/80 font-medium truncate">
+ <span className="text-[11px] text-slate-500 font-medium truncate">
  Recording voice note...
  </span>
  </div>
@@ -1893,7 +1893,7 @@ export default function ChatPage() {
  type="button"
  onClick={stopAndSendRecording}
  aria-label="Send voice message"
- className="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
+ className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shrink-0"
  >
  <Send className="w-3.5 h-3.5" />
  <span>Send</span>
@@ -1901,7 +1901,7 @@ export default function ChatPage() {
  </div>
  ) : (
  <form onSubmit={handleSendMessage} className="flex items-end gap-2">
- <div className="flex-1 flex items-end gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-brand-100 focus-within:border-brand-500 border border-slate-200">
+ <div className="flex-1 flex items-end gap-2 bg-slate-100 rounded-2xl p-1.5 focus-within:ring-2 focus-within:ring-slate-200 focus-within:border-slate-400 border border-slate-200">
  <textarea
  ref={textareaRef}
  rows={1}
@@ -1914,7 +1914,7 @@ export default function ChatPage() {
  <button
  type="submit"
  aria-label="Send message"
- className="p-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition shrink-0 cursor-pointer"
+ className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  <Send className="w-4 h-4" />
  </button>
@@ -1925,7 +1925,7 @@ export default function ChatPage() {
  disabled={uploadingVoice}
  aria-label="Record voice message"
  title="Record voice message"
- className="p-2 bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white rounded-xl transition shrink-0 cursor-pointer"
+ className="p-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-xl transition shrink-0 cursor-pointer"
  >
  {uploadingVoice ? (
  <Loader2 className="w-4 h-4 animate-spin" />
@@ -2142,7 +2142,7 @@ export default function ChatPage() {
  headerSlot={
  <div className="flex items-center justify-between border-b border-slate-100 px-5 sm:px-6 py-3.5">
  <div className="flex items-center gap-2">
- <Compass className="w-5 h-5 text-brand-600 animate-pulse" />
+ <Compass className="w-5 h-5 text-slate-600 animate-pulse" />
  <div>
  <h3 className="text-base font-black text-slate-900">Smart Safe Meetup Finder</h3>
  <span className="text-[10px] text-slate-400 block font-medium">
@@ -2176,7 +2176,7 @@ export default function ChatPage() {
  <div className="space-y-2">
  <div className="flex items-center justify-between text-xs gap-2">
  <span className="text-slate-500 font-semibold flex items-center gap-1.5 min-w-0">
- <MapPin className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+ <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
  <span className="truncate">
  {locationStatus === 'detecting'
  ? 'Detecting GPS location...'
@@ -2201,7 +2201,7 @@ export default function ChatPage() {
  type="button"
  onClick={() => fetchSmartSafeSpots()}
  disabled={loadingSmartSpots}
- className="text-[11px] font-bold text-brand-600 hover:text-brand-800 transition cursor-pointer"
+ className="text-[11px] font-bold text-slate-700 hover:text-slate-950 transition cursor-pointer"
  >
  Refresh
  </button>
