@@ -45,7 +45,7 @@ import {
 } from 'lucide-react';
 
 export default function ChatPage() {
- const { user } = useAuth();
+ const { user, openAuthModal } = useAuth();
  const [searchParams, setSearchParams] = useSearchParams();
  const initialConversationId = searchParams.get('conversationId');
  const currentUserId = (user?._id || user?.id)?.toString();
@@ -1054,6 +1054,38 @@ export default function ChatPage() {
  activeConversation?.listing?.acceptsOffers !== false &&
  activeConversation?.listing?.status !== 'sold' &&
  activeConversation?.listing?.status !== 'completed';
+
+ if (!user) {
+ return (
+ <div className="flex-1 h-full w-full flex items-center justify-center bg-slate-50 px-4 py-10">
+ <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 text-center space-y-4">
+ <div className="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto border border-brand-100">
+ <MessageSquare className="w-7 h-7" />
+ </div>
+ <h2 className="text-xl font-black text-slate-900">Sign in to access your Inbox</h2>
+ <p className="text-xs text-slate-500 leading-relaxed">
+ Chat directly with sellers and buyers, send voice notes, negotiate offers, and pick verified safe public meetup spots.
+ </p>
+ <div className="flex gap-2.5 pt-2">
+ <button
+ type="button"
+ onClick={() => openAuthModal('login')}
+ className="flex-1 py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
+ >
+ Log In
+ </button>
+ <button
+ type="button"
+ onClick={() => openAuthModal('register')}
+ className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition cursor-pointer"
+ >
+ Create Account
+ </button>
+ </div>
+ </div>
+ </div>
+ );
+ }
 
  return (
  <div className="flex-1 h-full w-full md:max-w-7xl md:mx-auto md:px-6 lg:px-8 p-0 overflow-hidden flex flex-col relative">

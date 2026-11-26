@@ -191,15 +191,15 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
     );
   }
 
-  // Standard Compact Grid Card Layout (strict fixed height per breakpoint so portrait/landscape images and varying titles never alter card size)
+  // Standard Compact Grid Card Layout (strict fixed height per breakpoint with tight photo-to-text proportions and zero dead whitespace)
   return (
     <Link
       to={`/listing/${_id}`}
-      className={`${ownerActions ? '' : 'listing-card-item '}group flex flex-col w-full h-[296px] sm:h-[344px] bg-white rounded-xl sm:rounded-2xl ${
+      className={`${ownerActions ? '' : 'listing-card-item '}group flex flex-col w-full h-[268px] sm:h-[304px] bg-white rounded-xl sm:rounded-2xl ${
         ownerActions ? 'overflow-visible' : 'overflow-hidden'
       } ${ownerMenuOpen ? 'z-30' : ''} border border-slate-200/90 hover:border-brand-400 transition-colors duration-150 relative select-none`}
     >
-      <div className="relative w-full h-[156px] sm:h-[188px] shrink-0 bg-slate-100 rounded-t-xl sm:rounded-t-2xl">
+      <div className="relative w-full h-[154px] sm:h-[182px] shrink-0 bg-slate-100 rounded-t-xl sm:rounded-t-2xl">
         <div className="absolute inset-0 rounded-t-xl sm:rounded-t-2xl overflow-hidden">
           <img
             src={imageUrl}
@@ -330,17 +330,17 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
         )}
       </div>
 
-      <div className="p-2.5 sm:p-3 flex flex-col flex-1 min-h-0 justify-between overflow-hidden">
+      <div className="px-2.5 py-2 sm:px-3 sm:py-2.5 flex flex-col flex-1 min-h-0 justify-between overflow-hidden">
         <div className="min-w-0">
-          <div className="font-black text-slate-900 text-sm sm:text-base leading-tight truncate">
+          <div className="font-black text-slate-900 text-sm sm:text-[15px] leading-tight truncate">
             {formatPrice(price, priceType)}
           </div>
 
-          <h3 className="font-semibold text-slate-800 text-xs sm:text-sm line-clamp-2 mt-1 group-hover:text-brand-600 transition-colors leading-snug">
+          <h3 className="font-semibold text-slate-800 text-xs sm:text-[13px] line-clamp-2 mt-0.5 group-hover:text-brand-600 transition-colors leading-snug">
             {title}
           </h3>
 
-          <div className="text-[11px] text-slate-400 truncate mt-1">
+          <div className="text-[10.5px] sm:text-[11px] text-slate-400 truncate mt-0.5">
             {mode === 'service' && serviceType ? (
               <span className="text-purple-600 font-medium">{serviceType}</span>
             ) : (
@@ -349,7 +349,7 @@ const ListingCard = memo(function ListingCard({ listing, layout = 'grid', ownerA
           </div>
         </div>
 
-        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 gap-1.5 shrink-0">
+        <div className="pt-1.5 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 gap-1.5 shrink-0">
           <div className="flex items-center gap-1 min-w-0 truncate">
             <MapPin className="w-3 h-3 text-brand-500 shrink-0" />
             <span className="truncate font-medium">{location?.city || 'Local'}</span>

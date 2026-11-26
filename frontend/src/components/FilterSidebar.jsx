@@ -75,9 +75,15 @@ export default function FilterSidebar({
     activeCity !== 'All Locations';
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-3xl border border-slate-200/90 overflow-hidden text-slate-800">
+    <div
+      className={`flex flex-col bg-white text-slate-800 ${
+        onClose
+          ? 'max-h-[80dvh] h-full min-h-0'
+          : 'h-full rounded-3xl border border-slate-200/90 overflow-hidden'
+      }`}
+    >
       {/* Sidebar Header */}
-      <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-4 py-3.5 sm:p-5 border-b border-slate-100 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="w-4 h-4 text-brand-600" />
           <h3 className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
@@ -258,7 +264,7 @@ export default function FilterSidebar({
 
       {/* Mobile Sticky Footer */}
       {onClose && (
-        <div className="p-4 border-t border-slate-100 bg-white flex items-center gap-2">
+        <div className="px-4 py-3 border-t border-slate-200 bg-white flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={onResetAll}

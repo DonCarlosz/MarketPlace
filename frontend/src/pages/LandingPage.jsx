@@ -27,50 +27,57 @@ const CATEGORY_TILES = [
  name: 'Electronics & Tech',
  category: 'Electronics',
  mode: 'second-hand',
- image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80',
- tag: 'Pre-owned & New',
+ image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=500&q=80',
+ tag: 'Laptops, TVs & Audio',
+ },
+ {
+ name: 'Phones & Gadgets',
+ category: 'Gadgets & Tech',
+ mode: 'new',
+ image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=500&q=80',
+ tag: 'Smartphones & Accessories',
  },
  {
  name: 'Vehicles & Parts',
  category: 'Vehicles',
  mode: 'second-hand',
- image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=400&q=80',
+ image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&w=500&q=80',
  tag: 'Bikes, Cars & Parts',
  },
  {
  name: 'Fashion & Wears',
  category: 'Fashion & Apparel',
  mode: 'new',
- image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=400&q=80',
+ image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=500&q=80',
  tag: 'Footwear & Fits',
  },
  {
  name: 'Home & Living',
  category: 'Furniture',
  mode: 'second-hand',
- image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80',
- tag: 'Sofas, Tables, Decor',
+ image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=500&q=80',
+ tag: 'Sofas, Tables & Decor',
  },
  {
  name: 'Barbers & Braids',
  category: 'Barbers & Hair',
  mode: 'service',
- image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80',
+ image: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=500&q=80',
  tag: 'Local Stylists',
  },
  {
  name: 'Handwork & Repairs',
  category: 'Home Repair & Handyman',
  mode: 'service',
- image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80',
- tag: 'Mechanics & Techs',
+ image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=500&q=80',
+ tag: 'Mechanics, Solar & Techs',
  },
  {
  name: 'Tutors & Lessons',
  category: 'Tutors & Lessons',
  mode: 'service',
- image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=400&q=80',
- tag: 'Private Lessons',
+ image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=500&q=80',
+ tag: 'Private Coaching',
  },
 ];
 
@@ -267,8 +274,8 @@ export default function LandingPage() {
  </div>
  </div>
 
- {/* Right Content: 3 Horizontal Showcases (Enlarged & Prominent) */}
- <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-5 lg:gap-6 shrink-0 py-2">
+ {/* Right Content: 3 Clean Edge-to-Edge Category Showcases */}
+ <div className="hidden sm:flex items-center gap-3 sm:gap-4 md:gap-5 shrink-0 py-2">
  {/* Item 1: Home and Garden */}
  <button
  type="button"
@@ -279,17 +286,17 @@ export default function LandingPage() {
  mode: 'second-hand',
  })
  }
- className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
+ className="group flex flex-col items-center text-center cursor-pointer transition hover:-translate-y-0.5"
  >
- <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 flex items-center justify-center p-2.5 bg-white rounded-2xl border border-slate-200/90 overflow-hidden">
+ <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 bg-white rounded-2xl border border-slate-200 overflow-hidden">
  <img
  src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=500&q=80"
  alt="Home and Garden"
- className="w-full h-full object-cover rounded-xl"
+ className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
  />
  </div>
  <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
- Home and Garden <ChevronRight className="w-3.5 h-3.5" />
+ Home & Living <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
 
@@ -303,13 +310,13 @@ export default function LandingPage() {
  mode: 'new',
  })
  }
- className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
+ className="group flex flex-col items-center text-center cursor-pointer transition hover:-translate-y-0.5"
  >
- <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 flex items-center justify-center p-2.5 bg-white rounded-2xl border border-slate-200/90 overflow-hidden">
+ <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 bg-white rounded-2xl border border-slate-200 overflow-hidden">
  <img
  src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=500&q=80"
  alt="Fashion & Wears"
- className="w-full h-full object-cover rounded-xl"
+ className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
  />
  </div>
  <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
@@ -327,17 +334,17 @@ export default function LandingPage() {
  mode: 'second-hand',
  })
  }
- className="group flex flex-col items-center text-center cursor-pointer transition hover:scale-105"
+ className="group flex flex-col items-center text-center cursor-pointer transition hover:-translate-y-0.5"
  >
- <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 flex items-center justify-center p-2.5 bg-white rounded-2xl border border-slate-200/90 overflow-hidden">
+ <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 bg-white rounded-2xl border border-slate-200 overflow-hidden">
  <img
  src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=500&q=80"
  alt="Tech & Tools"
- className="w-full h-full object-cover rounded-xl"
+ className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
  />
  </div>
  <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-brand-600 transition inline-flex items-center gap-0.5 whitespace-nowrap mt-2">
- Tech & Tools <ChevronRight className="w-3.5 h-3.5" />
+ Tech & Audio <ChevronRight className="w-3.5 h-3.5" />
  </span>
  </button>
  </div>
@@ -421,9 +428,9 @@ export default function LandingPage() {
  mode: 'service',
  })
  }
- className="w-36 sm:w-42 md:w-46 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl p-2.5 transform -rotate-1 hover:rotate-0 transition flex flex-col justify-between text-left cursor-pointer"
+ className="w-36 sm:w-42 md:w-44 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl overflow-hidden border border-white/20 hover:-translate-y-0.5 transition flex flex-col text-left cursor-pointer"
  >
- <div className="w-full h-20 sm:h-24 rounded-xl overflow-hidden mb-1">
+ <div className="w-full h-22 sm:h-24 overflow-hidden shrink-0">
  <img
  src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80"
  alt="Barber"
@@ -431,7 +438,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover"
  />
  </div>
- <div>
+ <div className="p-2.5">
  <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Master Barber</div>
  <div className="text-[11px] text-purple-600 font-bold">Fixed Sessions</div>
  <div className="text-[10px] text-slate-500 truncate mt-0.5">Fades, Beard & Styling</div>
@@ -448,9 +455,9 @@ export default function LandingPage() {
  mode: 'service',
  })
  }
- className="w-36 sm:w-42 md:w-46 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl p-2.5 transform rotate-1 hover:rotate-0 transition flex flex-col justify-between text-left cursor-pointer"
+ className="w-36 sm:w-42 md:w-44 h-40 sm:h-44 bg-white text-slate-900 rounded-2xl overflow-hidden border border-white/20 hover:-translate-y-0.5 transition flex flex-col text-left cursor-pointer"
  >
- <div className="w-full h-20 sm:h-24 rounded-xl overflow-hidden mb-1">
+ <div className="w-full h-22 sm:h-24 overflow-hidden shrink-0">
  <img
  src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80"
  alt="Mechanic"
@@ -458,7 +465,7 @@ export default function LandingPage() {
  className="w-full h-full object-cover"
  />
  </div>
- <div>
+ <div className="p-2.5">
  <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">Auto Mechanics</div>
  <div className="text-[11px] text-emerald-600 font-bold">Starting-At</div>
  <div className="text-[10px] text-slate-500 truncate mt-0.5">Engine, Brakes & Tune-up</div>
@@ -485,65 +492,45 @@ export default function LandingPage() {
  }
  >
  <div className="min-h-screen bg-white flex flex-col w-full max-w-full overflow-x-clip">
- {/* 1. Top Search Section */}
- <section className="bg-slate-50 border-b border-slate-200/90 pt-3.5 pb-6 sm:pb-7 px-4 sm:px-6 lg:px-8 w-full max-w-full">
+ {/* 1. Top Search Section (Unified Clean Full-Width Bar) */}
+ <section className="bg-slate-50 border-b border-slate-200/90 py-3.5 sm:py-5 px-4 sm:px-6 lg:px-8 w-full max-w-full">
  <div className="max-w-7xl mx-auto space-y-2.5">
  <form
  onSubmit={handleSearchSubmit}
- className="flex items-center gap-2 max-w-4xl mx-auto bg-white p-1.5 rounded-full border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition"
+ className="flex items-center gap-2 max-w-3xl mx-auto bg-white p-1 sm:p-1.5 rounded-full border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition"
  >
- <div className="flex items-center gap-2 flex-1 pl-3">
+ <div className="flex items-center gap-2 flex-1 min-w-0 pl-3">
  <Search className="w-4 h-4 text-slate-400 shrink-0" />
  <input
  type="text"
  value={localSearch}
  onChange={(e) => setLocalSearch(e.target.value)}
- placeholder="Search for anything (phones, bikes, tools, barbers, tutors...)"
- className="w-full bg-transparent border-none text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none py-1.5"
+ placeholder="Search phones, laptops, bikes, barbers, tutors..."
+ className="w-full min-w-0 bg-transparent border-none text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none py-1.5"
  />
  {localSearch && (
  <button
  type="button"
  onClick={handleClearFilter}
- className="text-slate-400 hover:text-slate-600 p-1"
+ aria-label="Clear search"
+ className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer shrink-0"
  >
  <X className="w-3.5 h-3.5" />
  </button>
  )}
  </div>
 
- {/* Category Dropdown */}
- <select
- value={selectedSearchCat}
- onChange={(e) => {
- setSelectedSearchCat(e.target.value);
- if (e.target.value !== 'All') {
- setSelectedCategory(e.target.value);
- }
- }}
- className="hidden md:block bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-full px-3 py-1.5 border border-slate-200 focus:outline-none cursor-pointer"
- >
- <option value="All">All Categories</option>
- <option value="Electronics">Electronics</option>
- <option value="Vehicles">Vehicles</option>
- <option value="Fashion & Apparel">Fashion</option>
- <option value="Furniture">Home & Furniture</option>
- <option value="Barbers & Hair">Barbers & Hair</option>
- <option value="Home Repair & Handyman">Handwork</option>
- <option value="Tutors & Lessons">Tutors</option>
- </select>
-
  <button
  type="submit"
- className="px-6 py-2 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm transition shrink-0"
+ className="px-5 sm:px-6 py-1.5 sm:py-2 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm transition shrink-0 cursor-pointer"
  >
  Search
  </button>
  </form>
 
- {/* Quick Category Sub-links */}
- <div className="flex items-center justify-center gap-2 sm:gap-4 text-xs text-slate-600 flex-wrap">
- <span className="font-semibold text-slate-500">Popular:</span>
+ {/* Quick Popular Search Pills */}
+ <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 text-xs text-slate-600 flex-wrap">
+ <span className="font-semibold text-slate-400 text-[11px]">Popular:</span>
  {POPULAR_SEARCHES.map((item) => {
  const isSelected = activeFilter === item.term || localSearch === item.term;
  return (
@@ -551,9 +538,9 @@ export default function LandingPage() {
  key={item.term}
  type="button"
  onClick={() => handlePopularClick(item)}
- className={`transition px-2.5 py-0.5 rounded-full ${
+ className={`transition px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs cursor-pointer ${
  isSelected
- ? 'bg-brand-600 text-white font-bold '
+ ? 'bg-brand-600 text-white font-bold'
  : 'hover:text-brand-600 hover:bg-slate-200/60 font-medium'
  }`}
  >
@@ -565,9 +552,9 @@ export default function LandingPage() {
  </div>
  </section>
 
- {/* 2. Full-Bleed Auto-Switching Hero Banner (1-Direction Infinite Scroll, Fixed Height) */}
+ {/* 2. Full-Bleed Auto-Switching Hero Banner (Tight Mobile Height, 1-Direction Infinite Scroll) */}
  <section className="w-full relative overflow-hidden bg-slate-900 border-b border-slate-200">
- <div className="relative w-full h-[320px] sm:h-[340px] md:h-[350px] overflow-hidden">
+ <div className="relative w-full h-[248px] sm:h-[310px] md:h-[330px] overflow-hidden">
  {/* Continuous Forward Sliding Track */}
  <div
  className="flex w-full h-full"
@@ -644,26 +631,28 @@ export default function LandingPage() {
  </div>
  </section>
 
- {/* 3. Category Square Tiles: "Explore by Category" (Image 4 Style) */}
- <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-10 overflow-hidden">
- <div className="flex items-end justify-between mb-4">
+ {/* 3. Editorial Full-Bleed Category Grid: "Explore by Category" (8 balanced tiles, zero padded inner frames) */}
+ <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-7 sm:pt-9 overflow-hidden">
+ <div className="flex items-end justify-between mb-3.5 sm:mb-4">
  <div>
- <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Explore by Category</h2>
+ <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
+ Explore by Category
+ </h2>
  <p className="text-xs text-slate-500 mt-0.5">
- Browse top trending categories in your community.
+ Jump straight into popular items and local services.
  </p>
  </div>
  <Link
  to="/market"
- className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline inline-flex items-center gap-1"
+ className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline inline-flex items-center gap-1 shrink-0"
  >
  <span>See all</span>
  <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
 
- {/* Clean rounded square cards */}
- <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+ {/* Crisp 4x2 Full-Bleed Photo Tiles (2x4 on mobile, 4x2 on tablet/desktop - zero orphan slots) */}
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
  {CATEGORY_TILES.map((tile) => {
  const isSelected = activeFilter === tile.name || (selectedSearchCat === tile.category && !activeFilter);
  return (
@@ -671,42 +660,41 @@ export default function LandingPage() {
  key={tile.name}
  type="button"
  onClick={() => handleCategoryClick(tile)}
- className={`group flex flex-col items-center p-3 rounded-2xl bg-white border transition text-center cursor-pointer ${
+ className={`group relative aspect-[16/10] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-slate-900 border text-left cursor-pointer transition-colors ${
  isSelected
- ? 'border-brand-500 ring-2 ring-brand-200 '
- : 'border-slate-200/90 hover:border-brand-400 '
+ ? 'border-brand-500 ring-2 ring-brand-200'
+ : 'border-slate-200 hover:border-brand-400'
  }`}
  >
- <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2.5 relative">
  <img
  src={tile.image}
  alt={tile.name}
- className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+ className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
  loading="lazy"
  decoding="async"
  />
- </div>
- <span className={`font-bold text-xs transition line-clamp-1 ${
- isSelected ? 'text-brand-600' : 'text-slate-800 group-hover:text-brand-600'
- }`}>
+ <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent" />
+ <div className="relative z-10 h-full flex flex-col justify-end p-3 sm:p-3.5">
+ <span className="font-extrabold text-xs sm:text-sm text-white leading-tight line-clamp-1">
  {tile.name}
  </span>
- <span className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+ <span className="text-[10px] sm:text-[11px] text-slate-200/90 font-medium line-clamp-1 mt-0.5">
  {tile.tag}
  </span>
+ </div>
  </button>
  );
  })}
  </div>
  </section>
 
- {/* 4. Horizontal Scrollable Deals Carousel: "Today's Highlights" (Image 5 Style) */}
- <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
- <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+ {/* 4. Horizontal Scrollable Deals Carousel: "Trending Deals Near You" */}
+ <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8 sm:pt-10 overflow-hidden">
+ <div className="flex items-end justify-between mb-3.5 sm:mb-4 flex-wrap gap-2">
  <div>
  <div className="inline-flex items-center gap-1.5 flex-wrap">
- <div className="inline-flex items-center gap-1 text-[11px] font-extrabold uppercase tracking-wider text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-md border border-rose-100 mb-1">
- <Flame className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+ <div className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-100 mb-1">
+ <Flame className="w-3 h-3 fill-rose-500 text-rose-500" />
  <span>Today's Highlights</span>
  </div>
  {activeFilter && (
@@ -715,33 +703,43 @@ export default function LandingPage() {
  <button
  type="button"
  onClick={handleClearFilter}
- className="hover:text-brand-900 ml-1 font-extrabold"
+ className="hover:text-brand-900 ml-1 font-extrabold cursor-pointer"
  >
  ×
  </button>
  </div>
  )}
  </div>
- <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+ <h2 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight">
  Trending Deals Near You
  </h2>
  <p className="text-xs text-slate-500 mt-0.5">
- Verified items and services ready for meetup and inspection.
+ Active items and services ready for direct inspection and meetup.
  </p>
  </div>
+ <Link
+ to="/market"
+ className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline inline-flex items-center gap-1 shrink-0"
+ >
+ <span>View market</span>
+ <ArrowRight className="w-3.5 h-3.5" />
+ </Link>
  </div>
 
- {/* Scrollable Container with Floating Left/Right Chevrons on Top of Carousel */}
+ {/* Scrollable Container (Arrows desktop-only so mobile badges are never overlapped) */}
  {loading ? (
- <div className="flex gap-4 overflow-x-hidden py-2">
+ <div className="flex gap-3 sm:gap-4 overflow-x-hidden py-1">
  {[1, 2, 3, 4, 5].map((n) => (
  <div
  key={n}
- className="w-[170px] sm:w-[210px] md:w-[220px] h-[296px] sm:h-[344px] shrink-0 bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
+ className="w-[170px] sm:w-[210px] md:w-[220px] h-[268px] sm:h-[304px] shrink-0 bg-white rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden flex flex-col"
  >
- <div className="w-full h-[144px] sm:h-[176px] bg-slate-200 rounded-xl" />
- <div className="h-4 bg-slate-200 rounded w-1/2" />
- <div className="h-3 bg-slate-200 rounded w-3/4" />
+ <div className="w-full h-[154px] sm:h-[182px] obuy-shimmer shrink-0" />
+ <div className="p-2.5 sm:p-3 space-y-2 flex-1">
+ <div className="h-4 obuy-shimmer rounded w-1/2" />
+ <div className="h-3.5 obuy-shimmer rounded w-11/12" />
+ <div className="h-3 obuy-shimmer rounded w-2/3" />
+ </div>
  </div>
  ))}
  </div>
@@ -753,29 +751,29 @@ export default function LandingPage() {
  </div>
  ) : (
  <div className="relative group">
- {/* Left Chevron Floating Over Left Side of Carousel */}
+ {/* Left Chevron (Desktop sm+ only so mobile Card 1 badges stay 100% clear) */}
  <button
  type="button"
  onClick={() => scrollCarousel('left')}
  aria-label="Scroll left"
- className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 hover:bg-white text-slate-800 flex items-center justify-center border border-slate-200 hover:border-slate-300 transition active:scale-95 opacity-90 hover:opacity-100"
+ className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white hover:bg-slate-50 text-slate-800 items-center justify-center border border-slate-200 hover:border-slate-300 transition active:scale-95 cursor-pointer"
  >
  <ChevronLeft className="w-5 h-5" />
  </button>
 
- {/* Right Chevron Floating Over Right Side of Carousel */}
+ {/* Right Chevron (Desktop sm+ only) */}
  <button
  type="button"
  onClick={() => scrollCarousel('right')}
  aria-label="Scroll right"
- className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/95 hover:bg-white text-slate-800 flex items-center justify-center border border-slate-200 hover:border-slate-300 transition active:scale-95 opacity-90 hover:opacity-100"
+ className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white hover:bg-slate-50 text-slate-800 items-center justify-center border border-slate-200 hover:border-slate-300 transition active:scale-95 cursor-pointer"
  >
  <ChevronRight className="w-5 h-5" />
  </button>
 
  <div
  ref={carouselRef}
- className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth pb-4 pt-1 no-scrollbar px-1 sm:px-0"
+ className="flex gap-3 sm:gap-4 overflow-x-auto scroll-smooth pb-3 pt-1 no-scrollbar"
  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
  >
  {featuredListings.map((item) => (
@@ -788,40 +786,40 @@ export default function LandingPage() {
  )}
  </section>
 
- {/* 5. Full-Bleed Light Promo Showcase Band (zero outer wrapper card) */}
- <section className="w-full bg-slate-50 border-y border-slate-200 mt-10 sm:mt-12 py-8 sm:py-10 overflow-hidden">
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center justify-between gap-8">
- <div className="space-y-4 max-w-xl">
- <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
- Endless local finds. Epic community prices.
+ {/* 5. Clean Full-Bleed Showcase & Seller CTA Band (Flat aligned 3-card strip, zero tilted overflow) */}
+ <section className="w-full bg-slate-50 border-y border-slate-200 mt-8 sm:mt-10 py-7 sm:py-9 overflow-hidden">
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+ <div className="space-y-3 max-w-xl">
+ <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight leading-tight">
+ Buy local. Sell free with zero commission.
  </h2>
 
  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
- Browse thousands of pre-owned gadgets, vehicle upgrades, home crafts, and neighborhood
- handwork across Nigeria. Pay in person when you are completely satisfied.
+ Post unused items or local services in under 2 minutes, chat directly with verified neighbors, and pay only after physical inspection.
  </p>
 
- <div className="pt-1">
+ <div className="pt-1 flex items-center gap-2.5 flex-wrap">
+ <button
+ type="button"
+ onClick={handlePostClick}
+ className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm transition active:scale-95 cursor-pointer"
+ >
+ <span>Post a Listing</span>
+ <ArrowRight className="w-4 h-4" />
+ </button>
  <Link
  to="/market"
- className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition active:scale-95"
+ className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 font-bold text-xs sm:text-sm transition active:scale-95"
  >
- <span>Shop now</span>
- <ArrowRight className="w-4 h-4" />
+ <span>Explore Market</span>
  </Link>
  </div>
  </div>
 
- {/* Right Showcase Products: Live clickable listings from oBuy */}
- <div className="flex items-center gap-3 sm:gap-4 overflow-hidden py-2">
- {(featuredListings.length >= 3 ? featuredListings.slice(0, 3) : CATEGORY_TILES.slice(0, 3)).map((entry, idx) => {
+ {/* Clean Aligned 3-Card Live Listing Strip (Zero clipping on 390px mobile) */}
+ <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5 w-full lg:w-[460px] shrink-0">
+ {(featuredListings.length >= 3 ? featuredListings.slice(0, 3) : CATEGORY_TILES.slice(0, 3)).map((entry) => {
  const isLiveListing = Boolean(entry._id);
- const tiltClass =
- idx === 0
- ? 'w-32 sm:w-36 p-2.5 transform -rotate-3 hover:rotate-0'
- : idx === 1
- ? 'w-36 sm:w-40 p-3 transform rotate-2 hover:rotate-0 z-10'
- : 'w-32 sm:w-36 p-2.5 transform rotate-6 hover:rotate-0';
  const imgUrl = isLiveListing
  ? resolveMediaUrl(entry.images?.[0]?.url)
  : entry.image;
@@ -831,20 +829,22 @@ export default function LandingPage() {
  <Link
  key={entry._id}
  to={`/listing/${entry._id}`}
- className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-brand-400 transition block shrink-0`}
+ className="group bg-white rounded-xl sm:rounded-2xl border border-slate-200 hover:border-brand-400 transition overflow-hidden block"
  >
- <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
+ <div className="w-full aspect-square bg-slate-100 overflow-hidden">
  <img
  src={imgUrl}
  alt={entry.title}
  loading="lazy"
  decoding="async"
- className="w-full h-full object-cover"
+ className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
  />
  </div>
+ <div className="p-2">
  <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.title}</div>
- <div className="text-[10px] sm:text-[11px] font-extrabold text-brand-600">
+ <div className="text-[10px] sm:text-[11px] font-extrabold text-brand-600 truncate">
  {formatPrice(entry.price, entry.priceType)}
+ </div>
  </div>
  </Link>
  );
@@ -855,19 +855,21 @@ export default function LandingPage() {
  key={entry.name}
  type="button"
  onClick={() => handleCategoryClick(entry)}
- className={`${tiltClass} bg-white rounded-2xl border border-slate-200 hover:border-brand-400 transition text-left cursor-pointer shrink-0`}
+ className="group bg-white rounded-xl sm:rounded-2xl border border-slate-200 hover:border-brand-400 transition overflow-hidden text-left cursor-pointer"
  >
- <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden mb-2">
+ <div className="w-full aspect-square bg-slate-100 overflow-hidden">
  <img
  src={imgUrl}
  alt={entry.name}
  loading="lazy"
  decoding="async"
- className="w-full h-full object-cover"
+ className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
  />
  </div>
+ <div className="p-2">
  <div className="text-[10px] sm:text-[11px] font-bold text-slate-900 truncate">{entry.name}</div>
  <div className="text-[10px] font-extrabold text-brand-600 truncate">{entry.tag}</div>
+ </div>
  </button>
  );
  })}
@@ -1003,44 +1005,8 @@ export default function LandingPage() {
  </div>
  </section>
 
- {/* 7. Secondary Lifestyle Promo Banner */}
- <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-10 sm:pt-12 overflow-hidden">
- <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-900 text-white min-h-[220px] sm:min-h-[250px] flex items-center">
- <img
- src="https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1600&q=80"
- alt="Community Perks"
- className="absolute inset-0 w-full h-full object-cover opacity-35"
- />
- <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/80 to-transparent" />
-
- <div className="relative z-10 p-6 sm:p-10 max-w-xl space-y-3">
- <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
- Don't miss out on community perks
- </h2>
- <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
- List unused items in 2 minutes, discover hidden gems right in your town, and chat securely with verified neighbors.
- </p>
- <div className="pt-1 flex items-center gap-3">
- <button
- type="button"
- onClick={handlePostClick}
- className="px-6 py-2.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm transition "
- >
- Post a Listing
- </button>
- <Link
- to="/market"
- className="px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs sm:text-sm border border-white/25 transition"
- >
- Explore market
- </Link>
- </div>
- </div>
- </div>
- </section>
-
- {/* 8. Full-Bleed Safe Local Meetup Blueprint Band (zero cards inside cards) */}
- <section className="w-full bg-slate-50 border-t border-slate-200 mt-10 sm:mt-12 py-8 sm:py-10 overflow-hidden">
+ {/* 7. Full-Bleed Safe Local Meetup Blueprint Band (removed redundant duplicate stock promo banner) */}
+ <section className="w-full bg-slate-50 border-t border-slate-200 mt-8 sm:mt-10 py-8 sm:py-10 overflow-hidden">
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
  <div className="text-center space-y-1.5 max-w-lg mx-auto">
  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">

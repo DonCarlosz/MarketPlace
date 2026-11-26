@@ -65,13 +65,14 @@ export const getListings = async (req, res, next) => {
       query.condition = condition;
     }
 
-    // Price range
+    // Price range (only attach query.price when at least one valid non-negative bound exists)
     const parsedMin = minPrice !== undefined && minPrice !== '' ? Number(minPrice) : null;
     const parsedMax = maxPrice !== undefined && maxPrice !== '' ? Number(maxPrice) : null;
-    if ((parsedMin !== null && !isNaN(parsedMin)) || (parsedMax !== null && !isNaN(parsedMax))) {
-      query.price = {};
-      if (parsedMin !== null && !isNaN(parsedMin) && parsedMin >= 0) query.price.$gte = parsedMin;
-      if (parsedMax !== null && !isNaN(parsedMax) && parsedMax >= 0) query.price.$lte = parsedMax;
+    const priceQuery = {};
+    if (parsedMin !== null && Number.isFinite(parsedMin) && parsedMin >= 0) priceQuery.$gte = parsedMin;
+    if (parsedMax !== null && Number.isFinite(parsedMax) && parsedMax >= 0) priceQuery.$lte = parsedMax;
+    if (Object.keys(priceQuery).length > 0) {
+      query.price = priceQuery;
     }
 
     // Keyword search (ReDoS safe)

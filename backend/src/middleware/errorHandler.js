@@ -8,6 +8,17 @@ export const errorHandler = (err, req, res, next) => {
   let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
   let message = err.message || 'Internal Server Error';
 
+  // Express JSON body-parser malformed payload error
+  if (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && err.status === 400 && 'body' in err)) {
+    statusCode = 400;
+    message = 'Invalid JSON request payload.';
+  }
+
+  // CORS policy rejection
+  if (typeof err.message === 'string' && err.message.includes('CORS policy')) {
+    statusCode = 403;
+  }
+
   // Mongoose CastError (invalid ObjectId)
   if (err.name === 'CastError' && err.kind === 'ObjectId') {
     statusCode = 404;

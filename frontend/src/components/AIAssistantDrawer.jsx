@@ -43,32 +43,49 @@ export default function AIAssistantDrawer() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Draggable Floating Launcher Position State (clamped to current viewport on load/resize)
+  const getPosStorageKey = () =>
+    typeof window !== 'undefined' && window.innerWidth < 768
+      ? 'obuy_ai_pos_v2_mobile'
+      : 'obuy_ai_pos_v2_desktop';
+
+  const clampBtnPos = (pos) => {
+    if (!pos || typeof window === 'undefined') return null;
+    const minTop = 124; // Never overlap Navbar, Safety Banner, Search Bar, or < Back header
+    const maxTop = Math.max(minTop, window.innerHeight - (window.innerWidth < 640 ? 132 : 72));
+    return {
+      left: Math.max(12, Math.min(pos.left, window.innerWidth - 60)),
+      top: Math.max(minTop, Math.min(pos.top, maxTop)),
+    };
+  };
+
+  // Draggable Floating Launcher Position State (per viewport class, defaults cleanly to bottom-right)
   const [btnPos, setBtnPos] = useState(() => {
     try {
-      const saved = localStorage.getItem('obuy_ai_btn_pos') || localStorage.getItem('localmarket_ai_btn_pos');
+      const saved = localStorage.getItem(getPosStorageKey());
       if (saved) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.left === 'number' && typeof parsed.top === 'number') {
-          const clampedLeft = Math.max(8, Math.min(parsed.left, window.innerWidth - 60));
-          const clampedTop = Math.max(72, Math.min(parsed.top, window.innerHeight - 132));
-          return { left: clampedLeft, top: clampedTop };
+          return clampBtnPos(parsed);
         }
       }
     } catch {}
     return null;
   });
 
-  // Keep button inside viewport when screen resizes or phone rotates
+  // Keep button inside safe viewport zone when screen resizes or switches mobile <-> desktop
   useEffect(() => {
     const onResize = () => {
-      setBtnPos((prev) => {
-        if (!prev) return null;
-        return {
-          left: Math.max(8, Math.min(prev.left, window.innerWidth - 60)),
-          top: Math.max(72, Math.min(prev.top, window.innerHeight - 132)),
-        };
-      });
+      try {
+        const saved = localStorage.getItem(getPosStorageKey());
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.left === 'number' && typeof parsed.top === 'number') {
+            setBtnPos(clampBtnPos(parsed));
+            return;
+          }
+        }
+      } catch {}
+      setBtnPos(null);
     };
     window.addEventListener('resize', onResize, { passive: true });
     return () => window.removeEventListener('resize', onResize);
@@ -115,8 +132,10 @@ export default function AIAssistantDrawer() {
         let newLeft = dragStartRef.current.initialLeft + deltaX;
         let newTop = dragStartRef.current.initialTop + deltaY;
 
-        newLeft = Math.max(8, Math.min(newLeft, winWidth - btnWidth - 8));
-        newTop = Math.max(72, Math.min(newTop, winHeight - btnHeight - 76));
+        const minTop = 124;
+        const bottomMargin = winWidth < 640 ? 76 : 16;
+        newLeft = Math.max(12, Math.min(newLeft, winWidth - btnWidth - 12));
+        newTop = Math.max(minTop, Math.min(newTop, winHeight - btnHeight - bottomMargin));
 
         setBtnPos({ left: newLeft, top: newTop });
       }
@@ -132,7 +151,7 @@ export default function AIAssistantDrawer() {
         setBtnPos((current) => {
           if (current) {
             try {
-              localStorage.setItem('obuy_ai_btn_pos', JSON.stringify(current));
+              localStorage.setItem(getPosStorageKey(), JSON.stringify(current));
             } catch {}
           }
           return current;

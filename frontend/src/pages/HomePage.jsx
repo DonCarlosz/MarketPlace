@@ -468,11 +468,12 @@ export default function HomePage() {
  <div className="min-h-screen bg-slate-50 flex flex-col w-full max-w-full overflow-x-clip">
  <SafetyBanner />
 
- {/* Hero & Search Header */}
- <section className="bg-white border-b border-slate-200 py-6 sm:py-7 px-4 sm:px-6">
- <div className="max-w-4xl mx-auto text-center space-y-4">
+ {/* Compact Native Market Header: Mode Switcher + Full-Width Search + Scrollable Category Pills */}
+ <section className="bg-white border-b border-slate-200 pt-4 pb-3.5 sm:pt-5 sm:pb-4 px-4 sm:px-6 lg:px-8">
+ <div className="max-w-7xl mx-auto space-y-3">
+ <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
  {/* Mode Switcher Tabs (Equal 3-column segmented layout with zero wrapping) */}
- <div className="w-full max-w-sm sm:max-w-md mx-auto p-1 bg-slate-100/90 rounded-2xl sm:rounded-full border border-slate-200/90 grid grid-cols-3 gap-1">
+ <div className="w-full md:w-auto md:min-w-[360px] max-w-md mx-auto md:mx-0 p-1 bg-slate-100/90 rounded-2xl sm:rounded-full border border-slate-200/90 grid grid-cols-3 gap-1 shrink-0">
  <button
  type="button"
  onClick={() => {
@@ -481,7 +482,7 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'second-hand'
- ? 'bg-brand-600 text-white '
+ ? 'bg-brand-600 text-white'
  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
  }`}
  >
@@ -496,7 +497,7 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'new'
- ? 'bg-emerald-600 text-white '
+ ? 'bg-emerald-600 text-white'
  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
  }`}
  >
@@ -511,7 +512,7 @@ export default function HomePage() {
  }}
  className={`flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-1 sm:px-3 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-bold transition whitespace-nowrap cursor-pointer ${
  mode === 'service'
- ? 'bg-purple-600 text-white '
+ ? 'bg-purple-600 text-white'
  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
  }`}
  >
@@ -520,60 +521,64 @@ export default function HomePage() {
  </button>
  </div>
 
- <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight">
- Discover {mode === 'service' ? 'trusted local services' : 'great items'} in your community.
- </h1>
-
- {/* Integrated Search Bar with Category Dropdown */}
- <form onSubmit={handleSearchSubmit} className="max-w-2xl mx-auto pt-1">
- <div className="flex items-center bg-white rounded-full border border-slate-300 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition p-1 sm:p-1.5">
- <Search className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 ml-3 mr-2 shrink-0" />
+ {/* Full-Width Clean Search Bar (Zero Cramped Category Dropdown Inside Input) */}
+ <form onSubmit={handleSearchSubmit} className="w-full md:flex-1 md:max-w-2xl">
+ <div className="flex items-center bg-slate-50/70 rounded-full border border-slate-300 focus-within:bg-white focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100 transition p-1">
+ <Search className="w-4 h-4 text-slate-400 ml-3 mr-2 shrink-0" />
  <input
  type="text"
- placeholder={`Search ${
+ placeholder={
  mode === 'service'
- ? 'services (e.g., barber, photographer, tutor)...'
- : 'items (e.g., bike, generator, phone)...'
- }`}
+ ? 'Search barbers, solar, repairs, tutors...'
+ : 'Search phones, laptops, generators, bikes...'
+ }
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="w-full bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-800 placeholder-slate-400 py-1"
+ className="w-full min-w-0 bg-transparent border-none focus:outline-none text-xs sm:text-sm text-slate-900 placeholder-slate-400 py-1.5"
  />
  {searchQuery && (
  <button
  type="button"
  onClick={() => {
  setSearchQuery('');
- fetchListings(false);
+ fetchListings(false, 1, false);
  }}
- className="p-1 text-slate-400 hover:text-slate-600 mr-1 cursor-pointer"
+ aria-label="Clear search"
+ className="p-1.5 text-slate-400 hover:text-slate-700 cursor-pointer shrink-0"
  >
  <X className="w-4 h-4" />
  </button>
  )}
- {/* Category Dropdown inside Search Input */}
- <div className="flex items-center border-l border-slate-200 px-2 shrink-0">
- <select
- value={selectedCategory}
- onChange={(e) => setSelectedCategory(e.target.value)}
- className="text-xs font-semibold text-slate-600 bg-transparent focus:outline-none cursor-pointer pr-1"
- aria-label="Filter by category"
- >
- {categories.map((cat) => (
- <option key={cat} value={cat}>
- {cat === 'All' ? 'All Categories' : cat}
- </option>
- ))}
- </select>
- </div>
  <button
  type="submit"
- className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm rounded-full transition shrink-0 cursor-pointer"
+ className="px-4 sm:px-5 py-1.5 sm:py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs sm:text-sm rounded-full transition shrink-0 cursor-pointer"
  >
  Search
  </button>
  </div>
  </form>
+ </div>
+
+ {/* Horizontal 1-Tap Category Pill Strip (Replaces Cramped Select Inside Search Box) */}
+ <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 -mx-4 px-4 sm:mx-0 sm:px-0">
+ {categories.map((cat) => {
+ const active = selectedCategory === cat;
+ return (
+ <button
+ key={cat}
+ type="button"
+ onClick={() => setSelectedCategory(cat)}
+ className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors shrink-0 cursor-pointer ${
+ active
+ ? 'bg-slate-900 text-white border-slate-900'
+ : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:text-slate-900'
+ }`}
+ >
+ {cat === 'All' ? 'All Categories' : cat}
+ </button>
+ );
+ })}
+ </div>
  </div>
  </section>
 
@@ -774,11 +779,14 @@ export default function HomePage() {
  {[1, 2, 3, 4, 5, 6].map((n) => (
  <div
  key={n}
- className="bg-white rounded-2xl border border-slate-200 p-3 space-y-3 animate-pulse"
+ className="h-[268px] sm:h-[304px] bg-white rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden flex flex-col"
  >
- <div className="w-full aspect-square bg-slate-200 rounded-xl"></div>
- <div className="h-4 bg-slate-200 rounded w-3/4"></div>
- <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+ <div className="w-full h-[154px] sm:h-[182px] obuy-shimmer shrink-0" />
+ <div className="p-2.5 sm:p-3 space-y-2 flex-1">
+ <div className="h-4 obuy-shimmer rounded w-1/2" />
+ <div className="h-3.5 obuy-shimmer rounded w-11/12" />
+ <div className="h-3 obuy-shimmer rounded w-2/3" />
+ </div>
  </div>
  ))}
  </div>
@@ -859,7 +867,7 @@ export default function HomePage() {
  title="Filters & Facets"
  showDefaultHeader={false}
  maxWidth="max-w-md"
- bodyClassName="p-0"
+ bodyClassName="p-0 flex flex-col overflow-hidden"
  >
  <FilterSidebar
  categories={categories}

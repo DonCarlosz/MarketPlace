@@ -51,9 +51,9 @@ function PageLoader() {
         {[1, 2, 3, 4].map((n) => (
           <div
             key={n}
-            className="h-[296px] sm:h-[344px] rounded-2xl bg-white border border-slate-200 overflow-hidden flex flex-col"
+            className="h-[268px] sm:h-[304px] rounded-xl sm:rounded-2xl bg-white border border-slate-200 overflow-hidden flex flex-col"
           >
-            <div className="h-[156px] sm:h-[188px] obuy-shimmer shrink-0" />
+            <div className="h-[154px] sm:h-[182px] obuy-shimmer shrink-0" />
             <div className="p-3 space-y-2.5 flex-1">
               <div className="h-4 w-24 rounded-md obuy-shimmer" />
               <div className="h-3.5 w-full rounded-md obuy-shimmer" />

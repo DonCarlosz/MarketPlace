@@ -747,14 +747,29 @@ export default function ListingDetailPage() {
  </dd>
  </div>
 
- {specificEntries.map(([specKey, specVal]) => (
+ {specificEntries.map(([specKey, specVal]) => {
+ const SPEC_LABELS = {
+ brand: 'Brand',
+ model: 'Model',
+ storageRam: 'Storage & RAM',
+ color: 'Color',
+ yearMileage: 'Year / Mileage',
+ materialSize: 'Material / Size',
+ serviceScope: 'Service Scope',
+ };
+ const formattedLabel =
+ SPEC_LABELS[specKey] ||
+ specKey
+ .replace(/([A-Z])/g, ' $1')
+ .replace(/^./, (ch) => ch.toUpperCase())
+ .trim();
+ return (
  <div key={specKey}>
- <dt className="text-slate-400 font-medium capitalize">
- {specKey.replace(/([A-Z])/g, ' $1').trim()}
- </dt>
+ <dt className="text-slate-400 font-medium">{formattedLabel}</dt>
  <dd className="font-bold text-slate-800 mt-0.5 truncate">{specVal}</dd>
  </div>
- ))}
+ );
+ })}
  </dl>
  </div>
 
