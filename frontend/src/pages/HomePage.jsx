@@ -639,7 +639,7 @@ export default function HomePage() {
  <select
  value={sortBy}
  onChange={(e) => setSortBy(e.target.value)}
- className="bg-white border border-slate-300 text-xs font-semibold rounded-xl px-3 py-1.5 text-slate-700 focus:outline-none cursor-pointer"
+ className="bg-white border border-slate-300 text-xs font-semibold rounded-xl px-2.5 sm:px-3 py-1.5 text-slate-700 focus:outline-none cursor-pointer min-w-0 max-w-[165px] sm:max-w-none truncate"
  >
  <option value="newest">Sort: Newest</option>
  <option value="price-low">Price: Low to High</option>

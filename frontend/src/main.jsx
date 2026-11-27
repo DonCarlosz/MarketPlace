@@ -19,6 +19,28 @@ if (typeof window !== 'undefined') {
     },
     { passive: false }
   );
+
+  // Snap iOS visualViewport back cleanly if keyboard dismissal leaves a residual shift
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (isIOS) {
+    let viewportResetTimer = null;
+    document.addEventListener('focusout', (e) => {
+      const tag = e.target?.tagName;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return;
+      if (viewportResetTimer) window.clearTimeout(viewportResetTimer);
+      viewportResetTimer = window.setTimeout(() => {
+        const activeTag = document.activeElement?.tagName;
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+        const vv = window.visualViewport;
+        if (vv && (Math.abs(vv.offsetTop) > 1 || Math.abs(vv.offsetLeft) > 1)) {
+          window.scrollTo(window.scrollX, window.scrollY);
+        }
+      }, 90);
+    });
+  }
 }
 
 // Register PWA Service Worker for Mobile App Installability

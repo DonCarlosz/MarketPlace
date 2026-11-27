@@ -42,8 +42,16 @@
 
   button,
   a,
-  [role="button"] {
+  [role="button"],
+  input,
+  textarea,
+  select {
     touch-action: manipulation;
+  }
+
+  button,
+  a,
+  [role="button"] {
     -webkit-touch-callout: none;
   }
 
@@ -53,6 +61,59 @@
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+  }
+}
+
+/* Prevent iOS Safari & Standalone PWA auto-zoom on form controls (< 16px triggers WebKit zoom)
+   while preserving compact 12px placeholders so search bars stay proportional to neighboring text. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]):not([type="image"]):not([type="color"]):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl),
+  select:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl) {
+    font-size: 16px !important;
+    line-height: 1.35;
+  }
+
+  textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl) {
+    font-size: 16px !important;
+  }
+
+  input:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::placeholder,
+  textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::placeholder {
+    font-size: 12px !important;
+    line-height: normal;
+  }
+
+  input:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::-webkit-input-placeholder,
+  textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::-webkit-input-placeholder {
+    font-size: 12px !important;
+    line-height: normal;
+  }
+}
+
+/* Also protect iPads & wider iOS WebKit touch viewports (>= 768px) */
+@media (pointer: coarse) {
+  @supports (-webkit-touch-callout: none) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="hidden"]):not([type="image"]):not([type="color"]):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl),
+    select:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl) {
+      font-size: 16px !important;
+      line-height: 1.35;
+    }
+
+    textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl) {
+      font-size: 16px !important;
+    }
+
+    input:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::placeholder,
+    textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::placeholder {
+      font-size: 12px !important;
+      line-height: normal;
+    }
+
+    input:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::-webkit-input-placeholder,
+    textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl)::-webkit-input-placeholder {
+      font-size: 12px !important;
+      line-height: normal;
+    }
   }
 }
 

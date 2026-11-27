@@ -1,8 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Drawer } from 'vaul';
 import { X } from 'lucide-react';
 
 const MOBILE_QUERY = '(max-width: 639px)';
+
+function detectIOSDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
 
 export function useIsMobileViewport() {
   const [isMobile, setIsMobile] = useState(() =>
@@ -43,16 +51,27 @@ export default function ResponsiveSheet({
   children,
 }) {
   const isMobile = useIsMobileViewport();
+  const isIOS = useMemo(() => detectIOSDevice(), []);
+
+  const handleClose = useCallback(() => {
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      const tag = document.activeElement.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        document.activeElement.blur();
+      }
+    }
+    onClose?.();
+  }, [onClose]);
 
   // Escape-key dismissal on desktop modal
   useEffect(() => {
     if (!open || isMobile) return undefined;
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose?.();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, isMobile, onClose]);
+  }, [open, isMobile, handleClose]);
 
   // Prevent background page scroll on desktop modal
   useEffect(() => {
@@ -69,14 +88,15 @@ export default function ResponsiveSheet({
       <Drawer.Root
         open={Boolean(open)}
         onOpenChange={(nextOpen) => {
-          if (!nextOpen) onClose?.();
+          if (!nextOpen) handleClose();
         }}
         shouldScaleBackground={false}
+        repositionInputs={!isIOS}
       >
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-[100] bg-slate-900/55" />
           <Drawer.Content
-            className="fixed inset-x-0 bottom-0 z-[101] flex flex-col bg-white rounded-t-3xl border-t border-slate-200 max-h-[90dvh] outline-none"
+            className="fixed inset-x-0 bottom-0 z-[101] flex flex-col bg-white rounded-t-3xl border-t border-slate-200 max-h-[92dvh] outline-none"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             {/* Native Drag Pill */}
@@ -113,7 +133,7 @@ export default function ResponsiveSheet({
                 {showCloseButton && (
                   <button
                     type="button"
-                    onClick={onClose}
+                    onClick={handleClose}
                     aria-label="Close"
                     className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
                   >
@@ -140,7 +160,7 @@ export default function ResponsiveSheet({
       role="dialog"
       aria-modal="true"
       aria-label={title || 'Dialog'}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className={`bg-white rounded-3xl border border-slate-200 ${maxWidth} w-full max-h-[88dvh] flex flex-col overflow-hidden relative`}
@@ -161,7 +181,7 @@ export default function ResponsiveSheet({
             {showCloseButton && (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Close"
                 className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
               >

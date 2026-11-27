@@ -40,7 +40,7 @@ export default function AIAssistantDrawer() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const inputRef = useRef(null);
 
   const getPosStorageKey = () =>
@@ -174,18 +174,38 @@ export default function AIAssistantDrawer() {
     setIsOpen(true);
   };
 
-  // Auto scroll to bottom
+  // Auto scroll ONLY inside the drawer stream (never jumps outer window/body)
   useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages, loading, isOpen]);
 
-  // Focus input when opening
+  // Focus input when opening ONLY on desktop fine-pointer devices after slide completes
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150);
+    if (!isOpen) {
+      inputRef.current?.blur();
+      return undefined;
     }
+    const isDesktopPointer =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(hover: hover) and (pointer: fine)').matches;
+    if (!isDesktopPointer) return undefined;
+
+    const timer = window.setTimeout(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    }, 320);
+    return () => window.clearTimeout(timer);
+  }, [isOpen]);
+
+  // Lock background page scroll while AI drawer is open
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, [isOpen]);
 
   // Close on Escape key
@@ -353,8 +373,11 @@ export default function AIAssistantDrawer() {
 
       {/* Slide-Over Drawer Panel */}
       <div
-        className={`fixed top-0 right-0 bottom-0 w-full sm:w-[450px] bg-white border-l border-slate-200 z-50 flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
+        aria-hidden={!isOpen}
+        className={`fixed top-0 right-0 bottom-0 w-full sm:w-[450px] bg-white border-l border-slate-200 z-50 flex flex-col transition-[transform,visibility] duration-300 ease-in-out ${
+          isOpen
+            ? 'translate-x-0 visible pointer-events-auto'
+            : 'translate-x-full invisible pointer-events-none'
         }`}
       >
         {/* Drawer Header */}
@@ -396,7 +419,10 @@ export default function AIAssistantDrawer() {
         </div>
 
         {/* Message Stream */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5 space-y-3.5"
+        >
           {messages.map((msg, index) => {
             const isUser = msg.role === 'user';
             return (
@@ -500,8 +526,6 @@ export default function AIAssistantDrawer() {
               </div>
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Suggested Prompts (when only 1 or 2 messages exist) */}
@@ -528,7 +552,10 @@ export default function AIAssistantDrawer() {
         )}
 
         {/* Input Bar */}
-        <div className="p-3 sm:p-4 border-t border-slate-200 bg-white">
+        <div
+          className="p-3 sm:p-4 border-t border-slate-200 bg-white"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -542,7 +569,8 @@ export default function AIAssistantDrawer() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask a question or find items/sellers..."
-              disabled={loading}
+              tabIndex={isOpen ? 0 : -1}
+              disabled={loading || !isOpen}
               className="flex-1 text-xs border border-slate-300 rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400 text-slate-900 bg-slate-50/50"
             />
             <button
